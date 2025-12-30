@@ -1,3 +1,11 @@
+## [1.2.0](https://github.com/bordeux/tmpltool/compare/v1.1.1...v1.2.0) (2025-12-30)
+
+
+### Features
+
+* add data parsing functions for JSON, YAML, and TOML ([0890d05](https://github.com/bordeux/tmpltool/commit/0890d05c82b80affcee628a0401be7a7b16bcc3b))
+* add validation functions for email, URL, IP, UUID and regex ([7579af5](https://github.com/bordeux/tmpltool/commit/7579af562a1d49f7255fdacf759a8a7cd6ef77f0))
+
 ## [1.1.1](https://github.com/bordeux/tmpltool/compare/v1.1.0...v1.1.1) (2025-12-30)
 
 
