@@ -84,11 +84,11 @@ This document tracks potential features, improvements, and ideas for tmpltool.
 - [ ] `cwd()` - Get current working directory
 
 ### Validation Functions
-- [ ] `is_email(string)` - Validate email format
-- [ ] `is_url(string)` - Validate URL format
-- [ ] `is_ip(string)` - Validate IP address
-- [ ] `is_uuid(string)` - Validate UUID format
-- [ ] `matches_regex(pattern, string)` - Check if string matches regex
+- [x] `is_email(string)` - Validate email format ✅ **Implemented v1.2.0**
+- [x] `is_url(string)` - Validate URL format ✅ **Implemented v1.2.0**
+- [x] `is_ip(string)` - Validate IP address ✅ **Implemented v1.2.0**
+- [x] `is_uuid(string)` - Validate UUID format ✅ **Implemented v1.2.0**
+- [x] `matches_regex(pattern, string)` - Check if string matches regex ✅ **Implemented v1.2.0**
 
 ## CLI Enhancements
 

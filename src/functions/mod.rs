@@ -27,6 +27,11 @@
 //! - `glob(pattern)` - List files matching a glob pattern
 //! - `file_size(path)` - Get file size in bytes
 //! - `file_modified(path)` - Get file modification timestamp
+//! - `is_email(string)` - Validate email address format
+//! - `is_url(string)` - Validate URL format
+//! - `is_ip(string)` - Validate IP address (IPv4 or IPv6)
+//! - `is_uuid(string)` - Validate UUID format
+//! - `matches_regex(pattern, string)` - Check if string matches regex pattern
 //!
 //! # Adding Custom Functions
 //!
@@ -55,6 +60,7 @@ pub mod filter_env;
 pub mod hash;
 pub mod random_string;
 pub mod uuid_gen;
+pub mod validation;
 
 use crate::TemplateContext;
 use tera::Tera;
@@ -104,4 +110,11 @@ pub fn register_all(tera: &mut Tera, context: TemplateContext) {
     tera.register_function("glob", filesystem::GlobFiles::new(context.clone()));
     tera.register_function("file_size", filesystem::FileSize::new(context.clone()));
     tera.register_function("file_modified", filesystem::FileModified::new(context));
+
+    // Validation functions
+    tera.register_function("is_email", validation::IsEmail);
+    tera.register_function("is_url", validation::IsUrl);
+    tera.register_function("is_ip", validation::IsIp);
+    tera.register_function("is_uuid", validation::IsUuid);
+    tera.register_function("matches_regex", validation::MatchesRegex);
 }

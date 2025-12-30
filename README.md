@@ -1269,6 +1269,129 @@ tmpltool --trust template.tmpl  # OK, can read any file
 
 **WARNING:** Only use `--trust` with templates you completely trust. Malicious templates could read sensitive files like SSH keys, passwords, or system configurations.
 
+### Validation Functions
+
+tmpltool provides validation functions to check if strings match specific formats. These are useful for validating user input, configuration values, or data from external sources.
+
+#### `is_email(string)`
+
+Validates if a string is a valid email address format.
+
+```
+Email: user@example.com
+Valid: {{ is_email(string="user@example.com") }}
+{# Output: Valid: true #}
+
+Email: invalid-email
+Valid: {{ is_email(string="invalid-email") }}
+{# Output: Valid: false #}
+```
+
+#### `is_url(string)`
+
+Validates if a string is a valid URL (supports http, https, ftp, file schemes).
+
+```
+URL: https://example.com/path
+Valid: {{ is_url(string="https://example.com/path") }}
+{# Output: Valid: true #}
+
+URL: not-a-url
+Valid: {{ is_url(string="not-a-url") }}
+{# Output: Valid: false #}
+```
+
+#### `is_ip(string)`
+
+Validates if a string is a valid IP address (IPv4 or IPv6).
+
+```
+IPv4: 192.168.1.1
+Valid: {{ is_ip(string="192.168.1.1") }}
+{# Output: Valid: true #}
+
+IPv6: 2001:db8::1
+Valid: {{ is_ip(string="2001:db8::1") }}
+{# Output: Valid: true #}
+
+Invalid: 256.1.1.1
+Valid: {{ is_ip(string="256.1.1.1") }}
+{# Output: Valid: false #}
+```
+
+#### `is_uuid(string)`
+
+Validates if a string is a valid UUID format.
+
+```
+UUID: 550e8400-e29b-41d4-a716-446655440000
+Valid: {{ is_uuid(string="550e8400-e29b-41d4-a716-446655440000") }}
+{# Output: Valid: true #}
+
+Invalid: not-a-uuid
+Valid: {{ is_uuid(string="not-a-uuid") }}
+{# Output: Valid: false #}
+```
+
+#### `matches_regex(pattern, string)`
+
+Checks if a string matches a regular expression pattern.
+
+```
+{# Validate alphanumeric #}
+{% if matches_regex(pattern="^[A-Za-z0-9]+$", string="Test123") %}
+  Valid alphanumeric string
+{% endif %}
+
+{# Validate phone number format #}
+{% set phone = get_env(name="PHONE", default="") %}
+{% if matches_regex(pattern="^\\d{3}-\\d{3}-\\d{4}$", string=phone) %}
+  Phone number format: XXX-XXX-XXXX
+{% endif %}
+
+{# Check for specific pattern #}
+{% if matches_regex(pattern="^prod-", string="prod-server-01") %}
+  This is a production server
+{% endif %}
+```
+
+**Practical Example - Configuration Validation:**
+```
+# Configuration Validation Report
+
+{% set email = get_env(name="ADMIN_EMAIL", default="") %}
+Admin Email: {{ email }}
+{% if is_email(string=email) %}
+✓ Valid email format
+{% else %}
+✗ Invalid email format
+{% endif %}
+
+{% set api_url = get_env(name="API_URL", default="") %}
+API URL: {{ api_url }}
+{% if is_url(string=api_url) %}
+✓ Valid URL format
+{% else %}
+✗ Invalid URL format
+{% endif %}
+
+{% set server_ip = get_env(name="SERVER_IP", default="") %}
+Server IP: {{ server_ip }}
+{% if is_ip(string=server_ip) %}
+✓ Valid IP address
+{% else %}
+✗ Invalid IP address
+{% endif %}
+
+{% set correlation_id = get_env(name="CORRELATION_ID", default="") %}
+Correlation ID: {{ correlation_id }}
+{% if is_uuid(string=correlation_id) %}
+✓ Valid UUID format
+{% else %}
+✗ Invalid UUID format
+{% endif %}
+```
+
 ### Comments
 ```
 {# This is a comment #}
