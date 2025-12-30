@@ -1,4 +1,5 @@
 use crate::functions;
+use std::error::Error;
 use std::fs;
 use std::io::{self, Read, Write};
 use tera::{Context, Tera};
@@ -67,10 +68,38 @@ fn render(template_content: &str, context: &Context) -> Result<String, Box<dyn s
     functions::register_all(&mut tera);
 
     tera.add_raw_template("template", template_content)
-        .map_err(|e| format!("Failed to parse template: {}", e))?;
+        .map_err(|e| format_tera_error("Failed to parse template", &e))?;
 
     tera.render("template", context)
-        .map_err(|e| format!("Failed to render template: {}", e).into())
+        .map_err(|e| format_tera_error("Failed to render template", &e).into())
+}
+
+/// Formats Tera errors with detailed information
+fn format_tera_error(prefix: &str, error: &tera::Error) -> String {
+    use std::fmt::Write;
+
+    let mut msg = String::new();
+    writeln!(&mut msg, "{}", prefix).ok();
+    writeln!(&mut msg).ok();
+
+    // Main error message
+    writeln!(&mut msg, "Error: {}", error).ok();
+
+    // Add source information if available
+    if let Some(source) = Error::source(error) {
+        writeln!(&mut msg).ok();
+        writeln!(&mut msg, "Caused by:").ok();
+        writeln!(&mut msg, "  {}", source).ok();
+
+        // Chain of causes
+        let mut current_source = Error::source(source);
+        while let Some(cause) = current_source {
+            writeln!(&mut msg, "  {}", cause).ok();
+            current_source = Error::source(cause);
+        }
+    }
+
+    msg
 }
 
 /// Writes the rendered content to file or stdout
