@@ -1,3 +1,13 @@
+## [1.1.1](https://github.com/bordeux/tmpltool/compare/v1.1.0...v1.1.1) (2025-12-30)
+
+
+### Bug Fixes
+
+* add unit tests ([b3b33cd](https://github.com/bordeux/tmpltool/commit/b3b33cdd4b09fc3671b24feb766a7c99ed74c5fe))
+* fix relative paths during reading files ([c56fdbb](https://github.com/bordeux/tmpltool/commit/c56fdbb95ffe2874f6e915199be7e236390e48f8))
+* Fix unit tests ([0a1d4cc](https://github.com/bordeux/tmpltool/commit/0a1d4cc02832f7dc7218d6932c9c54a4791bc5a8))
+* revert include fix ([96d7bae](https://github.com/bordeux/tmpltool/commit/96d7bae745edc30a4402f0a88023aadabc303be3))
+
 ## [1.1.0](https://github.com/bordeux/tmpltool/compare/v1.0.4...v1.1.0) (2025-12-30)
 
 
