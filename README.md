@@ -421,6 +421,274 @@ Generate nginx config and test it:
 tmpltool nginx.conf.tmpl | nginx -t -c /dev/stdin
 ```
 
+#### Comprehensive Example - All Features
+
+This example demonstrates all tmpltool features in a single template:
+
+Template `comprehensive-app-config.tmpl`:
+```yaml
+# Application Configuration
+# Generated: {{ now() }}
+# Instance ID: {{ uuid() }}
+
+{# ============================================
+   Service Configuration
+   ============================================ #}
+service:
+  name: {{ get_env(name="APP_NAME", default="myapp") | upper }}
+  version: {{ get_env(name="APP_VERSION", default="1.0.0") }}
+  environment: {{ get_env(name="ENV", default="development") | upper }}
+
+  # Unique identifiers
+  instance_id: {{ uuid() }}
+  deployment_id: {{ uuid() }}
+
+{# ============================================
+   Security & Authentication
+   ============================================ #}
+security:
+  # Hash functions for integrity checks
+  config_checksum: {{ md5(string="v1.0-config") }}
+  license_hash: {{ sha256(string=get_env(name="LICENSE_KEY", default="trial-license")) }}
+
+  # Generated secrets
+  api_key: {{ random_string(length=32, charset="hex") }}
+  secret_token: {{ random_string(length=64) }}
+  csrf_token: {{ random_string(length=40, charset="hex") }}
+  session_secret: {{ random_string(length=32, charset="alphanumeric") }}
+
+  # Password hashing (example - use proper password hashing in production!)
+  {% set admin_pwd = get_env(name="ADMIN_PASSWORD", default="changeme123") %}
+  admin_password_hash: {{ sha512(string=admin_pwd) }}
+
+{# ============================================
+   Database Configuration
+   ============================================ #}
+database:
+  # Filter all DB_* environment variables
+  {% set db_vars = filter_env(pattern="DB_*") %}
+  {% if db_vars | length > 0 %}
+  # From environment:
+  {% for var in db_vars %}
+  {{ var.key | lower | replace(from="db_", to="") }}: {{ var.value }}
+  {% endfor %}
+  {% else %}
+  # Default configuration:
+  host: {{ get_env(name="DB_HOST", default="localhost") }}
+  port: {{ get_env(name="DB_PORT", default="5432") }}
+  name: {{ get_env(name="DB_NAME", default="myapp_db") }}
+  user: {{ get_env(name="DB_USER", default="app_user") }}
+  {% endif %}
+
+  # Connection pool
+  max_connections: {{ get_env(name="DB_MAX_CONNECTIONS", default="20") }}
+  connection_id: {{ uuid() }}
+
+{# ============================================
+   Server Configuration
+   ============================================ #}
+server:
+  {% set servers = filter_env(pattern="SERVER_*") %}
+  {% if servers | length > 0 %}
+  # Detected server configuration:
+  {% for srv in servers %}
+  {{ srv.key | lower | replace(from="server_", to="") }}: {{ srv.value }}
+  {% endfor %}
+  {% else %}
+  # Default server configuration:
+  host: {{ get_env(name="HOST", default="0.0.0.0") }}
+  port: {{ get_env(name="PORT", default="8080") }}
+  protocol: {{ get_env(name="PROTOCOL", default="http") }}
+  {% endif %}
+
+  # TLS/SSL
+  {% set enable_tls = get_env(name="ENABLE_TLS", default="false") %}
+  {% if enable_tls == "true" %}
+  tls:
+    enabled: true
+    cert_path: {{ get_env(name="TLS_CERT_PATH", default="/etc/ssl/cert.pem") }}
+    key_path: {{ get_env(name="TLS_KEY_PATH", default="/etc/ssl/key.pem") }}
+  {% else %}
+  tls:
+    enabled: false
+  {% endif %}
+
+{# ============================================
+   Logging Configuration
+   ============================================ #}
+logging:
+  {% set env_type = get_env(name="ENV", default="development") %}
+  {% if env_type == "production" %}
+  level: ERROR
+  format: json
+  output: /var/log/app/production.log
+  {% elif env_type == "staging" %}
+  level: WARN
+  format: json
+  output: /var/log/app/staging.log
+  {% else %}
+  level: DEBUG
+  format: text
+  output: stdout
+  {% endif %}
+
+  # Log rotation ID
+  rotation_id: {{ uuid() }}
+
+{# ============================================
+   Feature Flags
+   ============================================ #}
+features:
+  {% set features = get_env(name="FEATURES", default="api,web,admin") | split(pat=",") %}
+  enabled: [{% for feature in features %}"{{ feature | trim }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+  count: {{ features | length }}
+
+  # Feature-specific settings
+  {% for feature in features %}
+  {{ feature | trim | slugify }}:
+    enabled: true
+    token: {{ random_string(length=16, charset="hex") }}
+  {% endfor %}
+
+{# ============================================
+   External Services
+   ============================================ #}
+external_services:
+  # All API_* environment variables
+  {% set api_vars = filter_env(pattern="API_*") %}
+  {% if api_vars | length > 0 %}
+  apis:
+  {% for api in api_vars %}
+    {{ api.key | lower | replace(from="api_", to="") }}:
+      url: {{ api.value }}
+      key: {{ random_string(length=32, charset="hex") }}
+      checksum: {{ md5(string=api.value) }}
+  {% endfor %}
+  {% else %}
+  apis: []
+  {% endif %}
+
+{# ============================================
+   Cache Configuration
+   ============================================ #}
+cache:
+  {% set cache_type = get_env(name="CACHE_TYPE", default="memory") %}
+  type: {{ cache_type }}
+  ttl: {{ get_env(name="CACHE_TTL", default="3600") }}
+
+  {% if cache_type == "redis" %}
+  redis:
+    host: {{ get_env(name="REDIS_HOST", default="localhost") }}
+    port: {{ get_env(name="REDIS_PORT", default="6379") }}
+    db: {{ get_env(name="REDIS_DB", default="0") }}
+    password_hash: {{ sha256(string=get_env(name="REDIS_PASSWORD", default="")) }}
+  {% endif %}
+
+{# ============================================
+   Monitoring & Metrics
+   ============================================ #}
+monitoring:
+  enabled: {{ get_env(name="ENABLE_MONITORING", default="true") }}
+  endpoint: {{ get_env(name="METRICS_ENDPOINT", default="/metrics") }}
+
+  # Unique tracking IDs
+  cluster_id: {{ uuid() }}
+  node_id: {{ uuid() }}
+
+  # Sample intervals (in seconds)
+  {% set intervals = get_env(name="SAMPLE_INTERVALS", default="10,30,60") | split(pat=",") %}
+  sample_intervals: [{% for interval in intervals %}{{ interval }}{% if not loop.last %}, {% endif %}{% endfor %}]
+
+{# ============================================
+   Recovery & Backup
+   ============================================ #}
+recovery:
+  # Recovery codes (for 2FA backup)
+  codes:
+  {% for i in range(end=5) %}
+    - {{ random_string(length=8, charset="uppercase") }}-{{ random_string(length=8, charset="uppercase") }}
+  {% endfor %}
+
+  # Backup encryption key
+  backup_key: {{ random_string(length=64, charset="hex") }}
+  backup_key_hash: {{ sha256(string=get_env(name="BACKUP_PASSPHRASE", default="default-passphrase")) }}
+
+{# ============================================
+   Metadata
+   ============================================ #}
+metadata:
+  generated_at: {{ now() }}
+  generated_by: tmpltool
+  template_version: "2.0"
+  config_hash: {{ sha1(string="comprehensive-config-v2.0") }}
+
+  # All environment variables used
+  environment_variables:
+  {% set all_env = filter_env(pattern="*") %}
+    total_count: {{ all_env | length }}
+    app_vars: {{ filter_env(pattern="APP_*") | length }}
+    db_vars: {{ filter_env(pattern="DB_*") | length }}
+    server_vars: {{ filter_env(pattern="SERVER_*") | length }}
+```
+
+Set environment variables and render:
+```bash
+# Set application variables
+export APP_NAME="mywebapp"
+export APP_VERSION="2.1.0"
+export ENV="production"
+
+# Set database variables
+export DB_HOST="db.example.com"
+export DB_PORT="5432"
+export DB_NAME="production_db"
+export DB_USER="app_prod"
+export DB_MAX_CONNECTIONS="50"
+
+# Set server variables
+export SERVER_HOST="api.example.com"
+export SERVER_PORT="443"
+export SERVER_PROTOCOL="https"
+
+# Enable features
+export ENABLE_TLS="true"
+export TLS_CERT_PATH="/etc/ssl/certs/app.crt"
+export TLS_KEY_PATH="/etc/ssl/private/app.key"
+
+# Set security
+export ADMIN_PASSWORD="SecureP@ssw0rd123"
+export LICENSE_KEY="PROD-ABC123-XYZ789"
+
+# Set features
+export FEATURES="api,web,admin,analytics,reporting"
+
+# External services
+export API_PAYMENT_URL="https://api.payment.example.com"
+export API_EMAIL_URL="https://api.email.example.com"
+
+# Cache configuration
+export CACHE_TYPE="redis"
+export REDIS_HOST="cache.example.com"
+export REDIS_PORT="6379"
+export REDIS_PASSWORD="redis-secure-pass"
+
+# Render the configuration
+tmpltool comprehensive-app-config.tmpl -o app-config.yaml
+```
+
+This example demonstrates:
+- ✅ All hash functions: `md5()`, `sha1()`, `sha256()`, `sha512()`
+- ✅ UUID generation: `uuid()`
+- ✅ Random strings: `random_string()` with various charsets
+- ✅ Environment variables: `get_env()` with defaults
+- ✅ Pattern filtering: `filter_env()`
+- ✅ Conditionals: `if/elif/else`
+- ✅ Loops: `for` loops with ranges and arrays
+- ✅ Filters: `upper`, `lower`, `trim`, `slugify`, `replace`, `split`, `length`
+- ✅ Comments: `{# ... #}`
+- ✅ String operations: concatenation and formatting
+- ✅ Complex logic: nested conditions and loops
+
 ## Examples
 
 The `examples/` directory contains ready-to-use template examples demonstrating various features:
@@ -430,6 +698,9 @@ The `examples/` directory contains ready-to-use template examples demonstrating 
 - **`config.tmpl`** - Application configuration file generation
 - **`docker-compose.tmpl`** - Docker Compose with sensible defaults
 - **`config-with-defaults.tmpl`** - Advanced config using `get_env()` function (recommended)
+- **`server-config.tmpl`** - Server configuration using `filter_env()` pattern matching
+- **`hash-crypto.tmpl`** - Demonstrates all hash functions, UUID, and random string generation
+- **`comprehensive-app-config.tmpl`** - Complete showcase of ALL features (recommended for learning)
 
 ### Try an Example
 
@@ -451,6 +722,19 @@ tmpltool examples/docker-compose.tmpl -o docker-compose.yml
 
 # Config with get_env() function and defaults
 tmpltool examples/config-with-defaults.tmpl
+
+# Hash and crypto functions
+tmpltool examples/hash-crypto.tmpl
+
+# Comprehensive example with ALL features (great for learning!)
+tmpltool examples/comprehensive-app-config.tmpl
+
+# Comprehensive example with environment variables
+APP_NAME="MyWebApp" \
+ENV="production" \
+DB_HOST="db.example.com" \
+FEATURES="api,web,admin" \
+tmpltool examples/comprehensive-app-config.tmpl -o app-config.yaml
 ```
 
 See the [examples/README.md](examples/README.md) for detailed documentation of each example.
