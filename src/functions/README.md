@@ -61,21 +61,6 @@ pub fn uppercase_function(args: &HashMap<String, Value>) -> tera::Result<Value> 
 
     Ok(Value::String(value.to_uppercase()))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_uppercase() {
-        let mut args = HashMap::new();
-        args.insert("value".to_string(), Value::String("hello".to_string()));
-
-        let result = uppercase_function(&args);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().as_str().unwrap(), "HELLO");
-    }
-}
 ```
 
 ### 2. Declare the Module
@@ -100,7 +85,7 @@ pub fn register_all(tera: &mut Tera) {
 
 ### 4. Write Tests
 
-Add tests in your function file (as shown in step 1).
+Add tests in <root>/tests folder
 
 ### 5. Test Everything
 
@@ -130,7 +115,7 @@ pub fn my_function(args: &HashMap<String, Value>) -> tera::Result<Value>
 
 1. **Always validate arguments** - Check for required arguments
 2. **Provide helpful error messages** - Users should know what went wrong
-3. **Write comprehensive tests** - Test both success and error cases
+3. **Write comprehensive tests** - Test both success and error cases, under <root/tests folder
 4. **Document your function** - Add doc comments and examples
 5. **Keep it focused** - One function should do one thing well
 

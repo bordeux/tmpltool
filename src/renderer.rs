@@ -1,4 +1,4 @@
-use crate::functions;
+use crate::{TemplateContext, functions};
 use std::error::Error;
 use std::fs;
 use std::io::{self, Read, Write};
@@ -23,11 +23,22 @@ pub fn render_template(
     // Read template from file or stdin
     let template_content = read_template(template_source)?;
 
-    // Create empty context - env vars only accessible via env() function
+    // Create template context for resolving file paths
+    let template_context = match template_source {
+        Some(file_path) => TemplateContext::from_template_file(file_path, trust_mode)?,
+        None => TemplateContext::from_stdin(trust_mode)?,
+    };
+
+    // Create empty Tera context - env vars only accessible via env() function
     let context = Context::new();
 
     // Render the template
-    let rendered = render(&template_content, &context, trust_mode)?;
+    let rendered = render(
+        template_source,
+        &template_content,
+        &context,
+        template_context,
+    )?;
 
     // Write output to file or stdout
     write_output(&rendered, output_file)?;
@@ -64,19 +75,23 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
 
 /// Renders the template with the given context
 fn render(
+    template_source: Option<&str>,
     template_content: &str,
     context: &Context,
-    trust_mode: bool,
+    template_context: TemplateContext,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut tera = Tera::default();
 
     // Register all custom functions
-    functions::register_all(&mut tera, trust_mode);
+    functions::register_all(&mut tera, template_context);
 
-    tera.add_raw_template("template", template_content)
+    // Use full file path as template name if it's a file, otherwise use "template"
+    let template_name = template_source.unwrap_or("template");
+
+    tera.add_raw_template(template_name, template_content)
         .map_err(|e| format_tera_error("Failed to parse template", &e))?;
 
-    tera.render("template", context)
+    tera.render(template_name, context)
         .map_err(|e| format_tera_error("Failed to render template", &e).into())
 }
 

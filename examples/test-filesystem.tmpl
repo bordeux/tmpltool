@@ -1,0 +1,17 @@
+Testing all filesystem functions with relative paths:
+
+1. read_file(path="./basic.tmpl"):
+{{ read_file(path="./basic.tmpl") | truncate(length=50) }}
+
+2. file_exists(path="./basic.tmpl"): {{ file_exists(path="./basic.tmpl") }}
+
+3. file_exists(path="./nonexistent.txt"): {{ file_exists(path="./nonexistent.txt") }}
+
+4. file_size(path="./basic.tmpl"): {{ file_size(path="./basic.tmpl") }} bytes
+
+5. glob(pattern="*.tmpl"):
+{% for file in glob(pattern="*.tmpl") -%}
+  - {{ file }}
+{% endfor %}
+
+All tests completed!
