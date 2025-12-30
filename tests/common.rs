@@ -1,5 +1,4 @@
 /// Common test utilities for tmpltool integration tests
-
 use std::fs;
 use std::path::PathBuf;
 
@@ -16,6 +15,7 @@ pub fn cleanup_test_file(path: &PathBuf) {
 }
 
 /// Get the path to a template fixture file
+#[allow(dead_code)]
 pub fn get_fixture_template(name: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests");
@@ -26,6 +26,7 @@ pub fn get_fixture_template(name: &str) -> PathBuf {
 }
 
 /// Get the path to an expected output fixture file
+#[allow(dead_code)]
 pub fn get_fixture_expected(name: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests");
@@ -36,15 +37,27 @@ pub fn get_fixture_expected(name: &str) -> PathBuf {
 }
 
 /// Read a fixture template file
+#[allow(dead_code)]
 pub fn read_fixture_template(name: &str) -> String {
     let path = get_fixture_template(name);
-    fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("Failed to read fixture template '{}': {}", path.display(), e))
+    fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read fixture template '{}': {}",
+            path.display(),
+            e
+        )
+    })
 }
 
 /// Read an expected output fixture file
+#[allow(dead_code)]
 pub fn read_fixture_expected(name: &str) -> String {
     let path = get_fixture_expected(name);
-    fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("Failed to read fixture expected '{}': {}", path.display(), e))
+    fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read fixture expected '{}': {}",
+            path.display(),
+            e
+        )
+    })
 }

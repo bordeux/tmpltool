@@ -34,7 +34,7 @@ This project adheres to a code of conduct. By participating, you are expected to
    ```
 3. Add the upstream repository:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_OWNER/tmpltool.git
+   git remote add upstream https://github.com/bordeux/tmpltool.git
    ```
 4. Install Node.js dependencies (for commit validation):
    ```bash
