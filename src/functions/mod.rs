@@ -11,6 +11,23 @@
 //! - `get_random(start, end)` - Generate random integers
 //! - And many built-in filters: slugify, date, filesizeformat, urlencode, etc.
 //!
+//! # Custom Functions
+//!
+//! tmpltool provides additional custom functions:
+//! - `filter_env(pattern)` - Filter environment variables by glob pattern (e.g., "SERVER_*")
+//! - `md5(string)` - Calculate MD5 hash of a string
+//! - `sha1(string)` - Calculate SHA1 hash of a string
+//! - `sha256(string)` - Calculate SHA256 hash of a string
+//! - `sha512(string)` - Calculate SHA512 hash of a string
+//! - `uuid()` - Generate a random UUID v4
+//! - `random_string(length, charset)` - Generate a random string with custom length and character set
+//! - `read_file(path)` - Read content from a file
+//! - `file_exists(path)` - Check if a file exists
+//! - `list_dir(path)` - List files in a directory
+//! - `glob(pattern)` - List files matching a glob pattern
+//! - `file_size(path)` - Get file size in bytes
+//! - `file_modified(path)` - Get file modification timestamp
+//!
 //! # Adding Custom Functions
 //!
 //! To add a new custom function:
@@ -33,6 +50,12 @@
 //! }
 //! ```
 
+pub mod filesystem;
+pub mod filter_env;
+pub mod hash;
+pub mod random_string;
+pub mod uuid_gen;
+
 use tera::Tera;
 
 /// Register all custom functions with the Tera instance
@@ -44,6 +67,7 @@ use tera::Tera;
 /// # Arguments
 ///
 /// * `tera` - Mutable reference to a Tera instance
+/// * `trust_mode` - If true, disables filesystem security restrictions
 ///
 /// # Example
 ///
@@ -52,10 +76,29 @@ use tera::Tera;
 /// use tmpltool::functions::register_all;
 ///
 /// let mut tera = Tera::default();
-/// register_all(&mut tera);
+/// register_all(&mut tera, false);
 /// ```
-pub fn register_all(_tera: &mut Tera) {
-    // Add custom function registrations here as you create them
-    // Example:
-    // tera.register_function("my_function", my_function::my_function);
+pub fn register_all(tera: &mut Tera, trust_mode: bool) {
+    // Register custom functions
+    tera.register_function("filter_env", filter_env::FilterEnv);
+
+    // Hash functions
+    tera.register_function("md5", hash::Md5);
+    tera.register_function("sha1", hash::Sha1);
+    tera.register_function("sha256", hash::Sha256);
+    tera.register_function("sha512", hash::Sha512);
+
+    // UUID generation
+    tera.register_function("uuid", uuid_gen::UuidV4);
+
+    // Random string generation
+    tera.register_function("random_string", random_string::RandomString);
+
+    // File system functions (with trust mode)
+    tera.register_function("read_file", filesystem::ReadFile::new(trust_mode));
+    tera.register_function("file_exists", filesystem::FileExists::new(trust_mode));
+    tera.register_function("list_dir", filesystem::ListDir::new(trust_mode));
+    tera.register_function("glob", filesystem::GlobFiles::new(trust_mode));
+    tera.register_function("file_size", filesystem::FileSize::new(trust_mode));
+    tera.register_function("file_modified", filesystem::FileModified::new(trust_mode));
 }

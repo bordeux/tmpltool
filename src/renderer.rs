@@ -1,4 +1,5 @@
 use crate::functions;
+use std::error::Error;
 use std::fs;
 use std::io::{self, Read, Write};
 use tera::{Context, Tera};
@@ -9,6 +10,7 @@ use tera::{Context, Tera};
 ///
 /// * `template_source` - Optional path to template file. If None, reads from stdin
 /// * `output_file` - Optional path to output file. If None, prints to stdout
+/// * `trust_mode` - If true, disables filesystem security restrictions
 ///
 /// # Returns
 ///
@@ -16,6 +18,7 @@ use tera::{Context, Tera};
 pub fn render_template(
     template_source: Option<&str>,
     output_file: Option<&str>,
+    trust_mode: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Read template from file or stdin
     let template_content = read_template(template_source)?;
@@ -24,7 +27,7 @@ pub fn render_template(
     let context = Context::new();
 
     // Render the template
-    let rendered = render(&template_content, &context)?;
+    let rendered = render(&template_content, &context, trust_mode)?;
 
     // Write output to file or stdout
     write_output(&rendered, output_file)?;
@@ -60,17 +63,49 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
 }
 
 /// Renders the template with the given context
-fn render(template_content: &str, context: &Context) -> Result<String, Box<dyn std::error::Error>> {
+fn render(
+    template_content: &str,
+    context: &Context,
+    trust_mode: bool,
+) -> Result<String, Box<dyn std::error::Error>> {
     let mut tera = Tera::default();
 
     // Register all custom functions
-    functions::register_all(&mut tera);
+    functions::register_all(&mut tera, trust_mode);
 
     tera.add_raw_template("template", template_content)
-        .map_err(|e| format!("Failed to parse template: {}", e))?;
+        .map_err(|e| format_tera_error("Failed to parse template", &e))?;
 
     tera.render("template", context)
-        .map_err(|e| format!("Failed to render template: {}", e).into())
+        .map_err(|e| format_tera_error("Failed to render template", &e).into())
+}
+
+/// Formats Tera errors with detailed information
+fn format_tera_error(prefix: &str, error: &tera::Error) -> String {
+    use std::fmt::Write;
+
+    let mut msg = String::new();
+    writeln!(&mut msg, "{}", prefix).ok();
+    writeln!(&mut msg).ok();
+
+    // Main error message
+    writeln!(&mut msg, "Error: {}", error).ok();
+
+    // Add source information if available
+    if let Some(source) = Error::source(error) {
+        writeln!(&mut msg).ok();
+        writeln!(&mut msg, "Caused by:").ok();
+        writeln!(&mut msg, "  {}", source).ok();
+
+        // Chain of causes
+        let mut current_source = Error::source(source);
+        while let Some(cause) = current_source {
+            writeln!(&mut msg, "  {}", cause).ok();
+            current_source = Error::source(cause);
+        }
+    }
+
+    msg
 }
 
 /// Writes the rendered content to file or stdout

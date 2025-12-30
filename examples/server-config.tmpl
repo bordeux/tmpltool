@@ -1,0 +1,22 @@
+# Server Configuration
+# Generated from environment variables
+
+## All SERVER_* variables:
+{% for var in filter_env(pattern="SERVER_*") -%}
+{{  var.key }}={{ var.value }}
+{% endfor %}
+
+## All DATABASE_* variables:
+{% set db_vars = filter_env(pattern="DATABASE_*") -%}
+{% if db_vars | length > 0 -%}
+{% for var in db_vars -%}
+{{ var.key }}={{ var.value }}
+{% endfor -%}
+{% else -%}
+# No DATABASE_* variables found
+{% endif -%}
+
+## All environment variables starting with APP_:
+{% for var in filter_env(pattern="APP_*") -%}
+export {{ var.key }}="{{ var.value }}"
+{% endfor -%}

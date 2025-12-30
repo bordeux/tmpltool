@@ -21,6 +21,7 @@ fn test_direct_var_access_fails() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     // Should fail because env vars not auto-added to context

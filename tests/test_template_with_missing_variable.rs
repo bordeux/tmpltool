@@ -17,6 +17,7 @@ fn test_template_with_missing_variable() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     // Verify it fails (get_env() without default should error on missing var)

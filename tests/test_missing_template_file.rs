@@ -15,6 +15,7 @@ fn test_missing_template_file() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     // Verify error

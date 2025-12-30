@@ -1,0 +1,73 @@
+# Hash and Crypto Functions Example
+
+## MD5 Hash
+Original: hello world
+MD5: {{ md5(string="hello world") }}
+
+## SHA1 Hash
+Original: tmpltool
+SHA1: {{ sha1(string="tmpltool") }}
+
+## SHA256 Hash
+{% set password = get_env(name="PASSWORD", default="secret123") -%}
+Password: {{ password }}
+SHA256: {{ sha256(string=password) }}
+
+## SHA512 Hash
+Original: secure-data
+SHA512: {{ sha512(string="secure-data") }}
+
+## UUID Generation
+Request ID: {{ uuid() }}
+Session ID: {{ uuid() }}
+Transaction ID: {{ uuid() }}
+
+## Random String Generation
+
+### Alphanumeric (default)
+API Key: {{ random_string(length=32) }}
+
+### Lowercase letters only
+Username: user_{{ random_string(length=8, charset="lowercase") }}
+
+### Uppercase letters only
+Code: {{ random_string(length=6, charset="uppercase") }}
+
+### Numeric only
+PIN: {{ random_string(length=4, charset="numeric") }}
+
+### Hexadecimal
+Token: {{ random_string(length=16, charset="hex") }}
+
+### Custom charset
+Custom: {{ random_string(length=12, charset="abc123") }}
+
+## Combined Example: Secure Configuration
+
+```yaml
+application:
+  instance_id: {{ uuid() }}
+  secret_key: {{ random_string(length=64, charset="alphanumeric") }}
+  api_token: {{ random_string(length=32, charset="hex") }}
+
+security:
+  password_hash: {{ sha256(string=get_env(name="ADMIN_PASSWORD", default="changeme")) }}
+  checksum: {{ md5(string="config-v1.0") }}
+
+session:
+  session_id: {{ uuid() }}
+  csrf_token: {{ random_string(length=40, charset="hex") }}
+```
+
+## Password Hashing Example
+{% set user_password = get_env(name="USER_PASSWORD", default="password123") -%}
+User: admin
+Password (SHA256): {{ sha256(string=user_password) }}
+Salt: {{ random_string(length=16, charset="hex") }}
+
+## Multi-factor Authentication
+TOTP Secret: {{ random_string(length=32, charset="uppercase") }}
+Recovery Codes:
+{%- for i in range(end=5) %}
+  - {{ random_string(length=8, charset="alphanumeric") }}
+{%- endfor %}
