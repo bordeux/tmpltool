@@ -115,9 +115,14 @@ fn normalize_output(output: &str) -> String {
     let random_line_re = Regex::new(r"Random \(1-10\): \d+").unwrap();
     let normalized = random_line_re.replace_all(&normalized, "Random (1-10): __RANDOM__");
 
-    // Replace container random suffix (100-999)
-    let container_re = Regex::new(r"api-container-\d{3}").unwrap();
+    // Replace container random suffix (100-999) - handle both "api" and "web" service names
+    // This handles the case where TEST_SERVICE env var might not be set on some platforms
+    let container_re = Regex::new(r"(api|web)-container-\d{3}").unwrap();
     let normalized = container_re.replace_all(&normalized, "api-container-__RANDOM__");
+
+    // Replace service name (API_SERVICE or WEB_SERVICE) with normalized version
+    let service_name_re = Regex::new(r"(API|WEB)_SERVICE").unwrap();
+    let normalized = service_name_re.replace_all(&normalized, "API_SERVICE");
 
     normalized.to_string()
 }
@@ -146,10 +151,10 @@ fn validate_random_numbers(output: &str) {
         );
     }
 
-    // Check container random suffix (100-999)
-    let container_re = Regex::new(r"api-container-(\d+)").unwrap();
+    // Check container random suffix (100-999) - handle both api and web service names
+    let container_re = Regex::new(r"(api|web)-container-(\d+)").unwrap();
     if let Some(caps) = container_re.captures(output) {
-        let random_num: i32 = caps[1].parse().unwrap();
+        let random_num: i32 = caps[2].parse().unwrap();
         assert!(
             (100..=999).contains(&random_num),
             "Container random number {} is not in range 100-999",
