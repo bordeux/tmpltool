@@ -1269,6 +1269,291 @@ tmpltool --trust template.tmpl  # OK, can read any file
 
 **WARNING:** Only use `--trust` with templates you completely trust. Malicious templates could read sensitive files like SSH keys, passwords, or system configurations.
 
+### Validation Functions
+
+tmpltool provides validation functions to check if strings match specific formats. These are useful for validating user input, configuration values, or data from external sources.
+
+#### `is_email(string)`
+
+Validates if a string is a valid email address format.
+
+```
+Email: user@example.com
+Valid: {{ is_email(string="user@example.com") }}
+{# Output: Valid: true #}
+
+Email: invalid-email
+Valid: {{ is_email(string="invalid-email") }}
+{# Output: Valid: false #}
+```
+
+#### `is_url(string)`
+
+Validates if a string is a valid URL (supports http, https, ftp, file schemes).
+
+```
+URL: https://example.com/path
+Valid: {{ is_url(string="https://example.com/path") }}
+{# Output: Valid: true #}
+
+URL: not-a-url
+Valid: {{ is_url(string="not-a-url") }}
+{# Output: Valid: false #}
+```
+
+#### `is_ip(string)`
+
+Validates if a string is a valid IP address (IPv4 or IPv6).
+
+```
+IPv4: 192.168.1.1
+Valid: {{ is_ip(string="192.168.1.1") }}
+{# Output: Valid: true #}
+
+IPv6: 2001:db8::1
+Valid: {{ is_ip(string="2001:db8::1") }}
+{# Output: Valid: true #}
+
+Invalid: 256.1.1.1
+Valid: {{ is_ip(string="256.1.1.1") }}
+{# Output: Valid: false #}
+```
+
+#### `is_uuid(string)`
+
+Validates if a string is a valid UUID format.
+
+```
+UUID: 550e8400-e29b-41d4-a716-446655440000
+Valid: {{ is_uuid(string="550e8400-e29b-41d4-a716-446655440000") }}
+{# Output: Valid: true #}
+
+Invalid: not-a-uuid
+Valid: {{ is_uuid(string="not-a-uuid") }}
+{# Output: Valid: false #}
+```
+
+#### `matches_regex(pattern, string)`
+
+Checks if a string matches a regular expression pattern.
+
+```
+{# Validate alphanumeric #}
+{% if matches_regex(pattern="^[A-Za-z0-9]+$", string="Test123") %}
+  Valid alphanumeric string
+{% endif %}
+
+{# Validate phone number format #}
+{% set phone = get_env(name="PHONE", default="") %}
+{% if matches_regex(pattern="^\\d{3}-\\d{3}-\\d{4}$", string=phone) %}
+  Phone number format: XXX-XXX-XXXX
+{% endif %}
+
+{# Check for specific pattern #}
+{% if matches_regex(pattern="^prod-", string="prod-server-01") %}
+  This is a production server
+{% endif %}
+```
+
+**Practical Example - Configuration Validation:**
+```
+# Configuration Validation Report
+
+{% set email = get_env(name="ADMIN_EMAIL", default="") %}
+Admin Email: {{ email }}
+{% if is_email(string=email) %}
+✓ Valid email format
+{% else %}
+✗ Invalid email format
+{% endif %}
+
+{% set api_url = get_env(name="API_URL", default="") %}
+API URL: {{ api_url }}
+{% if is_url(string=api_url) %}
+✓ Valid URL format
+{% else %}
+✗ Invalid URL format
+{% endif %}
+
+{% set server_ip = get_env(name="SERVER_IP", default="") %}
+Server IP: {{ server_ip }}
+{% if is_ip(string=server_ip) %}
+✓ Valid IP address
+{% else %}
+✗ Invalid IP address
+{% endif %}
+
+{% set correlation_id = get_env(name="CORRELATION_ID", default="") %}
+Correlation ID: {{ correlation_id }}
+{% if is_uuid(string=correlation_id) %}
+✓ Valid UUID format
+{% else %}
+✗ Invalid UUID format
+{% endif %}
+```
+
+### Data Parsing Functions
+
+tmpltool provides functions to parse structured data formats (JSON, YAML, TOML) from strings or files. These functions are useful for loading configuration files, processing API responses, or working with structured data in templates.
+
+#### `parse_json(string)`
+
+Parse a JSON string into an object that can be used in templates.
+
+```
+{% set config = parse_json(string='{"name": "myapp", "port": 8080, "debug": true}') %}
+Application: {{ config.name }}
+Port: {{ config.port }}
+Debug mode: {{ config.debug }}
+```
+
+#### `parse_yaml(string)`
+
+Parse a YAML string into an object.
+
+```
+{% set data = parse_yaml(string="
+name: myapp
+settings:
+  theme: dark
+  notifications: true
+") %}
+App: {{ data.name }}
+Theme: {{ data.settings.theme }}
+```
+
+#### `parse_toml(string)`
+
+Parse a TOML string into an object.
+
+```
+{% set config = parse_toml(string='
+[database]
+host = "localhost"
+port = 5432
+
+[cache]
+enabled = true
+') %}
+Database: {{ config.database.host }}:{{ config.database.port }}
+Cache: {{ config.cache.enabled }}
+```
+
+#### `read_json_file(path)`
+
+Read and parse a JSON file. The path is resolved relative to the template file's directory.
+
+**Example JSON file** (`config/settings.json`):
+```json
+{
+  "app_name": "MyApp",
+  "version": "1.0.0",
+  "features": {
+    "auth": true,
+    "api": true
+  }
+}
+```
+
+**Template:**
+```
+{% set config = read_json_file(path="config/settings.json") %}
+# {{ config.app_name }} v{{ config.version }}
+
+Features:
+{% if config.features.auth %}
+- Authentication: Enabled
+{% endif %}
+{% if config.features.api %}
+- API: Enabled
+{% endif %}
+```
+
+#### `read_yaml_file(path)`
+
+Read and parse a YAML file.
+
+**Example YAML file** (`config.yaml`):
+```yaml
+services:
+  - name: web
+    port: 8080
+  - name: api
+    port: 3000
+
+environment: production
+```
+
+**Template:**
+```
+{% set config = read_yaml_file(path="config.yaml") %}
+Environment: {{ config.environment }}
+
+Services:
+{% for service in config.services %}
+  - {{ service.name }}: port {{ service.port }}
+{% endfor %}
+```
+
+#### `read_toml_file(path)`
+
+Read and parse a TOML file.
+
+**Example TOML file** (`Cargo.toml`):
+```toml
+[package]
+name = "myapp"
+version = "1.0.0"
+
+[dependencies]
+serde = "1.0"
+tokio = "1.0"
+```
+
+**Template:**
+```
+{% set cargo = read_toml_file(path="Cargo.toml") %}
+# {{ cargo.package.name }}
+
+Version: {{ cargo.package.version }}
+
+Dependencies:
+{% for dep, version in cargo.dependencies %}
+- {{ dep }}: {{ version }}
+{% endfor %}
+```
+
+**Practical Example - Multi-format Configuration:**
+
+```
+{# Load configuration from different sources #}
+{% set json_config = read_json_file(path="config.json") %}
+{% set yaml_config = read_yaml_file(path="config.yaml") %}
+{% set toml_config = read_toml_file(path="Cargo.toml") %}
+
+# Application Configuration Report
+
+## From JSON ({{ json_config.app_name }})
+- Version: {{ json_config.version }}
+- Debug: {{ json_config.debug }}
+
+## From YAML
+Environment: {{ yaml_config.environment }}
+{% for service in yaml_config.services %}
+- Service {{ service.name }}: {{ service.host }}:{{ service.port }}
+{% endfor %}
+
+## From TOML ({{ toml_config.package.name }})
+Rust Version: {{ toml_config.package.edition }}
+Dependencies: {{ toml_config.dependencies | length }}
+```
+
+**Security Note**: Like other filesystem functions, data parsing file functions enforce security restrictions:
+- Only relative paths allowed (no absolute paths like `/etc/config.json`)
+- No parent directory traversal (no `..` in paths)
+- Access restricted to current working directory and subdirectories
+- Use `--trust` flag to bypass these restrictions for trusted templates
+
 ### Comments
 ```
 {# This is a comment #}
