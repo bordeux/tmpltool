@@ -26,8 +26,13 @@ fn test_filter_env() {
     );
 
     assert!(result.is_ok());
-    let output = fs::read_to_string(&output_path).unwrap().trim_end().to_string();
-    let expected = read_fixture_expected("filter_env.txt").trim_end().to_string();
+    let output = fs::read_to_string(&output_path)
+        .unwrap()
+        .trim_end()
+        .to_string();
+    let expected = read_fixture_expected("filter_env.txt")
+        .trim_end()
+        .to_string();
     assert_eq!(output, expected);
 
     // Cleanup

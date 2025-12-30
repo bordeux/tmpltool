@@ -13,6 +13,9 @@ A fast and simple command-line template rendering tool using [Tera](https://keat
 
 - Render Tera templates with environment variable support via `get_env()` function
 - Filter environment variables by pattern with `filter_env()` function
+- Cryptographic hash functions: `md5()`, `sha1()`, `sha256()`, `sha512()`
+- UUID generation with `uuid()` function
+- Random string generation with `random_string()` function
 - Output to file or stdout (for piping)
 - Simple CLI interface
 - Single binary executable
@@ -564,6 +567,120 @@ Found {{ db_vars | length }} database variables
 ```
 
 See [examples/server-config.tmpl](examples/server-config.tmpl) for a complete example.
+
+### Hash Functions
+
+tmpltool provides cryptographic hash functions for generating checksums and hashes:
+
+#### `md5(string)`
+Calculates MD5 hash of a string.
+
+```
+Checksum: {{ md5(string="hello world") }}
+# Output: 5eb63bbbe01eeed093cb22bb8f5acdc3
+```
+
+#### `sha1(string)`
+Calculates SHA1 hash of a string.
+
+```
+Hash: {{ sha1(string="tmpltool") }}
+# Output: c054a2a60ca2fe935ea1056bd90386194116f14f
+```
+
+#### `sha256(string)`
+Calculates SHA256 hash of a string (recommended for password hashing).
+
+```
+{% set password = get_env(name="PASSWORD", default="secret") %}
+Password hash: {{ sha256(string=password) }}
+# Output: fcf730b6d95236ecd3c9fc2d92d7b6b2bb061514961aec041d6c7a7192f592e4
+```
+
+#### `sha512(string)`
+Calculates SHA512 hash of a string (most secure).
+
+```
+Secure hash: {{ sha512(string="secure-data") }}
+# Output: a5c18d86d1d07cc2b22b12284e2f8e5b9705761003f149467995927e36f0e447ddfb158b89a28c0b4d5ac419c979c1fc435a3378b619aed1bab0d15c3b583db9
+```
+
+**Important:** These hash functions are for checksums and general-purpose hashing. For production password storage, use dedicated password hashing libraries with salt and proper key derivation functions (bcrypt, argon2, etc.).
+
+### UUID Generation
+
+#### `uuid()`
+Generates a random UUID v4 (Universally Unique Identifier).
+
+```
+Request ID: {{ uuid() }}
+Session ID: {{ uuid() }}
+# Output:
+# Request ID: c5b78641-89f8-4d04-a4c9-d53ba4d433f9
+# Session ID: aabc7fe1-f8ed-45ff-944d-9c24f3823ac0
+```
+
+Each call to `uuid()` generates a unique identifier.
+
+### Random String Generation
+
+#### `random_string(length, charset)`
+Generates a random string with customizable length and character set.
+
+**Arguments:**
+- `length` (required) - Length of the string to generate (1-10000)
+- `charset` (optional) - Character set to use (default: `alphanumeric`)
+
+**Character Set Presets:**
+- `alphanumeric` - Letters (a-z, A-Z) and digits (0-9) - **default**
+- `alphabetic` or `alpha` - Letters only (a-z, A-Z)
+- `lowercase` or `lower` - Lowercase letters only (a-z)
+- `uppercase` or `upper` - Uppercase letters only (A-Z)
+- `numeric` or `digits` - Digits only (0-9)
+- `hex` or `hexadecimal` - Hexadecimal characters (0-9, a-f)
+- `hex_upper` - Hexadecimal uppercase (0-9, A-F)
+- Custom string - Any custom character set (e.g., `"abc123"`)
+
+**Examples:**
+```
+# Alphanumeric (default)
+API Key: {{ random_string(length=32) }}
+# Output: 0QY92XIYYKIvMVuVc8a7u8O4v19VacO9
+
+# Lowercase only
+Username: user_{{ random_string(length=8, charset="lowercase") }}
+# Output: user_lvaycaxa
+
+# Uppercase only
+Code: {{ random_string(length=6, charset="uppercase") }}
+# Output: YFVLRV
+
+# Numeric only
+PIN: {{ random_string(length=4, charset="numeric") }}
+# Output: 5858
+
+# Hexadecimal
+Token: {{ random_string(length=16, charset="hex") }}
+# Output: bd2954f90019649b
+
+# Custom charset
+Password: {{ random_string(length=12, charset="abc123") }}
+# Output: 3bb3c31bb23c
+```
+
+**Practical Example - Secure Configuration:**
+```yaml
+application:
+  instance_id: {{ uuid() }}
+  secret_key: {{ random_string(length=64) }}
+  api_token: {{ random_string(length=32, charset="hex") }}
+
+security:
+  password_hash: {{ sha256(string=get_env(name="PASSWORD")) }}
+  csrf_token: {{ random_string(length=40, charset="hex") }}
+```
+
+See [examples/hash-crypto.tmpl](examples/hash-crypto.tmpl) for a complete example.
 
 ### Comments
 ```

@@ -15,6 +15,12 @@
 //!
 //! tmpltool provides additional custom functions:
 //! - `filter_env(pattern)` - Filter environment variables by glob pattern (e.g., "SERVER_*")
+//! - `md5(string)` - Calculate MD5 hash of a string
+//! - `sha1(string)` - Calculate SHA1 hash of a string
+//! - `sha256(string)` - Calculate SHA256 hash of a string
+//! - `sha512(string)` - Calculate SHA512 hash of a string
+//! - `uuid()` - Generate a random UUID v4
+//! - `random_string(length, charset)` - Generate a random string with custom length and character set
 //!
 //! # Adding Custom Functions
 //!
@@ -39,6 +45,9 @@
 //! ```
 
 pub mod filter_env;
+pub mod hash;
+pub mod random_string;
+pub mod uuid_gen;
 
 use tera::Tera;
 
@@ -64,4 +73,16 @@ use tera::Tera;
 pub fn register_all(tera: &mut Tera) {
     // Register custom functions
     tera.register_function("filter_env", filter_env::FilterEnv);
+
+    // Hash functions
+    tera.register_function("md5", hash::Md5);
+    tera.register_function("sha1", hash::Sha1);
+    tera.register_function("sha256", hash::Sha256);
+    tera.register_function("sha512", hash::Sha512);
+
+    // UUID generation
+    tera.register_function("uuid", uuid_gen::UuidV4);
+
+    // Random string generation
+    tera.register_function("random_string", random_string::RandomString);
 }

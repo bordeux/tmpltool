@@ -56,7 +56,11 @@ fn test_comprehensive_template() {
         Some(output_path.to_str().unwrap()),
     );
 
-    assert!(result.is_ok(), "Template rendering failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Template rendering failed: {:?}",
+        result.err()
+    );
 
     // Read actual output and expected output
     let actual_output = fs::read_to_string(&output_path).unwrap();
@@ -102,7 +106,8 @@ fn test_comprehensive_template() {
 /// Normalize output by replacing non-deterministic values with placeholders
 fn normalize_output(output: &str) -> String {
     // Replace ISO 8601 timestamp format
-    let timestamp_re = Regex::new(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+[+-]\d{2}:\d{2}").unwrap();
+    let timestamp_re =
+        Regex::new(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+[+-]\d{2}:\d{2}").unwrap();
     let normalized = timestamp_re.replace_all(output, "__TIMESTAMP__");
 
     // Replace random number in "Random (1-10): X" pattern
@@ -118,7 +123,9 @@ fn normalize_output(output: &str) -> String {
 
 /// Validate that timestamp is in correct format (ISO 8601)
 fn validate_timestamp(output: &str) {
-    let timestamp_re = Regex::new(r"Current timestamp: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+[+-]\d{2}:\d{2}").unwrap();
+    let timestamp_re =
+        Regex::new(r"Current timestamp: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+[+-]\d{2}:\d{2}")
+            .unwrap();
     assert!(
         timestamp_re.is_match(output),
         "Timestamp not found or in wrong format in output"
@@ -182,34 +189,64 @@ fn test_comprehensive_template_validates_all_functions() {
         Some(output_path.to_str().unwrap()),
     );
 
-    assert!(result.is_ok(), "Comprehensive template should render without errors");
+    assert!(
+        result.is_ok(),
+        "Comprehensive template should render without errors"
+    );
 
     let output = fs::read_to_string(&output_path).unwrap();
 
     // Verify all sections are present
-    assert!(output.contains("Built-in get_env() function"), "Missing get_env section");
-    assert!(output.contains("Custom filter_env() function"), "Missing filter_env section");
-    assert!(output.contains("Built-in filters"), "Missing filters section");
+    assert!(
+        output.contains("Built-in get_env() function"),
+        "Missing get_env section"
+    );
+    assert!(
+        output.contains("Custom filter_env() function"),
+        "Missing filter_env section"
+    );
+    assert!(
+        output.contains("Built-in filters"),
+        "Missing filters section"
+    );
     assert!(output.contains("String filters:"), "Missing string filters");
     assert!(output.contains("Array filters:"), "Missing array filters");
-    assert!(output.contains("Conditionals with environment variables"), "Missing conditionals");
+    assert!(
+        output.contains("Conditionals with environment variables"),
+        "Missing conditionals"
+    );
     assert!(output.contains("Loops with filter_env"), "Missing loops");
-    assert!(output.contains("Complex operations"), "Missing complex operations");
+    assert!(
+        output.contains("Complex operations"),
+        "Missing complex operations"
+    );
     assert!(output.contains("Current timestamp:"), "Missing timestamp");
     assert!(output.contains("Random (1-10):"), "Missing random number");
 
     // Verify comments are NOT in output
-    assert!(!output.contains("This is a comment"), "Comments should not appear in output");
-    assert!(!output.contains("Multi-line comment"), "Multi-line comments should not appear");
+    assert!(
+        !output.contains("This is a comment"),
+        "Comments should not appear in output"
+    );
+    assert!(
+        !output.contains("Multi-line comment"),
+        "Multi-line comments should not appear"
+    );
 
     // Verify specific function outputs
     assert!(output.contains("Upper: "), "upper filter not working");
     assert!(output.contains("Lower: "), "lower filter not working");
     assert!(output.contains("Title: "), "title filter not working");
     assert!(output.contains("Slugified: "), "slugify filter not working");
-    assert!(output.contains("Trimmed: spaces"), "trim filter not working");
+    assert!(
+        output.contains("Trimmed: spaces"),
+        "trim filter not working"
+    );
     assert!(output.contains("Items count:"), "length filter not working");
-    assert!(output.contains("File size:"), "filesizeformat filter not working");
+    assert!(
+        output.contains("File size:"),
+        "filesizeformat filter not working"
+    );
     assert!(output.contains("Encoded:"), "urlencode filter not working");
 
     cleanup_test_file(&template_path);
