@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/bordeux/tmpltool/compare/v1.0.2...v1.0.3) (2025-12-30)
+
+
+### Bug Fixes
+
+* **docker:** include Cargo.lock in Docker build context ([6bd4d2d](https://github.com/bordeux/tmpltool/commit/6bd4d2d153e0b4978510b04d58adfcfda504de37))
+
 ## [1.0.2](https://github.com/bordeux/tmpltool/compare/v1.0.1...v1.0.2) (2025-12-30)
 
 
