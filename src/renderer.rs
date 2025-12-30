@@ -63,7 +63,11 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
 }
 
 /// Renders the template with the given context
-fn render(template_content: &str, context: &Context, trust_mode: bool) -> Result<String, Box<dyn std::error::Error>> {
+fn render(
+    template_content: &str,
+    context: &Context,
+    trust_mode: bool,
+) -> Result<String, Box<dyn std::error::Error>> {
     let mut tera = Tera::default();
 
     // Register all custom functions

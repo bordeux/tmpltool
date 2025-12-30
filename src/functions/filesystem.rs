@@ -10,7 +10,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use tera::{to_value, Function, Result, Value};
+use tera::{Function, Result, Value, to_value};
 
 /// Read file content function
 pub struct ReadFile {
@@ -25,12 +25,9 @@ impl ReadFile {
 
 impl Function for ReadFile {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args
-            .get("path")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                tera::Error::msg("read_file requires a 'path' argument (e.g., path=\"config.txt\")")
-            })?;
+        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+            tera::Error::msg("read_file requires a 'path' argument (e.g., path=\"config.txt\")")
+        })?;
 
         // Security: Prevent reading absolute paths or paths with parent directory traversal (unless trust mode is enabled)
         if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
@@ -40,11 +37,11 @@ impl Function for ReadFile {
             )));
         }
 
-        let content = fs::read_to_string(path).map_err(|e| {
-            tera::Error::msg(format!("Failed to read file '{}': {}", path, e))
-        })?;
+        let content = fs::read_to_string(path)
+            .map_err(|e| tera::Error::msg(format!("Failed to read file '{}': {}", path, e)))?;
 
-        to_value(&content).map_err(|e| tera::Error::msg(format!("Failed to convert content: {}", e)))
+        to_value(&content)
+            .map_err(|e| tera::Error::msg(format!("Failed to convert content: {}", e)))
     }
 }
 
@@ -61,12 +58,9 @@ impl FileExists {
 
 impl Function for FileExists {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args
-            .get("path")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                tera::Error::msg("file_exists requires a 'path' argument (e.g., path=\"file.txt\")")
-            })?;
+        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+            tera::Error::msg("file_exists requires a 'path' argument (e.g., path=\"file.txt\")")
+        })?;
 
         // Security: Prevent checking absolute paths or paths with parent directory traversal (unless trust mode is enabled)
         if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
@@ -78,7 +72,7 @@ impl Function for FileExists {
 
         let exists = Path::new(path).exists();
 
-        to_value(&exists).map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
+        to_value(exists).map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
     }
 }
 
@@ -95,12 +89,9 @@ impl ListDir {
 
 impl Function for ListDir {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args
-            .get("path")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                tera::Error::msg("list_dir requires a 'path' argument (e.g., path=\"./data\")")
-            })?;
+        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+            tera::Error::msg("list_dir requires a 'path' argument (e.g., path=\"./data\")")
+        })?;
 
         // Security: Prevent listing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
         if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
@@ -115,9 +106,8 @@ impl Function for ListDir {
 
         let mut files: Vec<String> = Vec::new();
         for entry in entries {
-            let entry = entry.map_err(|e| {
-                tera::Error::msg(format!("Failed to read directory entry: {}", e))
-            })?;
+            let entry = entry
+                .map_err(|e| tera::Error::msg(format!("Failed to read directory entry: {}", e)))?;
             let file_name = entry
                 .file_name()
                 .into_string()
@@ -197,12 +187,9 @@ impl FileSize {
 
 impl Function for FileSize {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args
-            .get("path")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                tera::Error::msg("file_size requires a 'path' argument (e.g., path=\"data.bin\")")
-            })?;
+        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+            tera::Error::msg("file_size requires a 'path' argument (e.g., path=\"data.bin\")")
+        })?;
 
         // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
         if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
@@ -212,12 +199,13 @@ impl Function for FileSize {
             )));
         }
 
-        let metadata = fs::metadata(path)
-            .map_err(|e| tera::Error::msg(format!("Failed to get file metadata for '{}': {}", path, e)))?;
+        let metadata = fs::metadata(path).map_err(|e| {
+            tera::Error::msg(format!("Failed to get file metadata for '{}': {}", path, e))
+        })?;
 
         let size = metadata.len();
 
-        to_value(&size).map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
+        to_value(size).map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
     }
 }
 
@@ -234,12 +222,9 @@ impl FileModified {
 
 impl Function for FileModified {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args
-            .get("path")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                tera::Error::msg("file_modified requires a 'path' argument (e.g., path=\"file.txt\")")
-            })?;
+        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+            tera::Error::msg("file_modified requires a 'path' argument (e.g., path=\"file.txt\")")
+        })?;
 
         // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
         if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
@@ -249,8 +234,9 @@ impl Function for FileModified {
             )));
         }
 
-        let metadata = fs::metadata(path)
-            .map_err(|e| tera::Error::msg(format!("Failed to get file metadata for '{}': {}", path, e)))?;
+        let metadata = fs::metadata(path).map_err(|e| {
+            tera::Error::msg(format!("Failed to get file metadata for '{}': {}", path, e))
+        })?;
 
         let modified = metadata
             .modified()
@@ -263,6 +249,7 @@ impl Function for FileModified {
 
         let timestamp = duration.as_secs();
 
-        to_value(&timestamp).map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
+        to_value(timestamp)
+            .map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
     }
 }

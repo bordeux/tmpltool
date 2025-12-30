@@ -3,7 +3,9 @@ use std::fs;
 use std::io::Write;
 use std::sync::atomic::{AtomicU32, Ordering};
 use tera::{Function, Value};
-use tmpltool::functions::filesystem::{FileExists, FileModified, FileSize, GlobFiles, ListDir, ReadFile};
+use tmpltool::functions::filesystem::{
+    FileExists, FileModified, FileSize, GlobFiles, ListDir, ReadFile,
+};
 
 // Global counter for unique test directories
 static TEST_COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -62,13 +64,22 @@ fn test_read_file_missing_argument() {
     let args = HashMap::new();
     let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
-    assert!(result.err().unwrap().to_string().contains("requires a 'path' argument"));
+    assert!(
+        result
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("requires a 'path' argument")
+    );
 }
 
 #[test]
 fn test_read_file_nonexistent() {
     let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("test_data/nonexistent.txt".to_string()));
+    args.insert(
+        "path".to_string(),
+        Value::String("test_data/nonexistent.txt".to_string()),
+    );
 
     let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
@@ -87,7 +98,10 @@ fn test_read_file_security_absolute_path() {
 #[test]
 fn test_read_file_security_parent_directory() {
     let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("../../../etc/passwd".to_string()));
+    args.insert(
+        "path".to_string(),
+        Value::String("../../../etc/passwd".to_string()),
+    );
 
     let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
@@ -103,7 +117,7 @@ fn test_file_exists_true() {
     args.insert("path".to_string(), Value::String(path.clone()));
 
     let result = FileExists::new(false).call(&args).unwrap();
-    assert_eq!(result.as_bool().unwrap(), true);
+    assert!(result.as_bool().unwrap());
 
     cleanup_test_dir(&test_dir);
 }
@@ -113,10 +127,13 @@ fn test_file_exists_false() {
     let test_dir = get_test_dir();
 
     let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String(format!("{}/nonexistent.txt", test_dir)));
+    args.insert(
+        "path".to_string(),
+        Value::String(format!("{}/nonexistent.txt", test_dir)),
+    );
 
     let result = FileExists::new(false).call(&args).unwrap();
-    assert_eq!(result.as_bool().unwrap(), false);
+    assert!(!result.as_bool().unwrap());
 }
 
 #[test]
@@ -197,7 +214,10 @@ fn test_glob_basic() {
     create_test_file(&test_dir, "file1.md", "content3");
 
     let mut args = HashMap::new();
-    args.insert("pattern".to_string(), Value::String(format!("{}/*.txt", test_dir)));
+    args.insert(
+        "pattern".to_string(),
+        Value::String(format!("{}/*.txt", test_dir)),
+    );
 
     let result = GlobFiles::new(false).call(&args).unwrap();
     let files = result.as_array().unwrap();
@@ -214,7 +234,10 @@ fn test_glob_no_matches() {
     let test_dir = get_test_dir();
 
     let mut args = HashMap::new();
-    args.insert("pattern".to_string(), Value::String(format!("{}/*.xyz", test_dir)));
+    args.insert(
+        "pattern".to_string(),
+        Value::String(format!("{}/*.xyz", test_dir)),
+    );
 
     let result = GlobFiles::new(false).call(&args).unwrap();
     let files = result.as_array().unwrap();
@@ -264,7 +287,10 @@ fn test_file_size_empty() {
 #[test]
 fn test_file_size_nonexistent() {
     let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("test_data/nonexistent.txt".to_string()));
+    args.insert(
+        "path".to_string(),
+        Value::String("test_data/nonexistent.txt".to_string()),
+    );
 
     let result = FileSize::new(false).call(&args);
     assert!(result.is_err());
@@ -310,7 +336,10 @@ fn test_file_modified_basic() {
 #[test]
 fn test_file_modified_nonexistent() {
     let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("test_data/nonexistent.txt".to_string()));
+    args.insert(
+        "path".to_string(),
+        Value::String("test_data/nonexistent.txt".to_string()),
+    );
 
     let result = FileModified::new(false).call(&args);
     assert!(result.is_err());
@@ -337,7 +366,13 @@ fn test_read_file_trust_mode_allows_absolute_path() {
     // Without trust mode, should fail
     let result_no_trust = ReadFile::new(false).call(&args);
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let result_trust = ReadFile::new(true).call(&args);
@@ -355,14 +390,20 @@ fn test_file_exists_trust_mode_allows_absolute_path() {
     // Without trust mode, should fail
     let result_no_trust = FileExists::new(false).call(&args);
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed
     let result_trust = FileExists::new(true).call(&args);
     assert!(result_trust.is_ok());
     // /etc should exist on Unix systems
     #[cfg(unix)]
-    assert_eq!(result_trust.unwrap().as_bool().unwrap(), true);
+    assert!(result_trust.unwrap().as_bool().unwrap());
 }
 
 #[test]
@@ -372,12 +413,21 @@ fn test_list_dir_trust_mode_allows_parent_directory() {
 
     let mut args = HashMap::new();
     // Try to access parent directory
-    args.insert("path".to_string(), Value::String(format!("{}/..", test_dir)));
+    args.insert(
+        "path".to_string(),
+        Value::String(format!("{}/..", test_dir)),
+    );
 
     // Without trust mode, should fail
     let result_no_trust = ListDir::new(false).call(&args);
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed
     let result_trust = ListDir::new(true).call(&args);
@@ -389,12 +439,21 @@ fn test_list_dir_trust_mode_allows_parent_directory() {
 #[test]
 fn test_glob_trust_mode_allows_absolute_path() {
     let mut args = HashMap::new();
-    args.insert("pattern".to_string(), Value::String("/etc/host*".to_string()));
+    args.insert(
+        "pattern".to_string(),
+        Value::String("/etc/host*".to_string()),
+    );
 
     // Without trust mode, should fail
     let result_no_trust = GlobFiles::new(false).call(&args);
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed
     let result_trust = GlobFiles::new(true).call(&args);
@@ -409,7 +468,13 @@ fn test_file_size_trust_mode_allows_absolute_path() {
     // Without trust mode, should fail
     let result_no_trust = FileSize::new(false).call(&args);
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let result_trust = FileSize::new(true).call(&args);
@@ -426,7 +491,13 @@ fn test_file_modified_trust_mode_allows_absolute_path() {
     // Without trust mode, should fail
     let result_no_trust = FileModified::new(false).call(&args);
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let result_trust = FileModified::new(true).call(&args);
