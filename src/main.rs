@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::process;
-use tmpltool::{render_template, Cli};
+use tmpltool::{Cli, render_template};
 
 fn main() {
     let cli = Cli::parse();

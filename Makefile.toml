@@ -1,0 +1,270 @@
+[config]
+default_to_workspace = false
+
+# Environment variables
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+PROJECT_NAME = "tmpltool"
+
+# ========================================
+# Standard Development Tasks
+# ========================================
+
+[tasks.format]
+description = "Format code using rustfmt"
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.format-check]
+description = "Check code formatting without making changes"
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--all", "--", "--check"]
+
+[tasks.clippy]
+description = "Run clippy linter"
+command = "cargo"
+args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
+
+[tasks.clippy-fix]
+description = "Run clippy and automatically fix issues"
+command = "cargo"
+args = ["clippy", "--fix", "--all-targets", "--all-features"]
+
+[tasks.clean]
+description = "Clean all build artifacts"
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+description = "Build the project in debug mode"
+command = "cargo"
+args = ["build"]
+
+[tasks.build-release]
+description = "Build the project in release mode (optimized)"
+command = "cargo"
+args = ["build", "--release"]
+
+[tasks.test]
+description = "Run all tests"
+command = "cargo"
+args = ["test"]
+
+[tasks.test-verbose]
+description = "Run all tests with verbose output"
+command = "cargo"
+args = ["test", "--", "--nocapture", "--test-threads=1"]
+
+[tasks.run]
+description = "Run the application with example"
+command = "cargo"
+args = ["run", "--", "examples/greeting.tmpl"]
+
+[tasks.check]
+description = "Fast check for compile errors (no binary generation)"
+command = "cargo"
+args = ["check", "--all-targets"]
+
+# ========================================
+# Cross-Platform Release Builds
+# ========================================
+
+[tasks.build-linux-x86_64]
+description = "Build release binary for Linux x86_64"
+command = "cargo"
+args = ["build", "--release", "--target", "x86_64-unknown-linux-gnu"]
+
+[tasks.build-linux-musl]
+description = "Build static release binary for Linux (musl)"
+command = "cargo"
+args = ["build", "--release", "--target", "x86_64-unknown-linux-musl"]
+
+[tasks.build-macos-x86_64]
+description = "Build release binary for macOS x86_64 (Intel)"
+command = "cargo"
+args = ["build", "--release", "--target", "x86_64-apple-darwin"]
+
+[tasks.build-macos-aarch64]
+description = "Build release binary for macOS aarch64 (Apple Silicon)"
+command = "cargo"
+args = ["build", "--release", "--target", "aarch64-apple-darwin"]
+
+[tasks.build-windows-x86_64]
+description = "Build release binary for Windows x86_64"
+command = "cargo"
+args = ["build", "--release", "--target", "x86_64-pc-windows-gnu"]
+
+[tasks.build-all-platforms]
+description = "Build release binaries for all platforms"
+dependencies = [
+    "build-linux-x86_64",
+    "build-macos-x86_64",
+    "build-macos-aarch64",
+    "build-windows-x86_64"
+]
+
+# ========================================
+# Quality Assurance Flows
+# ========================================
+
+[tasks.ci]
+description = "Run CI checks (format, clippy, test)"
+dependencies = ["format-check", "clippy", "test"]
+
+[tasks.qa]
+description = "Run full quality assurance (format, clippy, test)"
+dependencies = ["format", "clippy", "test"]
+
+[tasks.pre-commit]
+description = "Run checks before committing"
+dependencies = ["format", "clippy", "test"]
+
+# ========================================
+# Documentation Tasks
+# ========================================
+
+[tasks.docs]
+description = "Generate and open documentation"
+command = "cargo"
+args = ["doc", "--open", "--no-deps"]
+
+[tasks.docs-build]
+description = "Generate documentation without opening"
+command = "cargo"
+args = ["doc", "--no-deps"]
+
+# ========================================
+# Installation Tasks
+# ========================================
+
+[tasks.install]
+description = "Install the binary to ~/.cargo/bin"
+command = "cargo"
+args = ["install", "--path", "."]
+
+[tasks.uninstall]
+description = "Uninstall the binary from ~/.cargo/bin"
+command = "cargo"
+args = ["uninstall", "tmpltool"]
+
+# ========================================
+# Benchmark & Performance Tasks
+# ========================================
+
+[tasks.bench]
+description = "Run benchmarks (if any)"
+command = "cargo"
+args = ["bench"]
+
+[tasks.bloat]
+description = "Analyze binary size (requires cargo-bloat)"
+install_crate = "cargo-bloat"
+command = "cargo"
+args = ["bloat", "--release"]
+
+# ========================================
+# Security & Audit Tasks
+# ========================================
+
+[tasks.audit]
+description = "Audit dependencies for security vulnerabilities"
+install_crate = "cargo-audit"
+command = "cargo"
+args = ["audit"]
+
+[tasks.outdated]
+description = "Check for outdated dependencies"
+install_crate = "cargo-outdated"
+command = "cargo"
+args = ["outdated"]
+
+[tasks.update]
+description = "Update dependencies"
+command = "cargo"
+args = ["update"]
+
+# ========================================
+# Development Workflow
+# ========================================
+
+[tasks.dev]
+description = "Quick development check (check + test)"
+dependencies = ["check", "test"]
+
+[tasks.release-prepare]
+description = "Prepare for release (clean + format + clippy + test + build-release)"
+dependencies = ["clean", "format", "clippy", "test", "build-release"]
+
+[tasks.all]
+description = "Full build and test suite"
+dependencies = ["clean", "format", "clippy", "test", "build-release", "docs-build"]
+
+# ========================================
+# Example Testing Tasks
+# ========================================
+
+[tasks.test-examples]
+description = "Test all example templates"
+script_runner = "@shell"
+script = '''
+echo "Testing examples..."
+cargo build --release
+echo "✓ Testing greeting.tmpl..."
+./target/release/tmpltool examples/greeting.tmpl > /dev/null
+echo "✓ Testing basic.tmpl..."
+CUSTOM_VAR="test" ./target/release/tmpltool examples/basic.tmpl > /dev/null
+echo "✓ Testing config-with-defaults.tmpl..."
+./target/release/tmpltool examples/config-with-defaults.tmpl > /dev/null
+echo "✓ Testing docker-compose.tmpl..."
+./target/release/tmpltool examples/docker-compose.tmpl > /dev/null
+echo ""
+echo "All examples tested successfully!"
+'''
+
+# ========================================
+# Help Task
+# ========================================
+
+[tasks.default]
+description = "Show available tasks"
+script = '''
+echo "==============================================="
+echo "tmpltool - Available cargo-make tasks"
+echo "==============================================="
+echo ""
+echo "Development:"
+echo "  cargo make build         - Build debug binary"
+echo "  cargo make build-release - Build optimized binary"
+echo "  cargo make test          - Run tests"
+echo "  cargo make run           - Run with example"
+echo "  cargo make dev           - Quick dev check"
+echo ""
+echo "Code Quality:"
+echo "  cargo make format        - Format code"
+echo "  cargo make clippy        - Run linter"
+echo "  cargo make qa            - Full quality check"
+echo "  cargo make ci            - CI checks"
+echo ""
+echo "Cross-Platform Builds:"
+echo "  cargo make build-linux-x86_64    - Linux x86_64"
+echo "  cargo make build-linux-musl      - Linux (static)"
+echo "  cargo make build-macos-x86_64    - macOS Intel"
+echo "  cargo make build-macos-aarch64   - macOS Apple Silicon"
+echo "  cargo make build-windows-x86_64  - Windows x86_64"
+echo "  cargo make build-all-platforms   - All platforms"
+echo ""
+echo "Utilities:"
+echo "  cargo make clean         - Clean build artifacts"
+echo "  cargo make docs          - Generate & open docs"
+echo "  cargo make install       - Install binary"
+echo "  cargo make audit         - Security audit"
+echo "  cargo make test-examples - Test all examples"
+echo ""
+echo "Workflows:"
+echo "  cargo make release-prepare - Prepare for release"
+echo "  cargo make all             - Full build suite"
+echo ""
+echo "==============================================="
+'''

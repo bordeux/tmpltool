@@ -37,9 +37,8 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
     match template_source {
         Some(file_path) => {
             // Read from file
-            fs::read_to_string(file_path).map_err(|e| {
-                format!("Failed to read template file '{}': {}", file_path, e).into()
-            })
+            fs::read_to_string(file_path)
+                .map_err(|e| format!("Failed to read template file '{}': {}", file_path, e).into())
         }
         None => {
             // Read from stdin
@@ -49,7 +48,10 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
                 .map_err(|e| format!("Failed to read from stdin: {}", e))?;
 
             if buffer.is_empty() {
-                return Err("No input provided. Either specify a template file or pipe content to stdin.".into());
+                return Err(
+                    "No input provided. Either specify a template file or pipe content to stdin."
+                        .into(),
+                );
             }
 
             Ok(buffer)
@@ -72,7 +74,10 @@ fn render(template_content: &str, context: &Context) -> Result<String, Box<dyn s
 }
 
 /// Writes the rendered content to file or stdout
-fn write_output(rendered: &str, output_file: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+fn write_output(
+    rendered: &str,
+    output_file: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     match output_file {
         Some(path) => {
             fs::write(path, rendered)
@@ -141,7 +146,12 @@ mod tests {
 
         let result = read_template(Some(template_path.to_str().unwrap()));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Failed to read template file"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Failed to read template file")
+        );
     }
 
     #[test]
@@ -165,7 +175,8 @@ mod tests {
     #[test]
     fn test_get_env_function_with_default_in_template() {
         let context = Context::new();
-        let template = r#"Value: {{ get_env(name="TMPLTOOL_NONEXISTENT_12345", default="fallback") }}"#;
+        let template =
+            r#"Value: {{ get_env(name="TMPLTOOL_NONEXISTENT_12345", default="fallback") }}"#;
         let result = render(template, &context);
 
         assert!(result.is_ok());
@@ -184,7 +195,12 @@ mod tests {
         let result = render(template, &context);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Failed to render template"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Failed to render template")
+        );
 
         unsafe {
             env::remove_var("TEST_NO_AUTO_ENV");

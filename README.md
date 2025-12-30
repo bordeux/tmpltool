@@ -399,6 +399,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 tmpltool/
 ├── Cargo.toml              # Project dependencies and metadata
 ├── Cargo.lock              # Locked dependency versions
+├── Makefile.toml           # cargo-make task definitions
 ├── src/
 │   ├── main.rs             # Entry point (binary)
 │   ├── lib.rs              # Library root
@@ -406,8 +407,17 @@ tmpltool/
 │   ├── renderer.rs         # Template rendering logic
 │   └── functions/          # Custom Tera functions (extensibility point)
 │       └── mod.rs          # Functions module (for registering custom functions)
-├── tests/
-│   └── integration_tests.rs # Integration tests
+├── tests/                  # Integration tests (one test per file)
+│   ├── common.rs           # Shared test utilities
+│   ├── test_successful_rendering.rs
+│   ├── test_missing_template_file.rs
+│   ├── test_invalid_template_syntax.rs
+│   ├── test_environment_variable_substitution.rs
+│   ├── test_template_with_conditionals.rs
+│   ├── test_template_with_missing_variable.rs
+│   ├── test_multiline_template.rs
+│   ├── test_stdout_output.rs
+│   └── test_direct_var_access_fails.rs
 ├── examples/               # Example templates
 │   ├── basic.tmpl          # Basic usage example
 │   ├── greeting.tmpl       # Simple greeting with defaults
@@ -428,7 +438,9 @@ tmpltool/
 - **`renderer.rs`** - Core template rendering logic with environment variable handling
 - **`functions/`** - Custom Tera functions (modular, one file per function)
   - **`mod.rs`** - Registers custom functions (currently empty - built-in functions like `get_env()` work automatically)
-- **`tests/integration_tests.rs`** - Integration tests that test the public API
+- **`tests/`** - Integration tests (one test per file for better organization)
+  - **`common.rs`** - Shared test utilities and helper functions
+  - Individual test files for each test scenario
 
 #### Adding New Custom Functions
 
@@ -457,6 +469,93 @@ cargo build --release
 ```
 
 The release binary will be located at `./target/release/tmpltool`.
+
+### Using cargo-make (Task Runner)
+
+This project includes a comprehensive `Makefile.toml` for [cargo-make](https://github.com/sagiegurari/cargo-make), providing standardized tasks for building, testing, and cross-platform compilation.
+
+#### Installation
+
+Install cargo-make globally:
+
+```bash
+cargo install --force cargo-make
+```
+
+#### Available Tasks
+
+View all available tasks:
+
+```bash
+cargo make
+```
+
+**Common Development Tasks:**
+
+```bash
+# Build and test
+cargo make build              # Build debug binary
+cargo make build-release      # Build optimized binary
+cargo make test              # Run all tests
+cargo make test-verbose      # Run tests with output
+cargo make run               # Run with example template
+
+# Code quality
+cargo make format            # Format code with rustfmt
+cargo make clippy            # Run clippy linter
+cargo make qa                # Full quality check (format + clippy + test)
+cargo make ci                # CI checks (format-check + clippy + test)
+
+# Utilities
+cargo make clean             # Clean build artifacts
+cargo make check             # Fast compile check
+cargo make docs              # Generate and open documentation
+cargo make test-examples     # Test all example templates
+```
+
+**Cross-Platform Builds:**
+
+Build release binaries for different platforms:
+
+```bash
+# Individual platforms
+cargo make build-linux-x86_64      # Linux x86_64
+cargo make build-linux-musl        # Linux (static, musl libc)
+cargo make build-macos-x86_64      # macOS Intel
+cargo make build-macos-aarch64     # macOS Apple Silicon
+cargo make build-windows-x86_64    # Windows x86_64
+
+# Build for all platforms
+cargo make build-all-platforms
+```
+
+**Note:** Cross-compilation may require installing additional targets:
+
+```bash
+# Add targets for cross-compilation
+rustup target add x86_64-unknown-linux-gnu
+rustup target add x86_64-unknown-linux-musl
+rustup target add x86_64-apple-darwin
+rustup target add aarch64-apple-darwin
+rustup target add x86_64-pc-windows-gnu
+```
+
+**Workflow Tasks:**
+
+```bash
+cargo make dev                # Quick dev check (check + test)
+cargo make pre-commit         # Pre-commit checks
+cargo make release-prepare    # Full release preparation
+cargo make all                # Complete build and test suite
+```
+
+**Additional Tools:**
+
+```bash
+cargo make audit              # Security audit (requires cargo-audit)
+cargo make outdated           # Check outdated dependencies (requires cargo-outdated)
+cargo make bloat              # Analyze binary size (requires cargo-bloat)
+```
 
 ### Running in Development
 
@@ -511,21 +610,66 @@ The project includes comprehensive test coverage:
 - `get_env()` function with default in template
 - Direct variable access fails (security test)
 
-**Integration Tests in `tests/integration_tests.rs`** (9 tests):
-- Successful template rendering
-- Missing template file handling
-- Invalid template syntax handling
-- Environment variable substitution with `get_env()`
-- Conditional logic (if/else)
-- Missing variable detection
-- Multiline templates
-- Stdout output functionality
-- Direct variable access fails (security test)
+**Integration Tests in `tests/`** (9 tests, one per file):
+- `test_successful_rendering.rs` - Successful template rendering
+- `test_missing_template_file.rs` - Missing template file handling
+- `test_invalid_template_syntax.rs` - Invalid template syntax handling
+- `test_environment_variable_substitution.rs` - Environment variable substitution with `get_env()`
+- `test_template_with_conditionals.rs` - Conditional logic (if/else)
+- `test_template_with_missing_variable.rs` - Missing variable detection
+- `test_multiline_template.rs` - Multiline templates
+- `test_stdout_output.rs` - Stdout output functionality
+- `test_direct_var_access_fails.rs` - Direct variable access fails (security test)
+- `common.rs` - Shared test utilities
 
 **Documentation Tests** (2 tests):
 - Library documentation examples
 
 Total: **18 tests** covering unit, integration, and documentation scenarios.
+
+#### Adding New Integration Tests
+
+To add a new integration test:
+
+1. Create a new file in `tests/` (e.g., `tests/test_my_feature.rs`)
+2. Import the common utilities: `mod common;` and `use common::*;`
+3. Import dependencies: `use tmpltool::render_template;`
+4. Write your test function with `#[test]` attribute
+5. Use helper functions: `get_test_file_path()` and `cleanup_test_file()`
+
+**Example:**
+
+```rust
+mod common;
+
+use common::{cleanup_test_file, get_test_file_path};
+use std::fs;
+use tmpltool::render_template;
+
+#[test]
+fn test_my_feature() {
+    let template_path = get_test_file_path("my_template.txt");
+    let output_path = get_test_file_path("my_output.txt");
+
+    // Create test template
+    fs::write(&template_path, "{{ get_env(name=\"TEST\") }}").unwrap();
+
+    // Run render_template
+    let result = render_template(
+        Some(template_path.to_str().unwrap()),
+        Some(output_path.to_str().unwrap()),
+    );
+
+    // Assert results
+    assert!(result.is_ok());
+
+    // Cleanup
+    cleanup_test_file(&template_path);
+    cleanup_test_file(&output_path);
+}
+```
+
+Each test file is compiled as a separate test binary, making tests more isolated and easier to debug.
 
 ### Code Quality
 

@@ -5,8 +5,9 @@ Home directory: {{ get_env(name="HOME") }}
 Shell: {{ get_env(name="SHELL") }}
 Path: {{ get_env(name="PATH") }}
 
-{% if get_env(name="CUSTOM_VAR", default="") %}
-Custom variable is set to: {{ get_env(name="CUSTOM_VAR") }}
+{% set custom_var = get_env(name="CUSTOM_VAR", default="") %}
+{% if custom_var %}
+Custom variable is set to: {{ custom_var }}
 {% else %}
 Custom variable is not set.
 {% endif %}
