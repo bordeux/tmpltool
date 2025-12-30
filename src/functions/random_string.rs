@@ -63,11 +63,11 @@ impl Function for RandomString {
         }
 
         // Generate random string
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let charset_chars: Vec<char> = charset.chars().collect();
         let random_string: String = (0..length)
             .map(|_| {
-                let idx = rng.gen_range(0..charset_chars.len());
+                let idx = rng.random_range(0..charset_chars.len());
                 charset_chars[idx]
             })
             .collect();

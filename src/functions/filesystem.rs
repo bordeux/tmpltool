@@ -7,19 +7,19 @@
 /// - glob: List files by pattern
 /// - file_size: Get file size
 /// - file_modified: Get file modification timestamp
+use crate::TemplateContext;
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use tera::{Function, Result, Value, to_value};
 
 /// Read file content function
 pub struct ReadFile {
-    trust_mode: bool,
+    context: TemplateContext,
 }
 
 impl ReadFile {
-    pub fn new(trust_mode: bool) -> Self {
-        ReadFile { trust_mode }
+    pub fn new(context: TemplateContext) -> Self {
+        ReadFile { context }
     }
 }
 
@@ -30,15 +30,23 @@ impl Function for ReadFile {
         })?;
 
         // Security: Prevent reading absolute paths or paths with parent directory traversal (unless trust mode is enabled)
-        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
+        if !self.context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
                 "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
 
-        let content = fs::read_to_string(path)
-            .map_err(|e| tera::Error::msg(format!("Failed to read file '{}': {}", path, e)))?;
+        // Resolve path relative to template's base directory
+        let resolved_path = self.context.resolve_path(path);
+
+        let content = fs::read_to_string(&resolved_path).map_err(|e| {
+            tera::Error::msg(format!(
+                "Failed to read file '{}': {}",
+                resolved_path.display(),
+                e
+            ))
+        })?;
 
         to_value(&content)
             .map_err(|e| tera::Error::msg(format!("Failed to convert content: {}", e)))
@@ -47,12 +55,12 @@ impl Function for ReadFile {
 
 /// Check if file exists function
 pub struct FileExists {
-    trust_mode: bool,
+    context: TemplateContext,
 }
 
 impl FileExists {
-    pub fn new(trust_mode: bool) -> Self {
-        FileExists { trust_mode }
+    pub fn new(context: TemplateContext) -> Self {
+        FileExists { context }
     }
 }
 
@@ -63,14 +71,16 @@ impl Function for FileExists {
         })?;
 
         // Security: Prevent checking absolute paths or paths with parent directory traversal (unless trust mode is enabled)
-        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
+        if !self.context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
                 "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
 
-        let exists = Path::new(path).exists();
+        // Resolve path relative to template's base directory
+        let resolved_path = self.context.resolve_path(path);
+        let exists = resolved_path.exists();
 
         to_value(exists).map_err(|e| tera::Error::msg(format!("Failed to convert result: {}", e)))
     }
@@ -78,12 +88,12 @@ impl Function for FileExists {
 
 /// List directory contents function
 pub struct ListDir {
-    trust_mode: bool,
+    context: TemplateContext,
 }
 
 impl ListDir {
-    pub fn new(trust_mode: bool) -> Self {
-        ListDir { trust_mode }
+    pub fn new(context: TemplateContext) -> Self {
+        ListDir { context }
     }
 }
 
@@ -94,15 +104,23 @@ impl Function for ListDir {
         })?;
 
         // Security: Prevent listing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
-        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
+        if !self.context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
                 "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
 
-        let entries = fs::read_dir(path)
-            .map_err(|e| tera::Error::msg(format!("Failed to read directory '{}': {}", path, e)))?;
+        // Resolve path relative to template's base directory
+        let resolved_path = self.context.resolve_path(path);
+
+        let entries = fs::read_dir(&resolved_path).map_err(|e| {
+            tera::Error::msg(format!(
+                "Failed to read directory '{}': {}",
+                resolved_path.display(),
+                e
+            ))
+        })?;
 
         let mut files: Vec<String> = Vec::new();
         for entry in entries {
@@ -124,12 +142,12 @@ impl Function for ListDir {
 
 /// Glob pattern matching function
 pub struct GlobFiles {
-    trust_mode: bool,
+    context: TemplateContext,
 }
 
 impl GlobFiles {
-    pub fn new(trust_mode: bool) -> Self {
-        GlobFiles { trust_mode }
+    pub fn new(context: TemplateContext) -> Self {
+        GlobFiles { context }
     }
 }
 
@@ -143,15 +161,25 @@ impl Function for GlobFiles {
             })?;
 
         // Security: Prevent absolute paths or paths with parent directory traversal (unless trust mode is enabled)
-        if !self.trust_mode && (pattern.starts_with('/') || pattern.contains("..")) {
+        if !self.context.is_trust_mode() && (pattern.starts_with('/') || pattern.contains("..")) {
             return Err(tera::Error::msg(format!(
                 "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 pattern
             )));
         }
 
-        let glob_result = glob::glob(pattern)
-            .map_err(|e| tera::Error::msg(format!("Invalid glob pattern '{}': {}", pattern, e)))?;
+        // Resolve pattern relative to template's base directory
+        let resolved_pattern = self.context.resolve_path(pattern);
+        let pattern_str = resolved_pattern.to_str().ok_or_else(|| {
+            tera::Error::msg(format!(
+                "Invalid path encoding in pattern: {:?}",
+                resolved_pattern
+            ))
+        })?;
+
+        let glob_result = glob::glob(pattern_str).map_err(|e| {
+            tera::Error::msg(format!("Invalid glob pattern '{}': {}", pattern_str, e))
+        })?;
 
         let mut files: Vec<String> = Vec::new();
         for entry in glob_result {
@@ -176,12 +204,12 @@ impl Function for GlobFiles {
 
 /// Get file size function
 pub struct FileSize {
-    trust_mode: bool,
+    context: TemplateContext,
 }
 
 impl FileSize {
-    pub fn new(trust_mode: bool) -> Self {
-        FileSize { trust_mode }
+    pub fn new(context: TemplateContext) -> Self {
+        FileSize { context }
     }
 }
 
@@ -192,15 +220,22 @@ impl Function for FileSize {
         })?;
 
         // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
-        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
+        if !self.context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
                 "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
 
-        let metadata = fs::metadata(path).map_err(|e| {
-            tera::Error::msg(format!("Failed to get file metadata for '{}': {}", path, e))
+        // Resolve path relative to template's base directory
+        let resolved_path = self.context.resolve_path(path);
+
+        let metadata = fs::metadata(&resolved_path).map_err(|e| {
+            tera::Error::msg(format!(
+                "Failed to get file metadata for '{}': {}",
+                resolved_path.display(),
+                e
+            ))
         })?;
 
         let size = metadata.len();
@@ -211,12 +246,12 @@ impl Function for FileSize {
 
 /// Get file modification time function
 pub struct FileModified {
-    trust_mode: bool,
+    context: TemplateContext,
 }
 
 impl FileModified {
-    pub fn new(trust_mode: bool) -> Self {
-        FileModified { trust_mode }
+    pub fn new(context: TemplateContext) -> Self {
+        FileModified { context }
     }
 }
 
@@ -227,15 +262,22 @@ impl Function for FileModified {
         })?;
 
         // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
-        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
+        if !self.context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
                 "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
 
-        let metadata = fs::metadata(path).map_err(|e| {
-            tera::Error::msg(format!("Failed to get file metadata for '{}': {}", path, e))
+        // Resolve path relative to template's base directory
+        let resolved_path = self.context.resolve_path(path);
+
+        let metadata = fs::metadata(&resolved_path).map_err(|e| {
+            tera::Error::msg(format!(
+                "Failed to get file metadata for '{}': {}",
+                resolved_path.display(),
+                e
+            ))
         })?;
 
         let modified = metadata

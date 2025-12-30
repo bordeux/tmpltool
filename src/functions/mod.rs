@@ -56,6 +56,7 @@ pub mod hash;
 pub mod random_string;
 pub mod uuid_gen;
 
+use crate::TemplateContext;
 use tera::Tera;
 
 /// Register all custom functions with the Tera instance
@@ -67,18 +68,20 @@ use tera::Tera;
 /// # Arguments
 ///
 /// * `tera` - Mutable reference to a Tera instance
-/// * `trust_mode` - If true, disables filesystem security restrictions
+/// * `context` - Template context with base directory and trust mode settings
 ///
 /// # Example
 ///
 /// ```
 /// use tera::Tera;
-/// use tmpltool::functions::register_all;
+/// use tmpltool::{TemplateContext, functions::register_all};
+/// use std::path::PathBuf;
 ///
 /// let mut tera = Tera::default();
-/// register_all(&mut tera, false);
+/// let ctx = TemplateContext::new(PathBuf::from("."), false);
+/// register_all(&mut tera, ctx);
 /// ```
-pub fn register_all(tera: &mut Tera, trust_mode: bool) {
+pub fn register_all(tera: &mut Tera, context: TemplateContext) {
     // Register custom functions
     tera.register_function("filter_env", filter_env::FilterEnv);
 
@@ -94,11 +97,11 @@ pub fn register_all(tera: &mut Tera, trust_mode: bool) {
     // Random string generation
     tera.register_function("random_string", random_string::RandomString);
 
-    // File system functions (with trust mode)
-    tera.register_function("read_file", filesystem::ReadFile::new(trust_mode));
-    tera.register_function("file_exists", filesystem::FileExists::new(trust_mode));
-    tera.register_function("list_dir", filesystem::ListDir::new(trust_mode));
-    tera.register_function("glob", filesystem::GlobFiles::new(trust_mode));
-    tera.register_function("file_size", filesystem::FileSize::new(trust_mode));
-    tera.register_function("file_modified", filesystem::FileModified::new(trust_mode));
+    // File system functions (with context containing base path and trust mode)
+    tera.register_function("read_file", filesystem::ReadFile::new(context.clone()));
+    tera.register_function("file_exists", filesystem::FileExists::new(context.clone()));
+    tera.register_function("list_dir", filesystem::ListDir::new(context.clone()));
+    tera.register_function("glob", filesystem::GlobFiles::new(context.clone()));
+    tera.register_function("file_size", filesystem::FileSize::new(context.clone()));
+    tera.register_function("file_modified", filesystem::FileModified::new(context));
 }

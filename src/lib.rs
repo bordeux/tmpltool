@@ -14,8 +14,10 @@
 //! See the [`functions`] module for more details on available functions.
 
 pub mod cli;
+pub mod context;
 pub mod functions;
 pub mod renderer;
 
 pub use cli::Cli;
+pub use context::TemplateContext;
 pub use renderer::render_template;
