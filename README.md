@@ -1,5 +1,12 @@
 # tmpltool
 
+[![CI](https://github.com/bordeux/tmpltool/actions/workflows/ci.yml/badge.svg)](https://github.com/bordeux/tmpltool/actions/workflows/ci.yml)
+[![Release](https://github.com/bordeux/tmpltool/actions/workflows/release.yml/badge.svg)](https://github.com/bordeux/tmpltool/actions/workflows/release.yml)
+[![codecov](https://codecov.io/gh/bordeux/tmpltool/branch/master/graph/badge.svg)](https://codecov.io/gh/bordeux/tmpltool)
+[![GitHub release](https://img.shields.io/github/v/release/bordeux/tmpltool)](https://github.com/bordeux/tmpltool/releases)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/bordeux/tmpltool/pkgs/container/tmpltool)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A fast and simple command-line template rendering tool using [Tera](https://keats.github.io/tera/) templates with environment variables.
 
 ## Features
@@ -11,6 +18,52 @@ A fast and simple command-line template rendering tool using [Tera](https://keat
 - Full Tera template syntax support (variables, conditionals, loops, filters, etc.)
 
 ## Installation
+
+### From GitHub Releases
+
+Download pre-built binaries for your platform from the [releases page](https://github.com/bordeux/tmpltool/releases):
+
+- **Linux**: `tmpltool-linux-x86_64`, `tmpltool-linux-x86_64-musl` (static), `tmpltool-linux-aarch64` (ARM64)
+- **macOS**: `tmpltool-macos-x86_64` (Intel), `tmpltool-macos-aarch64` (Apple Silicon)
+- **Windows**: `tmpltool-windows-x86_64.exe`
+
+Extract and place in your PATH:
+
+```bash
+# Linux/macOS example
+tar -xzf tmpltool-linux-x86_64.tar.gz
+sudo mv tmpltool /usr/local/bin/
+chmod +x /usr/local/bin/tmpltool
+```
+
+### Using Docker
+
+Pull from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/bordeux/tmpltool:latest
+```
+
+Run with Docker:
+
+```bash
+# Using a template file
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/bordeux/tmpltool:latest template.tmpl
+
+# With environment variables
+docker run --rm -e NAME=Alice -v $(pwd):/workspace -w /workspace \
+  ghcr.io/bordeux/tmpltool:latest greeting.tmpl
+
+# Output to file
+docker run --rm -v $(pwd):/workspace -w /workspace \
+  ghcr.io/bordeux/tmpltool:latest template.tmpl -o output.txt
+```
+
+Create a shell alias for convenience:
+
+```bash
+alias tmpltool='docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/bordeux/tmpltool:latest'
+```
 
 ### From Source
 
@@ -862,6 +915,62 @@ The library exposes:
 - `render_template(template_path: &str, output_path: Option<&str>)` - Main rendering function
 - `Cli` - Command-line argument structure
 
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and automated releases.
+
+### Continuous Integration
+
+Every pull request and push to master/main triggers:
+
+- **Code Formatting Check** - Ensures code follows Rust style guidelines (`rustfmt`)
+- **Linting** - Runs `clippy` with strict warnings
+- **Multi-Platform Tests** - Tests on Ubuntu, macOS, and Windows
+- **Code Coverage** - Generates coverage reports with `cargo-tarpaulin` and uploads to Codecov
+- **cargo-make QA** - Runs comprehensive quality checks
+- **Example Testing** - Tests all example templates to ensure they work
+
+### Automated Releases
+
+Releases are fully automated using [semantic-release](https://github.com/semantic-release/semantic-release):
+
+1. **Commit Analysis** - Analyzes commit messages to determine the next version
+2. **Version Bumping** - Updates `Cargo.toml` with the new version
+3. **CHANGELOG Generation** - Automatically generates `CHANGELOG.md` from commits
+4. **Multi-Platform Builds** - Builds release binaries for:
+   - Linux (x86_64, x86_64-musl, aarch64)
+   - macOS (x86_64 Intel, aarch64 Apple Silicon)
+   - Windows (x86_64)
+5. **GitHub Release** - Creates a new GitHub release with all binaries
+6. **Docker Image** - Builds and publishes multi-arch Docker image to GHCR
+
+### Commit Convention
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning:
+
+- `feat: description` - New feature (minor version bump: 1.2.0 → 1.3.0)
+- `fix: description` - Bug fix (patch version bump: 1.2.0 → 1.2.1)
+- `feat!: description` or `BREAKING CHANGE:` - Breaking change (major version bump: 1.2.0 → 2.0.0)
+- `docs:`, `refactor:`, `perf:`, `build:` - Other changes (patch bump)
+- `style:`, `test:`, `chore:`, `ci:` - No version bump
+
+**Examples:**
+
+```bash
+# Feature (minor bump)
+git commit -m "feat: add slugify filter support"
+
+# Bug fix (patch bump)
+git commit -m "fix: correct multiline template rendering"
+
+# Breaking change (major bump)
+git commit -m "feat!: change default output behavior
+
+BREAKING CHANGE: Output now goes to stdout by default instead of file"
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+
 ## License
 
 This project is open source.
@@ -870,14 +979,14 @@ This project is open source.
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
 
-### How to Contribute
+For detailed contribution guidelines, including commit conventions, development workflow, and testing requirements, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Quick Start
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run tests (`cargo test`)
-5. Run formatter (`cargo fmt`)
-6. Run clippy (`cargo clippy`)
-7. Commit your changes (`git commit -m 'Add amazing feature'`)
-8. Push to the branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+4. Run tests and QA checks (`cargo make qa`)
+5. Commit using [conventional commits](#commit-convention)
+6. Push to your fork
+7. Open a Pull Request
