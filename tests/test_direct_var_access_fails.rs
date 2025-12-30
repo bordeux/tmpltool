@@ -1,21 +1,21 @@
 mod common;
 
-use common::{cleanup_test_file, get_test_file_path};
+use common::{cleanup_test_file, get_test_file_path, read_fixture_template};
 use std::env;
 use std::fs;
 use tmpltool::render_template;
 
 #[test]
 fn test_direct_var_access_fails() {
-    let template_path = get_test_file_path("template_direct_var.txt");
     let output_path = get_test_file_path("output_direct_var.txt");
 
     unsafe {
-        env::set_var("TEST_DIRECT_VAR", "value");
+        env::set_var("DIRECT_VAR", "value");
     }
 
-    // Try to use variable directly without get_env() - should fail
-    let template_content = "{{ TEST_DIRECT_VAR }}";
+    // Read template from fixtures - tries direct var access without get_env()
+    let template_content = read_fixture_template("direct_var.tmpl");
+    let template_path = get_test_file_path("template_direct_var.txt");
     fs::write(&template_path, template_content).unwrap();
 
     let result = render_template(
@@ -30,6 +30,6 @@ fn test_direct_var_access_fails() {
     cleanup_test_file(&template_path);
     cleanup_test_file(&output_path);
     unsafe {
-        env::remove_var("TEST_DIRECT_VAR");
+        env::remove_var("DIRECT_VAR");
     }
 }

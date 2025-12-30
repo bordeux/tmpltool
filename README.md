@@ -409,6 +409,10 @@ tmpltool/
 │       └── mod.rs          # Functions module (for registering custom functions)
 ├── tests/                  # Integration tests (one test per file)
 │   ├── common.rs           # Shared test utilities
+│   ├── fixtures/           # Test fixtures (templates & expected outputs)
+│   │   ├── templates/      # Input template files
+│   │   ├── expected/       # Expected output files
+│   │   └── README.md       # Fixtures documentation
 │   ├── test_successful_rendering.rs
 │   ├── test_missing_template_file.rs
 │   ├── test_invalid_template_syntax.rs
@@ -432,15 +436,18 @@ tmpltool/
 
 #### Module Organization
 
+**Source Code (`src/`)** - No tests in source files:
 - **`main.rs`** - Minimal binary entry point, just parses CLI args and calls the library
 - **`lib.rs`** - Public library API, exports main functionality
 - **`cli.rs`** - CLI argument parsing using clap
-- **`renderer.rs`** - Core template rendering logic with environment variable handling
+- **`renderer.rs`** - Core template rendering logic (no unit tests)
 - **`functions/`** - Custom Tera functions (modular, one file per function)
   - **`mod.rs`** - Registers custom functions (currently empty - built-in functions like `get_env()` work automatically)
-- **`tests/`** - Integration tests (one test per file for better organization)
-  - **`common.rs`** - Shared test utilities and helper functions
-  - Individual test files for each test scenario
+
+**Tests (`tests/`)** - All tests as integration tests:
+- **`common.rs`** - Shared test utilities and fixture helpers
+- **`fixtures/`** - Test fixtures (templates and expected outputs)
+- **Individual test files** - One test per file for better organization (11 tests total)
 
 #### Adding New Custom Functions
 
@@ -599,19 +606,12 @@ cargo test -- --test-threads=1 --nocapture
 
 #### Test Coverage
 
-The project includes comprehensive test coverage:
+The project includes comprehensive test coverage. **All tests are located in `tests/` directory** - there are no unit tests in `src/` files.
 
-**Unit Tests in `src/renderer.rs`** (7 tests):
-- Template rendering
-- Invalid template syntax handling
-- Template file reading
-- Missing template file handling
-- `get_env()` function in template rendering
-- `get_env()` function with default in template
-- Direct variable access fails (security test)
-
-**Integration Tests in `tests/`** (9 tests, one per file):
-- `test_successful_rendering.rs` - Successful template rendering
+**Integration Tests in `tests/`** (11 tests, one per file):
+- `test_simple_rendering.rs` - Simple static template rendering
+- `test_successful_rendering.rs` - Template rendering with environment variables
+- `test_env_with_default.rs` - Environment variable with default fallback
 - `test_missing_template_file.rs` - Missing template file handling
 - `test_invalid_template_syntax.rs` - Invalid template syntax handling
 - `test_environment_variable_substitution.rs` - Environment variable substitution with `get_env()`
@@ -620,12 +620,15 @@ The project includes comprehensive test coverage:
 - `test_multiline_template.rs` - Multiline templates
 - `test_stdout_output.rs` - Stdout output functionality
 - `test_direct_var_access_fails.rs` - Direct variable access fails (security test)
-- `common.rs` - Shared test utilities
+
+**Test Infrastructure:**
+- `common.rs` - Shared test utilities and fixture helpers
+- `fixtures/` - Test fixtures (templates and expected outputs)
 
 **Documentation Tests** (2 tests):
 - Library documentation examples
 
-Total: **18 tests** covering unit, integration, and documentation scenarios.
+Total: **13 tests** covering integration and documentation scenarios.
 
 #### Adding New Integration Tests
 
@@ -670,6 +673,74 @@ fn test_my_feature() {
 ```
 
 Each test file is compiled as a separate test binary, making tests more isolated and easier to debug.
+
+#### Using Test Fixtures
+
+The project uses test fixtures to make tests easier to maintain. Fixtures are template files and their expected outputs stored in `tests/fixtures/`.
+
+**Fixture Directory Structure:**
+
+```
+tests/fixtures/
+├── templates/           # Input template files
+│   ├── simple.tmpl
+│   ├── with_env.tmpl
+│   ├── multiline.tmpl
+│   ├── conditionals.tmpl
+│   └── docker-compose.tmpl
+└── expected/            # Expected output files
+    ├── simple.txt
+    ├── with_env.txt
+    ├── multiline.txt
+    └── docker-compose.txt
+```
+
+**Using Fixtures in Tests:**
+
+```rust
+mod common;
+
+use common::{
+    cleanup_test_file, get_test_file_path,
+    read_fixture_expected, read_fixture_template
+};
+use std::fs;
+use tmpltool::render_template;
+
+#[test]
+fn test_my_feature() {
+    let output_path = get_test_file_path("output.txt");
+
+    // Read template from fixtures
+    let template_content = read_fixture_template("my_template.tmpl");
+    let template_path = get_test_file_path("template.txt");
+    fs::write(&template_path, template_content).unwrap();
+
+    // Render template
+    let result = render_template(
+        Some(template_path.to_str().unwrap()),
+        Some(output_path.to_str().unwrap()),
+    );
+
+    // Compare with expected output
+    assert!(result.is_ok());
+    let output = fs::read_to_string(&output_path).unwrap();
+    let expected = read_fixture_expected("my_template.txt");
+    assert_eq!(output, expected);
+
+    // Cleanup
+    cleanup_test_file(&template_path);
+    cleanup_test_file(&output_path);
+}
+```
+
+**Benefits:**
+- ✅ Test data separated from test logic
+- ✅ Easy to maintain and review template changes
+- ✅ Reusable across multiple tests
+- ✅ Can use real-world template examples
+
+See [tests/fixtures/README.md](tests/fixtures/README.md) for more details.
 
 ### Code Quality
 

@@ -1,21 +1,21 @@
 mod common;
 
-use common::{cleanup_test_file, get_test_file_path};
+use common::{cleanup_test_file, get_test_file_path, read_fixture_expected, read_fixture_template};
 use std::env;
 use std::fs;
 use tmpltool::render_template;
 
 #[test]
 fn test_successful_rendering() {
-    let template_path = get_test_file_path("template_success.txt");
     let output_path = get_test_file_path("output_success.txt");
 
     unsafe {
-        env::set_var("TEST_USER_VAR", "TestUser");
+        env::set_var("TEST_VAR", "test_value");
     }
 
-    // Create test template using get_env() function
-    let template_content = r#"Hello {{ get_env(name="TEST_USER_VAR") }}!"#;
+    // Read template from fixtures
+    let template_content = read_fixture_template("with_env.tmpl");
+    let template_path = get_test_file_path("template_success.txt");
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
@@ -27,14 +27,15 @@ fn test_successful_rendering() {
     // Verify success
     assert!(result.is_ok());
 
-    // Verify output file exists and contains expected content
+    // Verify output matches expected
     let output = fs::read_to_string(&output_path).unwrap();
-    assert_eq!(output, "Hello TestUser!");
+    let expected = read_fixture_expected("with_env.txt");
+    assert_eq!(output, expected);
 
     // Cleanup
     cleanup_test_file(&template_path);
     cleanup_test_file(&output_path);
     unsafe {
-        env::remove_var("TEST_USER_VAR");
+        env::remove_var("TEST_VAR");
     }
 }

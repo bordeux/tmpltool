@@ -1,16 +1,16 @@
 mod common;
 
-use common::{cleanup_test_file, get_test_file_path};
+use common::{cleanup_test_file, get_test_file_path, read_fixture_template};
 use std::fs;
 use tmpltool::render_template;
 
 #[test]
 fn test_invalid_template_syntax() {
-    let template_path = get_test_file_path("template_invalid.txt");
     let output_path = get_test_file_path("output_invalid.txt");
 
-    // Create invalid template with unclosed tag
-    let template_content = "Hello {{ USER ";
+    // Read invalid template from fixtures
+    let template_content = read_fixture_template("invalid.tmpl");
+    let template_path = get_test_file_path("template_invalid.txt");
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
