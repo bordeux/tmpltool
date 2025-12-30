@@ -28,38 +28,72 @@ cargo build --release
 ## Usage
 
 ```bash
-tmpltool <TEMPLATE> [OPTIONS]
+# Read from file
+tmpltool [TEMPLATE] [OPTIONS]
+
+# Read from stdin
+cat template.txt | tmpltool [OPTIONS]
 ```
 
 ### Arguments
 
-- `<TEMPLATE>` - Path to the template file (required)
+- `[TEMPLATE]` - Path to the template file (optional)
+  - If omitted, reads template from stdin
 
 ### Options
 
 - `-o, --output <FILE>` - Output file path (optional)
   - If not specified, output is printed to stdout
 
+### Input/Output Combinations
+
+tmpltool supports all standard Unix I/O patterns:
+
+| Input  | Output | Command |
+|--------|--------|---------|
+| File   | stdout | `tmpltool template.txt` |
+| File   | File   | `tmpltool template.txt -o output.txt` |
+| stdin  | stdout | `cat template.txt \| tmpltool` |
+| stdin  | File   | `cat template.txt \| tmpltool -o output.txt` |
+
 ### Examples
 
-#### Basic Usage - Output to File
-
-```bash
-tmpltool template.txt -o output.txt
-```
-
-#### Print to Stdout (for piping)
+#### File to stdout
 
 ```bash
 tmpltool template.txt
 ```
 
-```bash
-tmpltool template.txt | grep "something"
-```
+#### File to file
 
 ```bash
-tmpltool template.txt > output.txt
+tmpltool template.txt -o output.txt
+```
+
+#### stdin to stdout (pipe)
+
+```bash
+cat template.txt | tmpltool
+echo "Hello {{ env(name=\"NAME\", default=\"World\") }}!" | tmpltool
+```
+
+#### stdin to file
+
+```bash
+cat template.txt | tmpltool -o output.txt
+```
+
+#### Chaining with other tools
+
+```bash
+# Generate and validate
+tmpltool config.json.tmpl | jq .
+
+# Generate from stdin and apply
+cat k8s-deployment.yaml.tmpl | tmpltool | kubectl apply -f -
+
+# Combine multiple templates
+cat header.tmpl body.tmpl footer.tmpl | tmpltool > complete.html
 ```
 
 #### Using Environment Variables

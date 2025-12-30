@@ -1,28 +1,27 @@
 use crate::functions;
-use std::env;
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use tera::{Context, Tera};
 
-/// Renders a template file with environment variables
+/// Renders a template with environment variables
 ///
 /// # Arguments
 ///
-/// * `template_file` - Path to the template file
+/// * `template_source` - Optional path to template file. If None, reads from stdin
 /// * `output_file` - Optional path to output file. If None, prints to stdout
 ///
 /// # Returns
 ///
 /// Returns Ok(()) on success, or an error message on failure
 pub fn render_template(
-    template_file: &str,
+    template_source: Option<&str>,
     output_file: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Read template file
-    let template_content = read_template(template_file)?;
+    // Read template from file or stdin
+    let template_content = read_template(template_source)?;
 
-    // Build context from environment variables
-    let context = build_context();
+    // Create empty context - env vars only accessible via env() function
+    let context = Context::new();
 
     // Render the template
     let rendered = render(&template_content, &context)?;
@@ -33,19 +32,29 @@ pub fn render_template(
     Ok(())
 }
 
-/// Reads the template file content
-fn read_template(template_file: &str) -> Result<String, Box<dyn std::error::Error>> {
-    fs::read_to_string(template_file)
-        .map_err(|e| format!("Failed to read template file '{}': {}", template_file, e).into())
-}
+/// Reads the template content from file or stdin
+fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
+    match template_source {
+        Some(file_path) => {
+            // Read from file
+            fs::read_to_string(file_path).map_err(|e| {
+                format!("Failed to read template file '{}': {}", file_path, e).into()
+            })
+        }
+        None => {
+            // Read from stdin
+            let mut buffer = String::new();
+            io::stdin()
+                .read_to_string(&mut buffer)
+                .map_err(|e| format!("Failed to read from stdin: {}", e))?;
 
-/// Builds a Tera context from all environment variables
-fn build_context() -> Context {
-    let mut context = Context::new();
-    for (key, value) in env::vars() {
-        context.insert(&key, &value);
+            if buffer.is_empty() {
+                return Err("No input provided. Either specify a template file or pipe content to stdin.".into());
+            }
+
+            Ok(buffer)
+        }
     }
-    context
 }
 
 /// Renders the template with the given context
@@ -81,6 +90,7 @@ fn write_output(rendered: &str, output_file: Option<&str>) -> Result<(), Box<dyn
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use std::path::PathBuf;
 
     fn get_test_file_path(name: &str) -> PathBuf {
@@ -94,26 +104,9 @@ mod tests {
     }
 
     #[test]
-    fn test_build_context() {
-        unsafe {
-            env::set_var("TEST_BUILD_CONTEXT", "test_value");
-        }
-
-        let context = build_context();
-        let value = context.get("TEST_BUILD_CONTEXT");
-        assert!(value.is_some());
-
-        unsafe {
-            env::remove_var("TEST_BUILD_CONTEXT");
-        }
-    }
-
-    #[test]
     fn test_render() {
-        let mut context = Context::new();
-        context.insert("TEST_VAR", "test_value");
-
-        let template = "Value: {{ TEST_VAR }}";
+        let context = Context::new();
+        let template = "Value: test_value";
         let result = render(template, &context);
 
         assert!(result.is_ok());
@@ -130,11 +123,11 @@ mod tests {
     }
 
     #[test]
-    fn test_read_template() {
+    fn test_read_template_from_file() {
         let template_path = get_test_file_path("read_template.txt");
         fs::write(&template_path, "Test content").unwrap();
 
-        let result = read_template(template_path.to_str().unwrap());
+        let result = read_template(Some(template_path.to_str().unwrap()));
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Test content");
 
@@ -146,8 +139,9 @@ mod tests {
         let template_path = get_test_file_path("missing_template.txt");
         cleanup_test_file(&template_path);
 
-        let result = read_template(template_path.to_str().unwrap());
+        let result = read_template(Some(template_path.to_str().unwrap()));
         assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Failed to read template file"));
     }
 
     #[test]
@@ -176,5 +170,44 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Value: fallback");
+    }
+
+    #[test]
+    fn test_no_auto_env_vars_in_context() {
+        unsafe {
+            env::set_var("TEST_NO_AUTO_ENV", "should_not_be_accessible");
+        }
+
+        let context = Context::new();
+        // Try to use env var directly without env() function - should fail
+        let template = "{{ TEST_NO_AUTO_ENV }}";
+        let result = render(template, &context);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Failed to render template"));
+
+        unsafe {
+            env::remove_var("TEST_NO_AUTO_ENV");
+        }
+    }
+
+    #[test]
+    fn test_render_template_from_file() {
+        let template_path = get_test_file_path("template_file.txt");
+        let output_path = get_test_file_path("output_file.txt");
+
+        fs::write(&template_path, "Static content").unwrap();
+
+        let result = render_template(
+            Some(template_path.to_str().unwrap()),
+            Some(output_path.to_str().unwrap()),
+        );
+
+        assert!(result.is_ok());
+        let output = fs::read_to_string(&output_path).unwrap();
+        assert_eq!(output, "Static content");
+
+        cleanup_test_file(&template_path);
+        cleanup_test_file(&output_path);
     }
 }

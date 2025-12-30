@@ -18,13 +18,17 @@ fn test_successful_rendering() {
     let template_path = get_test_file_path("template_success.txt");
     let output_path = get_test_file_path("output_success.txt");
 
-    // Create test template
-    let template_content = "Hello {{ USER }}!";
+    unsafe {
+        env::set_var("TEST_USER_VAR", "TestUser");
+    }
+
+    // Create test template using env() function
+    let template_content = r#"Hello {{ env(name="TEST_USER_VAR") }}!"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
@@ -33,12 +37,14 @@ fn test_successful_rendering() {
 
     // Verify output file exists and contains expected content
     let output = fs::read_to_string(&output_path).unwrap();
-    assert!(output.starts_with("Hello "));
-    assert!(output.contains("!"));
+    assert_eq!(output, "Hello TestUser!");
 
     // Cleanup
     cleanup_test_file(&template_path);
     cleanup_test_file(&output_path);
+    unsafe {
+        env::remove_var("TEST_USER_VAR");
+    }
 }
 
 #[test]
@@ -51,7 +57,7 @@ fn test_missing_template_file() {
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
@@ -75,7 +81,7 @@ fn test_invalid_template_syntax() {
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
@@ -102,13 +108,13 @@ fn test_environment_variable_substitution() {
         env::set_var("TMPLTOOL_TEST_VAR", "test_value_123");
     }
 
-    // Create template using the test env var
-    let template_content = "Test: {{ TMPLTOOL_TEST_VAR }}";
+    // Create template using env() function
+    let template_content = r#"Test: {{ env(name="TMPLTOOL_TEST_VAR") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
@@ -137,14 +143,14 @@ fn test_template_with_conditionals() {
         env::set_var("TMPLTOOL_COND_TRUE", "yes");
     }
 
-    // Create template with conditional
+    // Create template with conditional using env()
     let template_content =
-        r#"{% if TMPLTOOL_COND_TRUE %}Variable is set{% else %}Not set{% endif %}"#;
+        r#"{% if env(name="TMPLTOOL_COND_TRUE", default="no") == "yes" %}Variable is set{% else %}Not set{% endif %}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
@@ -168,17 +174,17 @@ fn test_template_with_missing_variable() {
     let template_path = get_test_file_path("template_missing_var.txt");
     let output_path = get_test_file_path("output_missing_var.txt");
 
-    // Create template with a variable that likely doesn't exist
-    let template_content = "Value: {{ TMPLTOOL_NONEXISTENT_VAR_XYZ123 }}";
+    // Create template with env() without default - should error
+    let template_content = r#"Value: {{ env(name="TMPLTOOL_NONEXISTENT_VAR_XYZ123") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
-    // Verify it fails (Tera should error on missing variables by default)
+    // Verify it fails (env() without default should error on missing var)
     assert!(result.is_err());
 
     // Cleanup
@@ -196,13 +202,15 @@ fn test_multiline_template() {
         env::set_var("TMPLTOOL_LINE2", "Second");
     }
 
-    // Create multiline template
-    let template_content = "Line 1: {{ TMPLTOOL_LINE1 }}\nLine 2: {{ TMPLTOOL_LINE2 }}";
+    // Create multiline template using env()
+    let template_content =
+        r#"Line 1: {{ env(name="TMPLTOOL_LINE1") }}
+Line 2: {{ env(name="TMPLTOOL_LINE2") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
     let result = render_template(
-        template_path.to_str().unwrap(),
+        Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
     );
 
@@ -230,12 +238,12 @@ fn test_stdout_output() {
         env::set_var("TMPLTOOL_STDOUT_TEST", "stdout_value");
     }
 
-    // Create template
-    let template_content = "Output: {{ TMPLTOOL_STDOUT_TEST }}";
+    // Create template using env()
+    let template_content = r#"Output: {{ env(name="TMPLTOOL_STDOUT_TEST") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function with no output file (should print to stdout)
-    let result = render_template(template_path.to_str().unwrap(), None);
+    let result = render_template(Some(template_path.to_str().unwrap()), None);
 
     // Verify success
     assert!(result.is_ok());
@@ -244,5 +252,34 @@ fn test_stdout_output() {
     cleanup_test_file(&template_path);
     unsafe {
         env::remove_var("TMPLTOOL_STDOUT_TEST");
+    }
+}
+
+#[test]
+fn test_direct_var_access_fails() {
+    let template_path = get_test_file_path("template_direct_var.txt");
+    let output_path = get_test_file_path("output_direct_var.txt");
+
+    unsafe {
+        env::set_var("TEST_DIRECT_VAR", "value");
+    }
+
+    // Try to use variable directly without env() - should fail
+    let template_content = "{{ TEST_DIRECT_VAR }}";
+    fs::write(&template_path, template_content).unwrap();
+
+    let result = render_template(
+        Some(template_path.to_str().unwrap()),
+        Some(output_path.to_str().unwrap()),
+    );
+
+    // Should fail because env vars not auto-added to context
+    assert!(result.is_err());
+
+    // Cleanup
+    cleanup_test_file(&template_path);
+    cleanup_test_file(&output_path);
+    unsafe {
+        env::remove_var("TEST_DIRECT_VAR");
     }
 }

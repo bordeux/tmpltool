@@ -5,8 +5,8 @@ use clap::Parser;
 #[command(name = "tmpltool")]
 #[command(version, about, long_about = None)]
 pub struct Cli {
-    /// Path to the template file
-    pub template: String,
+    /// Path to the template file (omit to read from stdin)
+    pub template: Option<String>,
 
     /// Output file (if not specified, prints to stdout)
     #[arg(short, long)]
