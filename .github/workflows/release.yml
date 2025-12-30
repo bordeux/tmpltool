@@ -29,19 +29,37 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install semantic-release
-        run: |
-          npm install -g semantic-release@23 \
-            @semantic-release/git@10 \
-            @semantic-release/changelog@6 \
-            @semantic-release/exec@6 \
-            conventional-changelog-conventionalcommits@7
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run semantic-release
         id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: |
+          # Get current tags
+          BEFORE_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+
+          # Run semantic-release
+          npx semantic-release 2>&1 | tee release-output.log
+
+          # Check if a new tag was created
+          AFTER_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+
+          if [ "$BEFORE_TAG" != "$AFTER_TAG" ] && [ "$AFTER_TAG" != "none" ]; then
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+            VERSION=$(echo "$AFTER_TAG" | sed 's/^v//')
+            echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Release published: $VERSION"
+          else
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No release published"
+          fi
+
+      - name: Output release info
+        run: |
+          echo "New release published: ${{ steps.semantic.outputs.new_release_published }}"
+          echo "New release version: ${{ steps.semantic.outputs.new_release_version }}"
 
   build:
     name: Build ${{ matrix.target }}
