@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tera = "1"
+tera = { version = "1", features = ["builtins"] }
 clap = { version = "4", features = ["derive"] }

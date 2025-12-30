@@ -22,8 +22,8 @@ fn test_successful_rendering() {
         env::set_var("TEST_USER_VAR", "TestUser");
     }
 
-    // Create test template using env() function
-    let template_content = r#"Hello {{ env(name="TEST_USER_VAR") }}!"#;
+    // Create test template using get_env() function
+    let template_content = r#"Hello {{ get_env(name="TEST_USER_VAR") }}!"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
@@ -108,8 +108,8 @@ fn test_environment_variable_substitution() {
         env::set_var("TMPLTOOL_TEST_VAR", "test_value_123");
     }
 
-    // Create template using env() function
-    let template_content = r#"Test: {{ env(name="TMPLTOOL_TEST_VAR") }}"#;
+    // Create template using get_env() function
+    let template_content = r#"Test: {{ get_env(name="TMPLTOOL_TEST_VAR") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
@@ -143,9 +143,9 @@ fn test_template_with_conditionals() {
         env::set_var("TMPLTOOL_COND_TRUE", "yes");
     }
 
-    // Create template with conditional using env()
+    // Create template with conditional using get_env()
     let template_content =
-        r#"{% if env(name="TMPLTOOL_COND_TRUE", default="no") == "yes" %}Variable is set{% else %}Not set{% endif %}"#;
+        r#"{% if get_env(name="TMPLTOOL_COND_TRUE", default="no") == "yes" %}Variable is set{% else %}Not set{% endif %}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
@@ -174,8 +174,8 @@ fn test_template_with_missing_variable() {
     let template_path = get_test_file_path("template_missing_var.txt");
     let output_path = get_test_file_path("output_missing_var.txt");
 
-    // Create template with env() without default - should error
-    let template_content = r#"Value: {{ env(name="TMPLTOOL_NONEXISTENT_VAR_XYZ123") }}"#;
+    // Create template with get_env() without default - should error
+    let template_content = r#"Value: {{ get_env(name="TMPLTOOL_NONEXISTENT_VAR_XYZ123") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
@@ -184,7 +184,7 @@ fn test_template_with_missing_variable() {
         Some(output_path.to_str().unwrap()),
     );
 
-    // Verify it fails (env() without default should error on missing var)
+    // Verify it fails (get_env() without default should error on missing var)
     assert!(result.is_err());
 
     // Cleanup
@@ -202,10 +202,10 @@ fn test_multiline_template() {
         env::set_var("TMPLTOOL_LINE2", "Second");
     }
 
-    // Create multiline template using env()
+    // Create multiline template using get_env()
     let template_content =
-        r#"Line 1: {{ env(name="TMPLTOOL_LINE1") }}
-Line 2: {{ env(name="TMPLTOOL_LINE2") }}"#;
+        r#"Line 1: {{ get_env(name="TMPLTOOL_LINE1") }}
+Line 2: {{ get_env(name="TMPLTOOL_LINE2") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function
@@ -238,8 +238,8 @@ fn test_stdout_output() {
         env::set_var("TMPLTOOL_STDOUT_TEST", "stdout_value");
     }
 
-    // Create template using env()
-    let template_content = r#"Output: {{ env(name="TMPLTOOL_STDOUT_TEST") }}"#;
+    // Create template using get_env()
+    let template_content = r#"Output: {{ get_env(name="TMPLTOOL_STDOUT_TEST") }}"#;
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function with no output file (should print to stdout)
@@ -264,7 +264,7 @@ fn test_direct_var_access_fails() {
         env::set_var("TEST_DIRECT_VAR", "value");
     }
 
-    // Try to use variable directly without env() - should fail
+    // Try to use variable directly without get_env() - should fail
     let template_content = "{{ TEST_DIRECT_VAR }}";
     fs::write(&template_path, template_content).unwrap();
 

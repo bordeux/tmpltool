@@ -2,16 +2,16 @@
 # Generated from template using tmpltool
 
 [server]
-host = {{ SERVER_HOST }}
-port = {{ SERVER_PORT }}
+host = {{ get_env(name="SERVER_HOST") }}
+port = {{ get_env(name="SERVER_PORT") }}
 
 [database]
-url = {{ DATABASE_URL }}
-max_connections = {{ DB_MAX_CONNECTIONS }}
+url = {{ get_env(name="DATABASE_URL") }}
+max_connections = {{ get_env(name="DB_MAX_CONNECTIONS") }}
 
 [logging]
-level = {{ LOG_LEVEL }}
-{% if DEBUG %}
+level = {{ get_env(name="LOG_LEVEL") }}
+{% if get_env(name="DEBUG", default="") %}
 debug = true
 verbose = true
 {% else %}
@@ -20,5 +20,5 @@ verbose = false
 {% endif %}
 
 [environment]
-env = {{ APP_ENV }}
-version = {{ APP_VERSION }}
+env = {{ get_env(name="APP_ENV") }}
+version = {{ get_env(name="APP_VERSION") }}

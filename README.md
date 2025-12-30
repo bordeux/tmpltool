@@ -74,7 +74,7 @@ tmpltool template.txt -o output.txt
 
 ```bash
 cat template.txt | tmpltool
-echo "Hello {{ env(name=\"NAME\", default=\"World\") }}!" | tmpltool
+echo "Hello {{ get_env(name=\"NAME\", default=\"World\") }}!" | tmpltool
 ```
 
 #### stdin to file
@@ -259,10 +259,10 @@ tmpltool nginx.conf.tmpl | nginx -t -c /dev/stdin
 The `examples/` directory contains ready-to-use template examples demonstrating various features:
 
 - **`basic.tmpl`** - Basic variable substitution and conditionals
-- **`greeting.tmpl`** - Simple greeting with `env()` function
+- **`greeting.tmpl`** - Simple greeting with `get_env()` function
 - **`config.tmpl`** - Application configuration file generation
 - **`docker-compose.tmpl`** - Docker Compose with sensible defaults
-- **`config-with-defaults.tmpl`** - Advanced config using `env()` function (recommended)
+- **`config-with-defaults.tmpl`** - Advanced config using `get_env()` function (recommended)
 
 ### Try an Example
 
@@ -282,7 +282,7 @@ DATABASE_URL=postgres://db:5432/myapp \
 ENABLE_VOLUMES=true \
 tmpltool examples/docker-compose.tmpl -o docker-compose.yml
 
-# Config with env() function and defaults
+# Config with get_env() function and defaults
 tmpltool examples/config-with-defaults.tmpl
 ```
 
@@ -321,25 +321,25 @@ tmpltool uses the [Tera](https://keats.github.io/tera/) template engine. Here ar
 {{ variable | filter_name(arg=value) }}
 ```
 
-### Custom `env()` Function
+### Built-in `get_env()` Function
 
-tmpltool provides a custom `env()` function for accessing environment variables with optional defaults:
+tmpltool uses Tera's built-in `get_env()` function for accessing environment variables with optional defaults:
 
 ```
-{{ env(name="VARIABLE_NAME", default="fallback_value") }}
+{{ get_env(name="VARIABLE_NAME", default="fallback_value") }}
 ```
 
 **Examples:**
 ```
 # With default value (recommended)
-port = {{ env(name="PORT", default="8080") }}
-database = {{ env(name="DB_URL", default="postgres://localhost/mydb") }}
+port = {{ get_env(name="PORT", default="8080") }}
+database = {{ get_env(name="DB_URL", default="postgres://localhost/mydb") }}
 
 # Without default (will error if variable doesn't exist)
-api_key = {{ env(name="API_KEY") }}
+api_key = {{ get_env(name="API_KEY") }}
 
 # Use in conditionals
-{% if env(name="DEBUG", default="false") == "true" %}
+{% if get_env(name="DEBUG", default="false") == "true" %}
   Debug mode enabled
 {% endif %}
 ```
@@ -365,8 +365,8 @@ For complete Tera syntax documentation, visit: https://keats.github.io/tera/docs
 - If a template has syntax errors, tmpltool will report the error location
 - If a referenced environment variable doesn't exist:
   - Using `{{ VAR }}` syntax will error (strict mode)
-  - Using `{{ env(name="VAR", default="...") }}` will use the default value
-  - Using `{{ env(name="VAR") }}` without default will error
+  - Using `{{ get_env(name="VAR", default="...") }}` will use the default value
+  - Using `{{ get_env(name="VAR") }}` without default will error
 
 ## Help
 
@@ -404,16 +404,15 @@ tmpltool/
 │   ├── lib.rs              # Library root
 │   ├── cli.rs              # CLI argument parsing
 │   ├── renderer.rs         # Template rendering logic
-│   └── functions/          # Custom Tera functions
-│       ├── mod.rs          # Functions module (registers all functions)
-│       └── env.rs          # env() function implementation
+│   └── functions/          # Custom Tera functions (extensibility point)
+│       └── mod.rs          # Functions module (for registering custom functions)
 ├── tests/
 │   └── integration_tests.rs # Integration tests
 ├── examples/               # Example templates
 │   ├── basic.tmpl          # Basic usage example
 │   ├── greeting.tmpl       # Simple greeting with defaults
 │   ├── config.tmpl         # Config file generation
-│   ├── config-with-defaults.tmpl # Advanced config with env() function
+│   ├── config-with-defaults.tmpl # Advanced config with get_env() function
 │   ├── docker-compose.tmpl # Docker Compose with defaults
 │   └── README.md           # Examples documentation
 ├── .gitignore              # Git ignore rules
@@ -428,21 +427,20 @@ tmpltool/
 - **`cli.rs`** - CLI argument parsing using clap
 - **`renderer.rs`** - Core template rendering logic with environment variable handling
 - **`functions/`** - Custom Tera functions (modular, one file per function)
-  - **`mod.rs`** - Registers all functions, easy to add new ones
-  - **`env.rs`** - Implementation of the `env()` function
+  - **`mod.rs`** - Registers custom functions (currently empty - built-in functions like `get_env()` work automatically)
 - **`tests/integration_tests.rs`** - Integration tests that test the public API
 
 #### Adding New Custom Functions
 
 To add a new custom function:
 
-1. Create a new file in `src/functions/` (e.g., `uppercase.rs`)
+1. Create a new file in `src/functions/` (e.g., `my_function.rs`)
 2. Implement your function following the Tera function signature
 3. Add the module declaration to `src/functions/mod.rs`
 4. Register your function in the `register_all()` function
 5. Write tests in your function file
 
-See `src/functions/env.rs` for a complete example.
+Note: Tera's built-in functions like `get_env()`, `now()`, and `get_random()` are automatically available when the "builtins" feature is enabled.
 
 ### Building
 
@@ -505,35 +503,29 @@ cargo test -- --test-threads=1 --nocapture
 The project includes comprehensive test coverage:
 
 **Unit Tests in `src/renderer.rs`** (7 tests):
-- Context building from environment variables
 - Template rendering
 - Invalid template syntax handling
 - Template file reading
 - Missing template file handling
-- `env()` function in template rendering
-- `env()` function with default in template
+- `get_env()` function in template rendering
+- `get_env()` function with default in template
+- Direct variable access fails (security test)
 
-**Unit Tests in `src/functions/env.rs`** (5 tests):
-- `env()` function with existing variable
-- `env()` function with default fallback
-- `env()` function without default (error handling)
-- `env()` function with missing name argument
-- `env()` function with numeric default
-
-**Integration Tests in `tests/integration_tests.rs`** (8 tests):
+**Integration Tests in `tests/integration_tests.rs`** (9 tests):
 - Successful template rendering
 - Missing template file handling
 - Invalid template syntax handling
-- Environment variable substitution
+- Environment variable substitution with `get_env()`
 - Conditional logic (if/else)
 - Missing variable detection
 - Multiline templates
 - Stdout output functionality
+- Direct variable access fails (security test)
 
-**Function Tests** (2 tests in lib tests):
-- Documentation tests
+**Documentation Tests** (2 tests):
+- Library documentation examples
 
-Total: **22 tests** covering unit, integration, and function-specific scenarios.
+Total: **18 tests** covering unit, integration, and documentation scenarios.
 
 ### Code Quality
 
@@ -559,7 +551,9 @@ cargo clippy -- -W clippy::all
 
 The project uses minimal dependencies:
 
-- **[tera](https://crates.io/crates/tera)** (v1.x) - Template engine
+- **[tera](https://crates.io/crates/tera)** (v1.x) - Template engine with `builtins` feature enabled
+  - Provides built-in filters: `slugify`, `date`, `filesizeformat`, `urlencode`, etc.
+  - Provides built-in functions: `get_env()`, `now()`, `get_random()`
 - **[clap](https://crates.io/crates/clap)** (v4.x) - Command-line argument parsing
 
 To update dependencies:

@@ -145,13 +145,13 @@ mod tests {
     }
 
     #[test]
-    fn test_env_function_in_template() {
+    fn test_get_env_function_in_template() {
         unsafe {
             env::set_var("TEST_TEMPLATE_VAR", "from_env");
         }
 
         let context = Context::new();
-        let template = r#"Value: {{ env(name="TEST_TEMPLATE_VAR") }}"#;
+        let template = r#"Value: {{ get_env(name="TEST_TEMPLATE_VAR") }}"#;
         let result = render(template, &context);
 
         assert!(result.is_ok());
@@ -163,9 +163,9 @@ mod tests {
     }
 
     #[test]
-    fn test_env_function_with_default_in_template() {
+    fn test_get_env_function_with_default_in_template() {
         let context = Context::new();
-        let template = r#"Value: {{ env(name="TMPLTOOL_NONEXISTENT_12345", default="fallback") }}"#;
+        let template = r#"Value: {{ get_env(name="TMPLTOOL_NONEXISTENT_12345", default="fallback") }}"#;
         let result = render(template, &context);
 
         assert!(result.is_ok());
@@ -179,7 +179,7 @@ mod tests {
         }
 
         let context = Context::new();
-        // Try to use env var directly without env() function - should fail
+        // Try to use env var directly without get_env() function - should fail
         let template = "{{ TEST_NO_AUTO_ENV }}";
         let result = render(template, &context);
 
