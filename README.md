@@ -984,9 +984,17 @@ For detailed contribution guidelines, including commit conventions, development 
 ### Quick Start
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and QA checks (`cargo make qa`)
-5. Commit using [conventional commits](#commit-convention)
-6. Push to your fork
-7. Open a Pull Request
+2. Clone your fork and install dependencies:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/tmpltool.git
+   cd tmpltool
+   npm install  # Installs commit validation hooks
+   ```
+3. Create a feature branch (`git checkout -b feature/amazing-feature`)
+4. Make your changes
+5. Run tests and QA checks (`cargo make qa`)
+6. Commit using [conventional commits](#commit-convention) - invalid commits will be automatically rejected
+7. Push to your fork
+8. Open a Pull Request
+
+**Note:** Commit messages are automatically validated. If your commit is rejected, make sure it follows the [conventional commit format](#commit-convention).

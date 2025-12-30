@@ -21,6 +21,7 @@ This project adheres to a code of conduct. By participating, you are expected to
 ### Prerequisites
 
 - Rust 1.70 or higher ([Install Rust](https://rustup.rs/))
+- Node.js 18 or higher ([Install Node.js](https://nodejs.org/)) - for commit validation
 - cargo-make (optional but recommended): `cargo install --force cargo-make`
 
 ### Setup
@@ -35,7 +36,15 @@ This project adheres to a code of conduct. By participating, you are expected to
    ```bash
    git remote add upstream https://github.com/ORIGINAL_OWNER/tmpltool.git
    ```
-4. Create a new branch:
+4. Install Node.js dependencies (for commit validation):
+   ```bash
+   npm install
+   ```
+   This will:
+   - Install commitlint and husky
+   - Set up git hooks to validate commit messages
+   - Prevent commits that don't follow conventional commit format
+5. Create a new branch:
    ```bash
    git checkout -b feature/my-feature
    ```
@@ -76,6 +85,21 @@ cargo make test-examples
 ## Commit Convention
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
+
+**Important:** Commit messages are automatically validated using commitlint. Invalid commits will be rejected before they're created.
+
+### Commit Validation
+
+When you try to commit, a git hook will automatically check your commit message format. If it doesn't follow the conventional commit format, you'll see an error like:
+
+```
+⧗   input: bad commit message
+✖   type must be one of [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert] [type-enum]
+✖   found 1 problems, 0 warnings
+husky - commit-msg hook exited with code 1 (error)
+```
+
+To fix this, make sure your commit message follows the format below.
 
 ### Commit Message Format
 
@@ -278,6 +302,34 @@ Releases are automated using semantic-release:
    - Builds binaries for all platforms
    - Creates GitHub release
    - Publishes Docker image
+
+## Troubleshooting
+
+### Commit Validation Not Working
+
+If commit validation isn't working:
+
+1. Make sure you ran `npm install` after cloning the repository
+2. Check that `.husky/commit-msg` exists and is executable
+3. Reinstall hooks: `npm run prepare`
+
+### Bypassing Commit Validation (NOT Recommended)
+
+In rare cases, you may need to bypass validation (e.g., fixing a broken commit history):
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+**Warning:** Only use `--no-verify` when absolutely necessary, as it will bypass the commit validation.
+
+### Testing Commit Messages
+
+You can test a commit message without making a commit:
+
+```bash
+echo "feat: add new feature" | npx commitlint
+```
 
 ## Questions?
 
