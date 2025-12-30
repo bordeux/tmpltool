@@ -1392,6 +1392,168 @@ Correlation ID: {{ correlation_id }}
 {% endif %}
 ```
 
+### Data Parsing Functions
+
+tmpltool provides functions to parse structured data formats (JSON, YAML, TOML) from strings or files. These functions are useful for loading configuration files, processing API responses, or working with structured data in templates.
+
+#### `parse_json(string)`
+
+Parse a JSON string into an object that can be used in templates.
+
+```
+{% set config = parse_json(string='{"name": "myapp", "port": 8080, "debug": true}') %}
+Application: {{ config.name }}
+Port: {{ config.port }}
+Debug mode: {{ config.debug }}
+```
+
+#### `parse_yaml(string)`
+
+Parse a YAML string into an object.
+
+```
+{% set data = parse_yaml(string="
+name: myapp
+settings:
+  theme: dark
+  notifications: true
+") %}
+App: {{ data.name }}
+Theme: {{ data.settings.theme }}
+```
+
+#### `parse_toml(string)`
+
+Parse a TOML string into an object.
+
+```
+{% set config = parse_toml(string='
+[database]
+host = "localhost"
+port = 5432
+
+[cache]
+enabled = true
+') %}
+Database: {{ config.database.host }}:{{ config.database.port }}
+Cache: {{ config.cache.enabled }}
+```
+
+#### `read_json_file(path)`
+
+Read and parse a JSON file. The path is resolved relative to the template file's directory.
+
+**Example JSON file** (`config/settings.json`):
+```json
+{
+  "app_name": "MyApp",
+  "version": "1.0.0",
+  "features": {
+    "auth": true,
+    "api": true
+  }
+}
+```
+
+**Template:**
+```
+{% set config = read_json_file(path="config/settings.json") %}
+# {{ config.app_name }} v{{ config.version }}
+
+Features:
+{% if config.features.auth %}
+- Authentication: Enabled
+{% endif %}
+{% if config.features.api %}
+- API: Enabled
+{% endif %}
+```
+
+#### `read_yaml_file(path)`
+
+Read and parse a YAML file.
+
+**Example YAML file** (`config.yaml`):
+```yaml
+services:
+  - name: web
+    port: 8080
+  - name: api
+    port: 3000
+
+environment: production
+```
+
+**Template:**
+```
+{% set config = read_yaml_file(path="config.yaml") %}
+Environment: {{ config.environment }}
+
+Services:
+{% for service in config.services %}
+  - {{ service.name }}: port {{ service.port }}
+{% endfor %}
+```
+
+#### `read_toml_file(path)`
+
+Read and parse a TOML file.
+
+**Example TOML file** (`Cargo.toml`):
+```toml
+[package]
+name = "myapp"
+version = "1.0.0"
+
+[dependencies]
+serde = "1.0"
+tokio = "1.0"
+```
+
+**Template:**
+```
+{% set cargo = read_toml_file(path="Cargo.toml") %}
+# {{ cargo.package.name }}
+
+Version: {{ cargo.package.version }}
+
+Dependencies:
+{% for dep, version in cargo.dependencies %}
+- {{ dep }}: {{ version }}
+{% endfor %}
+```
+
+**Practical Example - Multi-format Configuration:**
+
+```
+{# Load configuration from different sources #}
+{% set json_config = read_json_file(path="config.json") %}
+{% set yaml_config = read_yaml_file(path="config.yaml") %}
+{% set toml_config = read_toml_file(path="Cargo.toml") %}
+
+# Application Configuration Report
+
+## From JSON ({{ json_config.app_name }})
+- Version: {{ json_config.version }}
+- Debug: {{ json_config.debug }}
+
+## From YAML
+Environment: {{ yaml_config.environment }}
+{% for service in yaml_config.services %}
+- Service {{ service.name }}: {{ service.host }}:{{ service.port }}
+{% endfor %}
+
+## From TOML ({{ toml_config.package.name }})
+Rust Version: {{ toml_config.package.edition }}
+Dependencies: {{ toml_config.dependencies | length }}
+```
+
+**Security Note**: Like other filesystem functions, data parsing file functions enforce security restrictions:
+- Only relative paths allowed (no absolute paths like `/etc/config.json`)
+- No parent directory traversal (no `..` in paths)
+- Access restricted to current working directory and subdirectories
+- Use `--trust` flag to bypass these restrictions for trusted templates
+
 ### Comments
 ```
 {# This is a comment #}

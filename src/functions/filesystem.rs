@@ -12,6 +12,28 @@ use std::collections::HashMap;
 use std::fs;
 use tera::{Function, Result, Value, to_value};
 
+/// Validate path security (prevent absolute paths and parent directory traversal)
+///
+/// This is a public helper function that can be reused by other modules that need
+/// to perform file path security validation.
+pub fn validate_path_security(path: &str) -> Result<()> {
+    if path.starts_with('/') {
+        return Err(tera::Error::msg(format!(
+            "Security: Absolute paths are not allowed: {}. Use --trust to bypass this restriction.",
+            path
+        )));
+    }
+
+    if path.contains("..") {
+        return Err(tera::Error::msg(format!(
+            "Security: Parent directory (..) traversal is not allowed: {}. Use --trust to bypass this restriction.",
+            path
+        )));
+    }
+
+    Ok(())
+}
+
 /// Read file content function
 pub struct ReadFile {
     context: TemplateContext,

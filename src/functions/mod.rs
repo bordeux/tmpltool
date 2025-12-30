@@ -32,6 +32,12 @@
 //! - `is_ip(string)` - Validate IP address (IPv4 or IPv6)
 //! - `is_uuid(string)` - Validate UUID format
 //! - `matches_regex(pattern, string)` - Check if string matches regex pattern
+//! - `parse_json(string)` - Parse JSON string into object
+//! - `parse_yaml(string)` - Parse YAML string into object
+//! - `parse_toml(string)` - Parse TOML string into object
+//! - `read_json_file(path)` - Read and parse JSON file
+//! - `read_yaml_file(path)` - Read and parse YAML file
+//! - `read_toml_file(path)` - Read and parse TOML file
 //!
 //! # Adding Custom Functions
 //!
@@ -55,6 +61,7 @@
 //! }
 //! ```
 
+pub mod data_parsing;
 pub mod filesystem;
 pub mod filter_env;
 pub mod hash;
@@ -109,7 +116,10 @@ pub fn register_all(tera: &mut Tera, context: TemplateContext) {
     tera.register_function("list_dir", filesystem::ListDir::new(context.clone()));
     tera.register_function("glob", filesystem::GlobFiles::new(context.clone()));
     tera.register_function("file_size", filesystem::FileSize::new(context.clone()));
-    tera.register_function("file_modified", filesystem::FileModified::new(context));
+    tera.register_function(
+        "file_modified",
+        filesystem::FileModified::new(context.clone()),
+    );
 
     // Validation functions
     tera.register_function("is_email", validation::IsEmail);
@@ -117,4 +127,18 @@ pub fn register_all(tera: &mut Tera, context: TemplateContext) {
     tera.register_function("is_ip", validation::IsIp);
     tera.register_function("is_uuid", validation::IsUuid);
     tera.register_function("matches_regex", validation::MatchesRegex);
+
+    // Data parsing functions
+    tera.register_function("parse_json", data_parsing::ParseJson);
+    tera.register_function("parse_yaml", data_parsing::ParseYaml);
+    tera.register_function("parse_toml", data_parsing::ParseToml);
+    tera.register_function(
+        "read_json_file",
+        data_parsing::ReadJsonFile::new(context.clone()),
+    );
+    tera.register_function(
+        "read_yaml_file",
+        data_parsing::ReadYamlFile::new(context.clone()),
+    );
+    tera.register_function("read_toml_file", data_parsing::ReadTomlFile::new(context));
 }

@@ -21,12 +21,12 @@ This document tracks potential features, improvements, and ideas for tmpltool.
 **Documentation**: See README.md "Filesystem Functions" section for comprehensive examples and usage.
 
 ### Data Parsing Functions
-- [ ] `parse_json(string)` - Parse JSON string into object
-- [ ] `parse_yaml(string)` - Parse YAML string into object
-- [ ] `parse_toml(string)` - Parse TOML string into object
-- [ ] `read_json_file(path)` - Read and parse JSON file
-- [ ] `read_yaml_file(path)` - Read and parse YAML file
-- [ ] `read_toml_file(path)` - Read and parse TOML file
+- [x] `parse_json(string)` - Parse JSON string into object ✅ **Implemented v1.3.0**
+- [x] `parse_yaml(string)` - Parse YAML string into object ✅ **Implemented v1.3.0**
+- [x] `parse_toml(string)` - Parse TOML string into object ✅ **Implemented v1.3.0**
+- [x] `read_json_file(path)` - Read and parse JSON file ✅ **Implemented v1.3.0**
+- [x] `read_yaml_file(path)` - Read and parse YAML file ✅ **Implemented v1.3.0**
+- [x] `read_toml_file(path)` - Read and parse TOML file ✅ **Implemented v1.3.0**
 
 ### String Manipulation Functions
 - [ ] `regex_match(pattern, string)` - Match regex pattern
