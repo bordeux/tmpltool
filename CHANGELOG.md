@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/bordeux/tmpltool/compare/v1.0.3...v1.0.4) (2025-12-30)
+
+
+### Bug Fixes
+
+* **docker:** update Rust version to 1.85 for edition 2024 support ([5fbe376](https://github.com/bordeux/tmpltool/commit/5fbe376e953ccda79c549dea281296e39e558400))
+
 ## [1.0.3](https://github.com/bordeux/tmpltool/compare/v1.0.2...v1.0.3) (2025-12-30)
 
 
