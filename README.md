@@ -986,7 +986,7 @@ For detailed contribution guidelines, including commit conventions, development 
 1. Fork the repository
 2. Clone your fork and install dependencies:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/tmpltool.git
+   git clone https://github.com/bordeux/tmpltool.git
    cd tmpltool
    npm install  # Installs commit validation hooks
    ```
