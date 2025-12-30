@@ -36,6 +36,7 @@ jobs:
         id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HUSKY: 0
         run: |
           # Get current tags
           BEFORE_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
