@@ -11,11 +11,13 @@ A fast and simple command-line template rendering tool using [Tera](https://keat
 
 ## Features
 
-- Render Tera templates with all environment variables available as context
+- Render Tera templates with environment variable support via `get_env()` function
 - Output to file or stdout (for piping)
 - Simple CLI interface
 - Single binary executable
 - Full Tera template syntax support (variables, conditionals, loops, filters, etc.)
+- Built-in filters: slugify, date, urlencode, filesizeformat, and more
+- Default values for environment variables (no errors when variables are missing)
 
 ## Installation
 
@@ -153,9 +155,9 @@ cat header.tmpl body.tmpl footer.tmpl | tmpltool > complete.html
 
 Create a template file `greeting.tmpl`:
 ```
-Hello {{ USER }}!
-Your home directory is: {{ HOME }}
-Your shell: {{ SHELL }}
+Hello {{ get_env(name="USER") }}!
+Your home directory is: {{ get_env(name="HOME") }}
+Your shell: {{ get_env(name="SHELL") }}
 ```
 
 Render it:
@@ -170,24 +172,38 @@ Your home directory is: /home/username
 Your shell: /bin/bash
 ```
 
+**Note:** These environment variables (USER, HOME, SHELL) are typically available on Unix systems.
+
 #### Setting Custom Environment Variables
 
 Create a template `config.tmpl`:
 ```
-Database: {{ DB_HOST }}:{{ DB_PORT }}
-Environment: {{ APP_ENV }}
-Debug: {{ DEBUG }}
+Database: {{ get_env(name="DB_HOST", default="localhost") }}:{{ get_env(name="DB_PORT", default="5432") }}
+Environment: {{ get_env(name="APP_ENV", default="development") }}
+Debug: {{ get_env(name="DEBUG", default="false") }}
 ```
 
 Render with custom variables:
 ```bash
-DB_HOST=localhost DB_PORT=5432 APP_ENV=production DEBUG=false tmpltool config.tmpl
+DB_HOST=postgres DB_PORT=5432 APP_ENV=production DEBUG=true tmpltool config.tmpl
+```
+
+Output:
+```
+Database: postgres:5432
+Environment: production
+Debug: true
+```
+
+Or render without any environment variables (using defaults):
+```bash
+tmpltool config.tmpl
 ```
 
 Output:
 ```
 Database: localhost:5432
-Environment: production
+Environment: development
 Debug: false
 ```
 
@@ -195,7 +211,8 @@ Debug: false
 
 Template `status.tmpl`:
 ```
-{% if DEBUG %}
+{% set debug = get_env(name="DEBUG", default="false") %}
+{% if debug == "true" %}
 DEBUG MODE ENABLED
 Log level: verbose
 {% else %}
@@ -204,27 +221,59 @@ Log level: error
 {% endif %}
 ```
 
-Render:
+Render with DEBUG enabled:
 ```bash
 DEBUG=true tmpltool status.tmpl
 ```
 
+Output:
+```
+DEBUG MODE ENABLED
+Log level: verbose
+```
+
+Render without DEBUG (uses default):
+```bash
+tmpltool status.tmpl
+```
+
+Output:
+```
+Production mode
+Log level: error
+```
+
 #### Using Loops
 
-If you set an environment variable with a list (this example uses Tera's split filter):
+You can use environment variables with Tera's split filter to create lists:
 
 Template `list.tmpl`:
 ```
-{% set items = ITEMS | split(pat=",") %}
+{% set items_str = get_env(name="ITEMS", default="apple,banana,orange") %}
+{% set items = items_str | split(pat=",") %}
 Items:
 {% for item in items %}
   - {{ item }}
 {% endfor %}
 ```
 
-Render:
+Render with custom list:
 ```bash
-ITEMS="apple,banana,orange" tmpltool list.tmpl
+ITEMS="apple,banana,orange,grape" tmpltool list.tmpl
+```
+
+Output:
+```
+Items:
+  - apple
+  - banana
+  - orange
+  - grape
+```
+
+Or use the default list:
+```bash
+tmpltool list.tmpl
 ```
 
 Output:
@@ -239,14 +288,29 @@ Items:
 
 Template `formatted.tmpl`:
 ```
-Uppercase: {{ NAME | upper }}
-Lowercase: {{ NAME | lower }}
-Title Case: {{ NAME | title }}
+{% set name = get_env(name="NAME", default="john doe") %}
+Uppercase: {{ name | upper }}
+Lowercase: {{ name | lower }}
+Title Case: {{ name | title }}
+Slugified: {{ name | slugify }}
 ```
 
-Render:
+Render with custom name:
 ```bash
-NAME="john doe" tmpltool formatted.tmpl
+NAME="Jane Smith" tmpltool formatted.tmpl
+```
+
+Output:
+```
+Uppercase: JANE SMITH
+Lowercase: jane smith
+Title Case: Jane Smith
+Slugified: jane-smith
+```
+
+Or use default:
+```bash
+tmpltool formatted.tmpl
 ```
 
 Output:
@@ -254,6 +318,7 @@ Output:
 Uppercase: JOHN DOE
 Lowercase: john doe
 Title Case: John Doe
+Slugified: john-doe
 ```
 
 #### Complex Example - Docker Compose Generator
@@ -263,32 +328,41 @@ Template `docker-compose.tmpl`:
 version: '3.8'
 
 services:
-  {{ SERVICE_NAME }}:
-    image: {{ DOCKER_IMAGE }}
+  {{ get_env(name="SERVICE_NAME", default="app") }}:
+    image: {{ get_env(name="DOCKER_IMAGE", default="node:18") }}
     ports:
-      - "{{ HOST_PORT }}:{{ CONTAINER_PORT }}"
+      - "{{ get_env(name="HOST_PORT", default="3000") }}:{{ get_env(name="CONTAINER_PORT", default="3000") }}"
     environment:
-      - NODE_ENV={{ NODE_ENV }}
-      {% if DATABASE_URL %}
-      - DATABASE_URL={{ DATABASE_URL }}
+      - NODE_ENV={{ get_env(name="NODE_ENV", default="development") }}
+      {% set db_url = get_env(name="DATABASE_URL", default="") %}
+      {% if db_url %}
+      - DATABASE_URL={{ db_url }}
       {% endif %}
-    {% if ENABLE_VOLUMES %}
+    {% set enable_volumes = get_env(name="ENABLE_VOLUMES", default="false") %}
+    {% if enable_volumes == "true" %}
     volumes:
       - ./app:/app
     {% endif %}
 ```
 
-Render:
+Render with all custom values:
 ```bash
 SERVICE_NAME=web \
-DOCKER_IMAGE=node:18 \
-HOST_PORT=3000 \
+DOCKER_IMAGE=node:20 \
+HOST_PORT=8080 \
 CONTAINER_PORT=3000 \
-NODE_ENV=development \
-DATABASE_URL=postgres://localhost/mydb \
+NODE_ENV=production \
+DATABASE_URL=postgres://db:5432/mydb \
 ENABLE_VOLUMES=true \
 tmpltool docker-compose.tmpl -o docker-compose.yml
 ```
+
+Or use all defaults (works out of the box!):
+```bash
+tmpltool docker-compose.tmpl -o docker-compose.yml
+```
+
+This generates a working docker-compose.yml with sensible defaults.
 
 #### Pipeline Usage
 
@@ -347,8 +421,10 @@ tmpltool uses the [Tera](https://keats.github.io/tera/) template engine. Here ar
 
 ### Variables
 ```
-{{ VARIABLE_NAME }}
+{{ variable_name }}
 ```
+
+**Note:** Environment variables are NOT automatically available as variables. Use the `get_env()` function to access them (see below).
 
 ### Conditionals
 ```
@@ -391,8 +467,9 @@ database = {{ get_env(name="DB_URL", default="postgres://localhost/mydb") }}
 # Without default (will error if variable doesn't exist)
 api_key = {{ get_env(name="API_KEY") }}
 
-# Use in conditionals
-{% if get_env(name="DEBUG", default="false") == "true" %}
+# Use in conditionals (requires {% set %} first)
+{% set debug = get_env(name="DEBUG", default="false") %}
+{% if debug == "true" %}
   Debug mode enabled
 {% endif %}
 ```
@@ -402,6 +479,10 @@ api_key = {{ get_env(name="API_KEY") }}
 - Sensible defaults for development
 - Easy to override in production
 - Self-documenting configuration
+
+**Important Notes:**
+- `get_env()` cannot be used directly in `{% if %}` conditions - use `{% set %}` to assign to a variable first
+- Direct environment variable access (e.g., `{{ ENV_VAR }}`) is not supported - always use `get_env()`
 
 See [examples/config-with-defaults.tmpl](examples/config-with-defaults.tmpl) for a complete example.
 
@@ -416,10 +497,10 @@ For complete Tera syntax documentation, visit: https://keats.github.io/tera/docs
 
 - If a template file doesn't exist, tmpltool will exit with an error
 - If a template has syntax errors, tmpltool will report the error location
-- If a referenced environment variable doesn't exist:
-  - Using `{{ VAR }}` syntax will error (strict mode)
-  - Using `{{ get_env(name="VAR", default="...") }}` will use the default value
-  - Using `{{ get_env(name="VAR") }}` without default will error
+- Environment variable handling:
+  - **Direct access not supported:** `{{ ENV_VAR }}` will cause an error - environment variables are not automatically available
+  - **With default (recommended):** `{{ get_env(name="VAR", default="...") }}` will use the default value if the variable doesn't exist
+  - **Without default:** `{{ get_env(name="VAR") }}` will error if the variable doesn't exist
 
 ## Help
 
