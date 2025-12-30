@@ -1,3 +1,21 @@
+## [1.1.0](https://github.com/bordeux/tmpltool/compare/v1.0.4...v1.1.0) (2025-12-30)
+
+
+### Features
+
+* add crypto functions ([34c27c1](https://github.com/bordeux/tmpltool/commit/34c27c13f2f6ff4dc32af8d606f98902b9ca600a))
+* add filter_env() function to filter environment variables by pattern ([2e0e600](https://github.com/bordeux/tmpltool/commit/2e0e600701d5aa9575406c4a04fdbef359952402))
+* add new unit test ([32bb336](https://github.com/bordeux/tmpltool/commit/32bb336705a90c7116068b97d2d9036318649138))
+* filesystem functions ([b4b3442](https://github.com/bordeux/tmpltool/commit/b4b34420bf4327d96b8a4b253d8f31f3fe289c09))
+* unit test for filesystem functions ([e07aa51](https://github.com/bordeux/tmpltool/commit/e07aa51e7087c9200f9b39b8bedcdda6222be033))
+* Update readme ([27f122e](https://github.com/bordeux/tmpltool/commit/27f122e1fa5dbdda125f4ba423ec87dc0d524764))
+
+
+### Bug Fixes
+
+* Fix unit tests & code style ([337f88c](https://github.com/bordeux/tmpltool/commit/337f88c2709b54fcfdfb35b50f1f5864e4ebb1bc))
+* improve error messages with detailed Tera error information ([ae0bc28](https://github.com/bordeux/tmpltool/commit/ae0bc286c9b4f0215f8d19a58c52fb8cd2739d32))
+
 ## [1.0.4](https://github.com/bordeux/tmpltool/compare/v1.0.3...v1.0.4) (2025-12-30)
 
 
