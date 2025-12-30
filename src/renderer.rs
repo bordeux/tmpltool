@@ -33,7 +33,12 @@ pub fn render_template(
     let context = Context::new();
 
     // Render the template
-    let rendered = render(&template_content, &context, template_context)?;
+    let rendered = render(
+        template_source,
+        &template_content,
+        &context,
+        template_context,
+    )?;
 
     // Write output to file or stdout
     write_output(&rendered, output_file)?;
@@ -70,6 +75,7 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
 
 /// Renders the template with the given context
 fn render(
+    template_source: Option<&str>,
     template_content: &str,
     context: &Context,
     template_context: TemplateContext,
@@ -79,10 +85,13 @@ fn render(
     // Register all custom functions
     functions::register_all(&mut tera, template_context);
 
-    tera.add_raw_template("template", template_content)
+    // Use full file path as template name if it's a file, otherwise use "template"
+    let template_name = template_source.unwrap_or("template");
+
+    tera.add_raw_template(template_name, template_content)
         .map_err(|e| format_tera_error("Failed to parse template", &e))?;
 
-    tera.render("template", context)
+    tera.render(template_name, context)
         .map_err(|e| format_tera_error("Failed to render template", &e).into())
 }
 
