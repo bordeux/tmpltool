@@ -12,6 +12,7 @@ A fast and simple command-line template rendering tool using [Tera](https://keat
 ## Features
 
 - Render Tera templates with environment variable support via `get_env()` function
+- Filter environment variables by pattern with `filter_env()` function
 - Output to file or stdout (for piping)
 - Simple CLI interface
 - Single binary executable
@@ -321,6 +322,42 @@ Title Case: John Doe
 Slugified: john-doe
 ```
 
+#### Filtering Environment Variables by Pattern
+
+Use the `filter_env()` function to get all environment variables matching a pattern:
+
+Template `server-vars.tmpl`:
+```
+Server Configuration:
+{% for var in filter_env(pattern="SERVER_*") %}
+  {{ var.key }}={{ var.value }}
+{% endfor %}
+```
+
+Set environment variables:
+```bash
+SERVER_HOST=localhost \
+SERVER_PORT=8080 \
+SERVER_NAME=myapp \
+OTHER_VAR=ignored \
+tmpltool server-vars.tmpl
+```
+
+Output:
+```
+Server Configuration:
+  SERVER_HOST=localhost
+  SERVER_NAME=myapp
+  SERVER_PORT=8080
+```
+
+**Pattern Syntax:**
+- `*` - matches any characters (e.g., `SERVER_*` matches `SERVER_HOST`, `SERVER_PORT`, etc.)
+- `?` - matches exactly one character (e.g., `DB_?` matches `DB_A`, `DB_B`, but not `DB_AB`)
+- Patterns can be at the beginning, middle, or end (e.g., `*_PORT`, `APP_*_NAME`)
+
+The results are returned as an array of objects with `key` and `value` fields, sorted alphabetically by key.
+
 #### Complex Example - Docker Compose Generator
 
 Template `docker-compose.tmpl`:
@@ -485,6 +522,48 @@ api_key = {{ get_env(name="API_KEY") }}
 - Direct environment variable access (e.g., `{{ ENV_VAR }}`) is not supported - always use `get_env()`
 
 See [examples/config-with-defaults.tmpl](examples/config-with-defaults.tmpl) for a complete example.
+
+### Custom `filter_env()` Function
+
+tmpltool provides a custom `filter_env()` function to filter environment variables by glob pattern:
+
+```
+{% for var in filter_env(pattern="PATTERN") %}
+  {{ var.key }}={{ var.value }}
+{% endfor %}
+```
+
+**Arguments:**
+- `pattern` (required) - A glob pattern to match environment variable names
+  - `*` matches any characters
+  - `?` matches exactly one character
+
+**Returns:**
+- An array of objects, each with:
+  - `key` - The environment variable name
+  - `value` - The environment variable value
+- Results are sorted alphabetically by key
+
+**Examples:**
+```
+# Match all SERVER_* variables
+{% for var in filter_env(pattern="SERVER_*") %}
+export {{ var.key }}="{{ var.value }}"
+{% endfor %}
+
+# Match all database variables
+{% set db_vars = filter_env(pattern="DATABASE_*") %}
+{% if db_vars | length > 0 %}
+Found {{ db_vars | length }} database variables
+{% endif %}
+
+# Match any variable ending with _PORT
+{% for var in filter_env(pattern="*_PORT") %}
+{{ var.key }}: {{ var.value }}
+{% endfor %}
+```
+
+See [examples/server-config.tmpl](examples/server-config.tmpl) for a complete example.
 
 ### Comments
 ```

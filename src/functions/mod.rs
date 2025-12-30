@@ -11,6 +11,11 @@
 //! - `get_random(start, end)` - Generate random integers
 //! - And many built-in filters: slugify, date, filesizeformat, urlencode, etc.
 //!
+//! # Custom Functions
+//!
+//! tmpltool provides additional custom functions:
+//! - `filter_env(pattern)` - Filter environment variables by glob pattern (e.g., "SERVER_*")
+//!
 //! # Adding Custom Functions
 //!
 //! To add a new custom function:
@@ -33,6 +38,8 @@
 //! }
 //! ```
 
+pub mod filter_env;
+
 use tera::Tera;
 
 /// Register all custom functions with the Tera instance
@@ -54,8 +61,7 @@ use tera::Tera;
 /// let mut tera = Tera::default();
 /// register_all(&mut tera);
 /// ```
-pub fn register_all(_tera: &mut Tera) {
-    // Add custom function registrations here as you create them
-    // Example:
-    // tera.register_function("my_function", my_function::my_function);
+pub fn register_all(tera: &mut Tera) {
+    // Register custom functions
+    tera.register_function("filter_env", filter_env::FilterEnv);
 }
