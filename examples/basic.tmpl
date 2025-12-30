@@ -1,0 +1,12 @@
+Hello from tmpltool!
+
+Current user: {{ USER }}
+Home directory: {{ HOME }}
+Shell: {{ SHELL }}
+Path: {{ PATH }}
+
+{% if CUSTOM_VAR %}
+Custom variable is set to: {{ CUSTOM_VAR }}
+{% else %}
+Custom variable is not set.
+{% endif %}

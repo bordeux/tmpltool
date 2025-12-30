@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  {{ env(name="SERVICE_NAME", default="app") }}:
+    image: {{ env(name="DOCKER_IMAGE", default="node:18-alpine") }}
+    container_name: {{ env(name="CONTAINER_NAME", default="my-app") }}
+    ports:
+      - "{{ env(name="HOST_PORT", default="3000") }}:{{ env(name="CONTAINER_PORT", default="3000") }}"
+    environment:
+      - NODE_ENV={{ env(name="NODE_ENV", default="development") }}
+      - PORT={{ env(name="CONTAINER_PORT", default="3000") }}
+      {% if env(name="DATABASE_URL", default="") != "" %}
+      - DATABASE_URL={{ env(name="DATABASE_URL") }}
+      {% endif %}
+      {% if env(name="REDIS_URL", default="") != "" %}
+      - REDIS_URL={{ env(name="REDIS_URL") }}
+      {% endif %}
+    {% if env(name="ENABLE_VOLUMES", default="false") == "true" %}
+    volumes:
+      - ./app:/app
+      - ./data:/data
+    {% endif %}
+    {% if env(name="DEPENDS_ON", default="") != "" %}
+    depends_on:
+      - {{ env(name="DEPENDS_ON") }}
+    {% endif %}
+    restart: unless-stopped
+    networks:
+      - {{ env(name="NETWORK_NAME", default="app-network") }}
+
+networks:
+  {{ env(name="NETWORK_NAME", default="app-network") }}:
+    driver: bridge
