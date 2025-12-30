@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Build artifacts
+target/
+*.tar.gz
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Documentation
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+*.md
+
+# Release config
+.releaserc.json
+
+# Cargo
+Cargo.lock
+
+# Editor config
+.editorconfig
+
+# Makefile
+Makefile.toml

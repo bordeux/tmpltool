@@ -1,0 +1,24 @@
+# Application Configuration
+# Generated from template using tmpltool
+
+[server]
+host = {{ get_env(name="SERVER_HOST") }}
+port = {{ get_env(name="SERVER_PORT") }}
+
+[database]
+url = {{ get_env(name="DATABASE_URL") }}
+max_connections = {{ get_env(name="DB_MAX_CONNECTIONS") }}
+
+[logging]
+level = {{ get_env(name="LOG_LEVEL") }}
+{% if get_env(name="DEBUG", default="") %}
+debug = true
+verbose = true
+{% else %}
+debug = false
+verbose = false
+{% endif %}
+
+[environment]
+env = {{ get_env(name="APP_ENV") }}
+version = {{ get_env(name="APP_VERSION") }}
