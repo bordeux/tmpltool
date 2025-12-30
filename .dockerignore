@@ -29,11 +29,18 @@ LICENSE
 # Release config
 .releaserc.json
 
-# Cargo
-Cargo.lock
-
 # Editor config
 .editorconfig
 
+# Note: Cargo.lock is NOT ignored for binary applications
+# It's required for reproducible Docker builds
+
 # Makefile
 Makefile.toml
+
+# Node.js (not needed in Docker)
+node_modules/
+package.json
+package-lock.json
+.commitlintrc.json
+.husky/
