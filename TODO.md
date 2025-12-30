@@ -5,12 +5,20 @@ This document tracks potential features, improvements, and ideas for tmpltool.
 ## Custom Functions
 
 ### File System Functions
-- [ ] `read_file(path)` - Read content from a file into the template
-- [ ] `file_exists(path)` - Check if a file exists (returns boolean)
-- [ ] `list_dir(path)` - List files in a directory
-- [ ] `glob(pattern)` - List files by pattern
-- [ ] `file_size(path)` - Get file size in bytes
-- [ ] `file_modified(path)` - Get file modification timestamp
+- [x] `read_file(path)` - Read content from a file into the template ✅ **Implemented v1.0.5**
+- [x] `file_exists(path)` - Check if a file exists (returns boolean) ✅ **Implemented v1.0.5**
+- [x] `list_dir(path)` - List files in a directory ✅ **Implemented v1.0.5**
+- [x] `glob(pattern)` - List files by pattern ✅ **Implemented v1.0.5**
+- [x] `file_size(path)` - Get file size in bytes ✅ **Implemented v1.0.5**
+- [x] `file_modified(path)` - Get file modification timestamp ✅ **Implemented v1.0.5**
+
+**Security Note**: All filesystem functions enforce security restrictions:
+- Only relative paths allowed (no absolute paths like `/etc/passwd`)
+- No parent directory traversal (no `..` in paths)
+- Access restricted to current working directory and subdirectories
+- Prevents unauthorized access to system files
+
+**Documentation**: See README.md "Filesystem Functions" section for comprehensive examples and usage.
 
 ### Data Parsing Functions
 - [ ] `parse_json(string)` - Parse JSON string into object
@@ -90,9 +98,9 @@ This document tracks potential features, improvements, and ideas for tmpltool.
 - [ ] Batch processing with glob patterns: `tmpltool templates/*.tmpl`
 
 ### Variable Management
-- [ ] Load variables from JSON file: `tmpltool --env-json vars.json template.tmpl`
-- [ ] Load variables from YAML file: `tmpltool --env-yaml vars.yaml template.tmpl`
-- [ ] Pass variables via CLI: `tmpltool --var key=value template.tmpl`
+- [ ] Load env variables from JSON file: `tmpltool --env-json vars.json template.tmpl`
+- [ ] Load env variables from YAML file: `tmpltool --env-yaml vars.yaml template.tmpl`
+- [ ] Pass env variables via CLI: `tmpltool --var key=value template.tmpl`
 - [ ] Environment file support: `tmpltool --env-file .env template.tmpl`
 - [ ] Variable precedence: CLI > env file > environment
 

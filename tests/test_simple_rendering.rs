@@ -17,6 +17,7 @@ fn test_simple_rendering() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     // Verify success

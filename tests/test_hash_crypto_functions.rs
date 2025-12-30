@@ -16,6 +16,7 @@ fn test_md5_function() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -42,6 +43,7 @@ fn test_sha1_function() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -68,6 +70,7 @@ fn test_sha256_function() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -97,6 +100,7 @@ fn test_sha512_function() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -132,6 +136,7 @@ fn test_hash_with_env_variable() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -166,6 +171,7 @@ fn test_uuid_function() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -203,6 +209,7 @@ fn test_uuid_uniqueness() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -234,6 +241,7 @@ fn test_random_string_basic() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -269,6 +277,7 @@ fn test_random_string_lowercase() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -303,6 +312,7 @@ fn test_random_string_uppercase() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -337,6 +347,7 @@ fn test_random_string_numeric() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -371,6 +382,7 @@ fn test_random_string_hex() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -405,6 +417,7 @@ fn test_random_string_custom_charset() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -440,6 +453,7 @@ fn test_random_string_uniqueness() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -475,6 +489,7 @@ checksum: {{ md5(string="config-v1") }}"#;
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -513,6 +528,7 @@ fn test_hash_function_missing_argument() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(result.is_err(), "MD5 without argument should fail");
@@ -539,6 +555,7 @@ fn test_random_string_missing_length() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(result.is_err(), "random_string without length should fail");

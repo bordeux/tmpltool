@@ -13,7 +13,15 @@ use std::path::Path;
 use tera::{to_value, Function, Result, Value};
 
 /// Read file content function
-pub struct ReadFile;
+pub struct ReadFile {
+    trust_mode: bool,
+}
+
+impl ReadFile {
+    pub fn new(trust_mode: bool) -> Self {
+        ReadFile { trust_mode }
+    }
+}
 
 impl Function for ReadFile {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
@@ -24,10 +32,10 @@ impl Function for ReadFile {
                 tera::Error::msg("read_file requires a 'path' argument (e.g., path=\"config.txt\")")
             })?;
 
-        // Security: Prevent reading absolute paths or paths with parent directory traversal
-        if path.starts_with('/') || path.contains("..") {
+        // Security: Prevent reading absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
-                "Security: Absolute paths and parent directory (..) access are not allowed: {}",
+                "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
@@ -41,7 +49,15 @@ impl Function for ReadFile {
 }
 
 /// Check if file exists function
-pub struct FileExists;
+pub struct FileExists {
+    trust_mode: bool,
+}
+
+impl FileExists {
+    pub fn new(trust_mode: bool) -> Self {
+        FileExists { trust_mode }
+    }
+}
 
 impl Function for FileExists {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
@@ -52,10 +68,10 @@ impl Function for FileExists {
                 tera::Error::msg("file_exists requires a 'path' argument (e.g., path=\"file.txt\")")
             })?;
 
-        // Security: Prevent checking absolute paths or paths with parent directory traversal
-        if path.starts_with('/') || path.contains("..") {
+        // Security: Prevent checking absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
-                "Security: Absolute paths and parent directory (..) access are not allowed: {}",
+                "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
@@ -67,7 +83,15 @@ impl Function for FileExists {
 }
 
 /// List directory contents function
-pub struct ListDir;
+pub struct ListDir {
+    trust_mode: bool,
+}
+
+impl ListDir {
+    pub fn new(trust_mode: bool) -> Self {
+        ListDir { trust_mode }
+    }
+}
 
 impl Function for ListDir {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
@@ -78,10 +102,10 @@ impl Function for ListDir {
                 tera::Error::msg("list_dir requires a 'path' argument (e.g., path=\"./data\")")
             })?;
 
-        // Security: Prevent listing absolute paths or paths with parent directory traversal
-        if path.starts_with('/') || path.contains("..") {
+        // Security: Prevent listing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
-                "Security: Absolute paths and parent directory (..) access are not allowed: {}",
+                "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
@@ -109,7 +133,15 @@ impl Function for ListDir {
 }
 
 /// Glob pattern matching function
-pub struct GlobFiles;
+pub struct GlobFiles {
+    trust_mode: bool,
+}
+
+impl GlobFiles {
+    pub fn new(trust_mode: bool) -> Self {
+        GlobFiles { trust_mode }
+    }
+}
 
 impl Function for GlobFiles {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
@@ -120,10 +152,10 @@ impl Function for GlobFiles {
                 tera::Error::msg("glob requires a 'pattern' argument (e.g., pattern=\"*.txt\")")
             })?;
 
-        // Security: Prevent absolute paths or paths with parent directory traversal
-        if pattern.starts_with('/') || pattern.contains("..") {
+        // Security: Prevent absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !self.trust_mode && (pattern.starts_with('/') || pattern.contains("..")) {
             return Err(tera::Error::msg(format!(
-                "Security: Absolute paths and parent directory (..) access are not allowed: {}",
+                "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 pattern
             )));
         }
@@ -153,7 +185,15 @@ impl Function for GlobFiles {
 }
 
 /// Get file size function
-pub struct FileSize;
+pub struct FileSize {
+    trust_mode: bool,
+}
+
+impl FileSize {
+    pub fn new(trust_mode: bool) -> Self {
+        FileSize { trust_mode }
+    }
+}
 
 impl Function for FileSize {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
@@ -164,10 +204,10 @@ impl Function for FileSize {
                 tera::Error::msg("file_size requires a 'path' argument (e.g., path=\"data.bin\")")
             })?;
 
-        // Security: Prevent accessing absolute paths or paths with parent directory traversal
-        if path.starts_with('/') || path.contains("..") {
+        // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
-                "Security: Absolute paths and parent directory (..) access are not allowed: {}",
+                "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }
@@ -182,7 +222,15 @@ impl Function for FileSize {
 }
 
 /// Get file modification time function
-pub struct FileModified;
+pub struct FileModified {
+    trust_mode: bool,
+}
+
+impl FileModified {
+    pub fn new(trust_mode: bool) -> Self {
+        FileModified { trust_mode }
+    }
+}
 
 impl Function for FileModified {
     fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
@@ -193,10 +241,10 @@ impl Function for FileModified {
                 tera::Error::msg("file_modified requires a 'path' argument (e.g., path=\"file.txt\")")
             })?;
 
-        // Security: Prevent accessing absolute paths or paths with parent directory traversal
-        if path.starts_with('/') || path.contains("..") {
+        // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !self.trust_mode && (path.starts_with('/') || path.contains("..")) {
             return Err(tera::Error::msg(format!(
-                "Security: Absolute paths and parent directory (..) access are not allowed: {}",
+                "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                 path
             )));
         }

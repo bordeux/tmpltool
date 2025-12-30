@@ -54,6 +54,7 @@ fn test_comprehensive_template() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(
@@ -187,6 +188,7 @@ fn test_comprehensive_template_validates_all_functions() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(

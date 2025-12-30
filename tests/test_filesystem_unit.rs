@@ -36,7 +36,7 @@ fn test_read_file_basic() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(path.clone()));
 
-    let result = ReadFile.call(&args).unwrap();
+    let result = ReadFile::new(false).call(&args).unwrap();
     assert_eq!(result.as_str().unwrap(), "Hello, World!");
 
     cleanup_test_dir(&test_dir);
@@ -51,7 +51,7 @@ fn test_read_file_multiline() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(path.clone()));
 
-    let result = ReadFile.call(&args).unwrap();
+    let result = ReadFile::new(false).call(&args).unwrap();
     assert_eq!(result.as_str().unwrap(), content);
 
     cleanup_test_dir(&test_dir);
@@ -60,7 +60,7 @@ fn test_read_file_multiline() {
 #[test]
 fn test_read_file_missing_argument() {
     let args = HashMap::new();
-    let result = ReadFile.call(&args);
+    let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("requires a 'path' argument"));
 }
@@ -70,7 +70,7 @@ fn test_read_file_nonexistent() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("test_data/nonexistent.txt".to_string()));
 
-    let result = ReadFile.call(&args);
+    let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
 }
 
@@ -79,7 +79,7 @@ fn test_read_file_security_absolute_path() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("/etc/passwd".to_string()));
 
-    let result = ReadFile.call(&args);
+    let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -89,7 +89,7 @@ fn test_read_file_security_parent_directory() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("../../../etc/passwd".to_string()));
 
-    let result = ReadFile.call(&args);
+    let result = ReadFile::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -102,7 +102,7 @@ fn test_file_exists_true() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(path.clone()));
 
-    let result = FileExists.call(&args).unwrap();
+    let result = FileExists::new(false).call(&args).unwrap();
     assert_eq!(result.as_bool().unwrap(), true);
 
     cleanup_test_dir(&test_dir);
@@ -115,7 +115,7 @@ fn test_file_exists_false() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(format!("{}/nonexistent.txt", test_dir)));
 
-    let result = FileExists.call(&args).unwrap();
+    let result = FileExists::new(false).call(&args).unwrap();
     assert_eq!(result.as_bool().unwrap(), false);
 }
 
@@ -124,7 +124,7 @@ fn test_file_exists_security() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("/etc/passwd".to_string()));
 
-    let result = FileExists.call(&args);
+    let result = FileExists::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -140,7 +140,7 @@ fn test_list_dir_basic() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(test_dir.clone()));
 
-    let result = ListDir.call(&args).unwrap();
+    let result = ListDir::new(false).call(&args).unwrap();
     let files = result.as_array().unwrap();
 
     assert_eq!(files.len(), 3);
@@ -159,7 +159,7 @@ fn test_list_dir_empty() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(test_dir.clone()));
 
-    let result = ListDir.call(&args).unwrap();
+    let result = ListDir::new(false).call(&args).unwrap();
     let files = result.as_array().unwrap();
 
     assert_eq!(files.len(), 0);
@@ -174,7 +174,7 @@ fn test_list_dir_nonexistent() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(test_dir.clone()));
 
-    let result = ListDir.call(&args);
+    let result = ListDir::new(false).call(&args);
     assert!(result.is_err());
 }
 
@@ -183,7 +183,7 @@ fn test_list_dir_security() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("/etc".to_string()));
 
-    let result = ListDir.call(&args);
+    let result = ListDir::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -199,7 +199,7 @@ fn test_glob_basic() {
     let mut args = HashMap::new();
     args.insert("pattern".to_string(), Value::String(format!("{}/*.txt", test_dir)));
 
-    let result = GlobFiles.call(&args).unwrap();
+    let result = GlobFiles::new(false).call(&args).unwrap();
     let files = result.as_array().unwrap();
 
     assert_eq!(files.len(), 2);
@@ -216,7 +216,7 @@ fn test_glob_no_matches() {
     let mut args = HashMap::new();
     args.insert("pattern".to_string(), Value::String(format!("{}/*.xyz", test_dir)));
 
-    let result = GlobFiles.call(&args).unwrap();
+    let result = GlobFiles::new(false).call(&args).unwrap();
     let files = result.as_array().unwrap();
 
     assert_eq!(files.len(), 0);
@@ -227,7 +227,7 @@ fn test_glob_security() {
     let mut args = HashMap::new();
     args.insert("pattern".to_string(), Value::String("/etc/*".to_string()));
 
-    let result = GlobFiles.call(&args);
+    let result = GlobFiles::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -241,7 +241,7 @@ fn test_file_size_basic() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(path.clone()));
 
-    let result = FileSize.call(&args).unwrap();
+    let result = FileSize::new(false).call(&args).unwrap();
     assert_eq!(result.as_u64().unwrap(), 13);
 
     cleanup_test_dir(&test_dir);
@@ -255,7 +255,7 @@ fn test_file_size_empty() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(path.clone()));
 
-    let result = FileSize.call(&args).unwrap();
+    let result = FileSize::new(false).call(&args).unwrap();
     assert_eq!(result.as_u64().unwrap(), 0);
 
     cleanup_test_dir(&test_dir);
@@ -266,7 +266,7 @@ fn test_file_size_nonexistent() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("test_data/nonexistent.txt".to_string()));
 
-    let result = FileSize.call(&args);
+    let result = FileSize::new(false).call(&args);
     assert!(result.is_err());
 }
 
@@ -275,7 +275,7 @@ fn test_file_size_security() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("/etc/passwd".to_string()));
 
-    let result = FileSize.call(&args);
+    let result = FileSize::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -291,7 +291,7 @@ fn test_file_modified_basic() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String(path.clone()));
 
-    let result = FileModified.call(&args).unwrap();
+    let result = FileModified::new(false).call(&args).unwrap();
     let timestamp = result.as_u64().unwrap();
 
     // Timestamp should be recent (within last minute)
@@ -312,7 +312,7 @@ fn test_file_modified_nonexistent() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("test_data/nonexistent.txt".to_string()));
 
-    let result = FileModified.call(&args);
+    let result = FileModified::new(false).call(&args);
     assert!(result.is_err());
 }
 
@@ -321,7 +321,116 @@ fn test_file_modified_security() {
     let mut args = HashMap::new();
     args.insert("path".to_string(), Value::String("/etc/passwd".to_string()));
 
-    let result = FileModified.call(&args);
+    let result = FileModified::new(false).call(&args);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
+}
+
+// Trust mode tests
+
+#[test]
+fn test_read_file_trust_mode_allows_absolute_path() {
+    let mut args = HashMap::new();
+    // Use a file that should exist on most systems
+    args.insert("path".to_string(), Value::String("/etc/hosts".to_string()));
+
+    // Without trust mode, should fail
+    let result_no_trust = ReadFile::new(false).call(&args);
+    assert!(result_no_trust.is_err());
+    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+
+    // With trust mode, should succeed (or fail with file not found, but not security error)
+    let result_trust = ReadFile::new(true).call(&args);
+    // Result might succeed or fail depending on file existence/permissions, but should not be a security error
+    if let Err(e) = result_trust {
+        assert!(!e.to_string().contains("Security"));
+    }
+}
+
+#[test]
+fn test_file_exists_trust_mode_allows_absolute_path() {
+    let mut args = HashMap::new();
+    args.insert("path".to_string(), Value::String("/etc".to_string()));
+
+    // Without trust mode, should fail
+    let result_no_trust = FileExists::new(false).call(&args);
+    assert!(result_no_trust.is_err());
+    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+
+    // With trust mode, should succeed
+    let result_trust = FileExists::new(true).call(&args);
+    assert!(result_trust.is_ok());
+    // /etc should exist on Unix systems
+    #[cfg(unix)]
+    assert_eq!(result_trust.unwrap().as_bool().unwrap(), true);
+}
+
+#[test]
+fn test_list_dir_trust_mode_allows_parent_directory() {
+    let test_dir = get_test_dir();
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let mut args = HashMap::new();
+    // Try to access parent directory
+    args.insert("path".to_string(), Value::String(format!("{}/..", test_dir)));
+
+    // Without trust mode, should fail
+    let result_no_trust = ListDir::new(false).call(&args);
+    assert!(result_no_trust.is_err());
+    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+
+    // With trust mode, should succeed
+    let result_trust = ListDir::new(true).call(&args);
+    assert!(result_trust.is_ok());
+
+    cleanup_test_dir(&test_dir);
+}
+
+#[test]
+fn test_glob_trust_mode_allows_absolute_path() {
+    let mut args = HashMap::new();
+    args.insert("pattern".to_string(), Value::String("/etc/host*".to_string()));
+
+    // Without trust mode, should fail
+    let result_no_trust = GlobFiles::new(false).call(&args);
+    assert!(result_no_trust.is_err());
+    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+
+    // With trust mode, should succeed
+    let result_trust = GlobFiles::new(true).call(&args);
+    assert!(result_trust.is_ok());
+}
+
+#[test]
+fn test_file_size_trust_mode_allows_absolute_path() {
+    let mut args = HashMap::new();
+    args.insert("path".to_string(), Value::String("/etc/hosts".to_string()));
+
+    // Without trust mode, should fail
+    let result_no_trust = FileSize::new(false).call(&args);
+    assert!(result_no_trust.is_err());
+    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+
+    // With trust mode, should succeed (or fail with file not found, but not security error)
+    let result_trust = FileSize::new(true).call(&args);
+    if let Err(e) = result_trust {
+        assert!(!e.to_string().contains("Security"));
+    }
+}
+
+#[test]
+fn test_file_modified_trust_mode_allows_absolute_path() {
+    let mut args = HashMap::new();
+    args.insert("path".to_string(), Value::String("/etc/hosts".to_string()));
+
+    // Without trust mode, should fail
+    let result_no_trust = FileModified::new(false).call(&args);
+    assert!(result_no_trust.is_err());
+    assert!(result_no_trust.err().unwrap().to_string().contains("Security"));
+
+    // With trust mode, should succeed (or fail with file not found, but not security error)
+    let result_trust = FileModified::new(true).call(&args);
+    if let Err(e) = result_trust {
+        assert!(!e.to_string().contains("Security"));
+    }
 }

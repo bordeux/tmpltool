@@ -67,6 +67,7 @@ use tera::Tera;
 /// # Arguments
 ///
 /// * `tera` - Mutable reference to a Tera instance
+/// * `trust_mode` - If true, disables filesystem security restrictions
 ///
 /// # Example
 ///
@@ -75,9 +76,9 @@ use tera::Tera;
 /// use tmpltool::functions::register_all;
 ///
 /// let mut tera = Tera::default();
-/// register_all(&mut tera);
+/// register_all(&mut tera, false);
 /// ```
-pub fn register_all(tera: &mut Tera) {
+pub fn register_all(tera: &mut Tera, trust_mode: bool) {
     // Register custom functions
     tera.register_function("filter_env", filter_env::FilterEnv);
 
@@ -93,11 +94,11 @@ pub fn register_all(tera: &mut Tera) {
     // Random string generation
     tera.register_function("random_string", random_string::RandomString);
 
-    // File system functions
-    tera.register_function("read_file", filesystem::ReadFile);
-    tera.register_function("file_exists", filesystem::FileExists);
-    tera.register_function("list_dir", filesystem::ListDir);
-    tera.register_function("glob", filesystem::GlobFiles);
-    tera.register_function("file_size", filesystem::FileSize);
-    tera.register_function("file_modified", filesystem::FileModified);
+    // File system functions (with trust mode)
+    tera.register_function("read_file", filesystem::ReadFile::new(trust_mode));
+    tera.register_function("file_exists", filesystem::FileExists::new(trust_mode));
+    tera.register_function("list_dir", filesystem::ListDir::new(trust_mode));
+    tera.register_function("glob", filesystem::GlobFiles::new(trust_mode));
+    tera.register_function("file_size", filesystem::FileSize::new(trust_mode));
+    tera.register_function("file_modified", filesystem::FileModified::new(trust_mode));
 }

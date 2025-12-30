@@ -104,6 +104,10 @@ cat template.txt | tmpltool [OPTIONS]
 
 - `-o, --output <FILE>` - Output file path (optional)
   - If not specified, output is printed to stdout
+- `--trust` - Trust mode: Allow filesystem functions to access absolute paths and parent directories (optional)
+  - **WARNING:** This disables security restrictions. Only use with trusted templates.
+  - Without this flag, filesystem functions are restricted to relative paths within the current working directory
+  - With this flag, you can access any file on the system (e.g., `/etc/passwd`, `../../secret.txt`)
 
 ### Input/Output Combinations
 
@@ -154,6 +158,33 @@ cat k8s-deployment.yaml.tmpl | tmpltool | kubectl apply -f -
 
 # Combine multiple templates
 cat header.tmpl body.tmpl footer.tmpl | tmpltool > complete.html
+```
+
+#### Using Trust Mode for System Files
+
+```bash
+# Create a template that reads system files
+cat > system_info.tmpl << 'EOF'
+# System Information
+
+## Hostname
+{{ read_file(path="/etc/hostname") }}
+
+## Hosts File (first 200 chars)
+{{ read_file(path="/etc/hosts") | truncate(length=200) }}
+
+## Files in /etc (first 10)
+{% for file in list_dir(path="/etc") | slice(end=10) %}
+- {{ file }}
+{% endfor %}
+EOF
+
+# Without --trust: Security error
+tmpltool system_info.tmpl
+# Error: Security: Absolute paths and parent directory (..) access are not allowed
+
+# With --trust: Works!
+tmpltool --trust system_info.tmpl -o system_info.md
 ```
 
 #### Using Environment Variables
@@ -1217,6 +1248,26 @@ All filesystem functions enforce the following security rules:
    ```
 
 These restrictions ensure templates can only access files in the current working directory and its subdirectories, preventing unauthorized access to system files or files outside the project.
+
+**Trust Mode:**
+
+You can bypass these security restrictions by using the `--trust` command-line flag:
+
+```bash
+# Without --trust: Security error
+tmpltool template.tmpl  # ERROR if template tries to read /etc/passwd
+
+# With --trust: Unrestricted access
+tmpltool --trust template.tmpl  # OK, can read any file
+```
+
+**When to use `--trust`:**
+- When you need to access system files or configuration outside your project
+- When reading files from absolute paths (e.g., `/etc/hosts`, `/var/log/app.log`)
+- When accessing parent directories (e.g., `../config/settings.yml`)
+- When you fully trust the template source and know what files it accesses
+
+**WARNING:** Only use `--trust` with templates you completely trust. Malicious templates could read sensitive files like SSH keys, passwords, or system configurations.
 
 ### Comments
 ```

@@ -23,6 +23,7 @@ fn test_filter_env() {
     let result = render_template(
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
+        false,
     );
 
     assert!(result.is_ok());

@@ -10,6 +10,7 @@ use tera::{Context, Tera};
 ///
 /// * `template_source` - Optional path to template file. If None, reads from stdin
 /// * `output_file` - Optional path to output file. If None, prints to stdout
+/// * `trust_mode` - If true, disables filesystem security restrictions
 ///
 /// # Returns
 ///
@@ -17,6 +18,7 @@ use tera::{Context, Tera};
 pub fn render_template(
     template_source: Option<&str>,
     output_file: Option<&str>,
+    trust_mode: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Read template from file or stdin
     let template_content = read_template(template_source)?;
@@ -25,7 +27,7 @@ pub fn render_template(
     let context = Context::new();
 
     // Render the template
-    let rendered = render(&template_content, &context)?;
+    let rendered = render(&template_content, &context, trust_mode)?;
 
     // Write output to file or stdout
     write_output(&rendered, output_file)?;
@@ -61,11 +63,11 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
 }
 
 /// Renders the template with the given context
-fn render(template_content: &str, context: &Context) -> Result<String, Box<dyn std::error::Error>> {
+fn render(template_content: &str, context: &Context, trust_mode: bool) -> Result<String, Box<dyn std::error::Error>> {
     let mut tera = Tera::default();
 
     // Register all custom functions
-    functions::register_all(&mut tera);
+    functions::register_all(&mut tera, trust_mode);
 
     tera.add_raw_template("template", template_content)
         .map_err(|e| format_tera_error("Failed to parse template", &e))?;
