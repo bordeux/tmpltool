@@ -1,0 +1,34 @@
+{
+  "name": "tmpltool",
+  "version": "0.0.0-development",
+  "description": "Fast and simple command-line template rendering tool using Tera templates",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "test:commit": "commitlint --from=HEAD~1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bordeux/tmpltool.git"
+  },
+  "keywords": [
+    "template",
+    "tera",
+    "cli",
+    "rust"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "husky": "^8.0.3"
+  },
+  "dependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "conventional-changelog-conventionalcommits": "^7.0.2",
+    "semantic-release": "^23.0.0"
+  }
+}

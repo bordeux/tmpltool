@@ -1,0 +1,3 @@
+Line 1: First
+Line 2: Second
+Line 3: Static content
