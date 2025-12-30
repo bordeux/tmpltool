@@ -1,3 +1,12 @@
+## [1.0.2](https://github.com/bordeux/tmpltool/compare/v1.0.1...v1.0.2) (2025-12-30)
+
+
+### Bug Fixes
+
+* **ci:** add package-lock.json for npm ci in GitHub Actions ([bb88780](https://github.com/bordeux/tmpltool/commit/bb88780916170b0adcac5e276cb5516b3e405233))
+* **ci:** disable husky git hooks in semantic-release workflow ([302cabe](https://github.com/bordeux/tmpltool/commit/302cabeecd1aee4a16e0e142033692c45eca84e6))
+* **ci:** properly capture semantic-release outputs for multi-platform builds ([8436bc1](https://github.com/bordeux/tmpltool/commit/8436bc19f8778203697a8c79a8cc2b0a4ff045bc))
+
 ## [1.0.1](https://github.com/bordeux/tmpltool/compare/v1.0.0...v1.0.1) (2025-12-30)
 
 
