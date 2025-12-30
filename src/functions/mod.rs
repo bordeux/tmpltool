@@ -21,6 +21,12 @@
 //! - `sha512(string)` - Calculate SHA512 hash of a string
 //! - `uuid()` - Generate a random UUID v4
 //! - `random_string(length, charset)` - Generate a random string with custom length and character set
+//! - `read_file(path)` - Read content from a file
+//! - `file_exists(path)` - Check if a file exists
+//! - `list_dir(path)` - List files in a directory
+//! - `glob(pattern)` - List files matching a glob pattern
+//! - `file_size(path)` - Get file size in bytes
+//! - `file_modified(path)` - Get file modification timestamp
 //!
 //! # Adding Custom Functions
 //!
@@ -45,6 +51,7 @@
 //! ```
 
 pub mod filter_env;
+pub mod filesystem;
 pub mod hash;
 pub mod random_string;
 pub mod uuid_gen;
@@ -85,4 +92,12 @@ pub fn register_all(tera: &mut Tera) {
 
     // Random string generation
     tera.register_function("random_string", random_string::RandomString);
+
+    // File system functions
+    tera.register_function("read_file", filesystem::ReadFile);
+    tera.register_function("file_exists", filesystem::FileExists);
+    tera.register_function("list_dir", filesystem::ListDir);
+    tera.register_function("glob", filesystem::GlobFiles);
+    tera.register_function("file_size", filesystem::FileSize);
+    tera.register_function("file_modified", filesystem::FileModified);
 }

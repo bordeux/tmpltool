@@ -16,6 +16,7 @@ A fast and simple command-line template rendering tool using [Tera](https://keat
 - Cryptographic hash functions: `md5()`, `sha1()`, `sha256()`, `sha512()`
 - UUID generation with `uuid()` function
 - Random string generation with `random_string()` function
+- Filesystem functions: `read_file()`, `file_exists()`, `list_dir()`, `glob()`, `file_size()`, `file_modified()`
 - Output to file or stdout (for piping)
 - Simple CLI interface
 - Single binary executable
@@ -689,6 +690,8 @@ This example demonstrates:
 - ✅ String operations: concatenation and formatting
 - ✅ Complex logic: nested conditions and loops
 
+**Note:** The comprehensive example does not include filesystem functions. For filesystem function examples, see the [Filesystem Functions](#filesystem-functions) section.
+
 ## Examples
 
 The `examples/` directory contains ready-to-use template examples demonstrating various features:
@@ -966,6 +969,255 @@ security:
 
 See [examples/hash-crypto.tmpl](examples/hash-crypto.tmpl) for a complete example.
 
+### Filesystem Functions
+
+tmpltool provides secure filesystem functions for reading files and querying file information within templates. All filesystem functions enforce security restrictions to prevent unauthorized access.
+
+**Security Note:** All filesystem functions only allow access to relative paths within the current working directory. Absolute paths (starting with `/`) and parent directory traversal (`..`) are explicitly blocked.
+
+#### `read_file(path)`
+Reads the content of a file into the template.
+
+**Arguments:**
+- `path` (required) - Relative path to the file to read
+
+**Returns:** String containing the file content
+
+**Examples:**
+```
+# Read a configuration file
+{% set config = read_file(path="config.txt") %}
+{{ config }}
+
+# Read and include file content
+License:
+{{ read_file(path="LICENSE") }}
+
+# Use with filters
+First 100 chars: {{ read_file(path="README.md") | truncate(length=100) }}
+```
+
+#### `file_exists(path)`
+Checks if a file exists at the specified path.
+
+**Arguments:**
+- `path` (required) - Relative path to check
+
+**Returns:** Boolean (`true` if file exists, `false` otherwise)
+
+**Examples:**
+```
+# Conditional file inclusion
+{% if file_exists(path="custom-config.txt") %}
+Custom config found!
+{{ read_file(path="custom-config.txt") }}
+{% else %}
+Using default configuration
+{% endif %}
+
+# Check multiple files
+{% set has_readme = file_exists(path="README.md") %}
+{% set has_license = file_exists(path="LICENSE") %}
+Documentation: {% if has_readme %}✓{% else %}✗{% endif %}
+License: {% if has_license %}✓{% else %}✗{% endif %}
+```
+
+#### `list_dir(path)`
+Lists all files and directories in a directory.
+
+**Arguments:**
+- `path` (required) - Relative path to the directory
+
+**Returns:** Array of filenames (sorted alphabetically)
+
+**Examples:**
+```
+# List files in a directory
+Files in data/:
+{% for file in list_dir(path="data") %}
+  - {{ file }}
+{% endfor %}
+
+# Count files
+{% set files = list_dir(path="templates") %}
+Total templates: {{ files | length }}
+
+# Filter by extension
+{% set all_files = list_dir(path="src") %}
+Rust files:
+{% for file in all_files %}
+{% if file is ending_with(".rs") %}
+  - {{ file }}
+{% endif %}
+{% endfor %}
+```
+
+#### `glob(pattern)`
+Lists all files matching a glob pattern.
+
+**Arguments:**
+- `pattern` (required) - Glob pattern to match files
+  - `*` matches any characters
+  - `?` matches exactly one character
+  - `**` matches any number of directories
+
+**Returns:** Array of file paths (sorted alphabetically)
+
+**Examples:**
+```
+# Find all text files
+Text files:
+{% for file in glob(pattern="*.txt") %}
+  - {{ file }}
+{% endfor %}
+
+# Find files in subdirectories
+All Rust files:
+{% for file in glob(pattern="src/**/*.rs") %}
+  - {{ file }}
+{% endfor %}
+
+# Match specific patterns
+Config files:
+{% for file in glob(pattern="config*.{json,yaml,toml}") %}
+  - {{ file }}
+{% endfor %}
+
+# Use in conditionals
+{% set test_files = glob(pattern="tests/**/*.rs") %}
+{% if test_files | length > 0 %}
+Found {{ test_files | length }} test files
+{% endif %}
+```
+
+#### `file_size(path)`
+Gets the size of a file in bytes.
+
+**Arguments:**
+- `path` (required) - Relative path to the file
+
+**Returns:** File size as a number (in bytes)
+
+**Examples:**
+```
+# Get file size
+README size: {{ file_size(path="README.md") }} bytes
+
+# Format with built-in filter
+README size: {{ file_size(path="README.md") | filesizeformat }}
+
+# Compare file sizes
+{% set size_a = file_size(path="file_a.txt") %}
+{% set size_b = file_size(path="file_b.txt") %}
+{% if size_a > size_b %}
+file_a.txt is larger
+{% else %}
+file_b.txt is larger
+{% endif %}
+
+# Calculate total size
+{% set files = glob(pattern="data/*.json") %}
+{% set total_size = 0 %}
+{% for file in files %}
+{% set total_size = total_size + file_size(path=file) %}
+{% endfor %}
+Total data size: {{ total_size | filesizeformat }}
+```
+
+#### `file_modified(path)`
+Gets the last modification time of a file as a Unix timestamp (seconds since epoch).
+
+**Arguments:**
+- `path` (required) - Relative path to the file
+
+**Returns:** Unix timestamp (number of seconds since January 1, 1970)
+
+**Examples:**
+```
+# Get modification timestamp
+Last modified: {{ file_modified(path="config.json") }}
+
+# Format with date filter
+{% set timestamp = file_modified(path="README.md") %}
+Last updated: {{ timestamp | date(format="%Y-%m-%d %H:%M:%S") }}
+
+# Check if file is recent
+{% set mod_time = file_modified(path="cache.dat") %}
+{% set now_time = now() %}
+{% set age_seconds = now_time - mod_time %}
+{% if age_seconds < 3600 %}
+Cache is fresh (less than 1 hour old)
+{% else %}
+Cache is stale ({{ age_seconds / 3600 }} hours old)
+{% endif %}
+
+# Find most recently modified file
+{% set files = glob(pattern="logs/*.log") %}
+{% set newest_time = 0 %}
+{% set newest_file = "" %}
+{% for file in files %}
+{% set mod_time = file_modified(path=file) %}
+{% if mod_time > newest_time %}
+{% set newest_time = mod_time %}
+{% set newest_file = file %}
+{% endif %}
+{% endfor %}
+Most recent log: {{ newest_file }}
+```
+
+**Practical Example - Build Report:**
+```
+# Build Report
+Generated: {{ now() | date(format="%Y-%m-%d %H:%M:%S") }}
+
+## Source Files
+{% set rs_files = glob(pattern="src/**/*.rs") %}
+Total Rust files: {{ rs_files | length }}
+
+{% for file in rs_files %}
+- {{ file }}
+  Size: {{ file_size(path=file) | filesizeformat }}
+  Modified: {{ file_modified(path=file) | date(format="%Y-%m-%d") }}
+{% endfor %}
+
+## Configuration
+{% if file_exists(path="Cargo.toml") %}
+✓ Cargo.toml found ({{ file_size(path="Cargo.toml") }} bytes)
+{% else %}
+✗ Cargo.toml missing
+{% endif %}
+
+## Tests
+{% set test_files = glob(pattern="tests/**/*.rs") %}
+Test files: {{ test_files | length }}
+{% for test in test_files %}
+- {{ test }}
+{% endfor %}
+```
+
+**Security Restrictions:**
+
+All filesystem functions enforce the following security rules:
+
+1. **No Absolute Paths** - Paths starting with `/` are rejected
+   ```
+   {{ read_file(path="/etc/passwd") }}  # ✗ ERROR: Security violation
+   ```
+
+2. **No Parent Directory Traversal** - Paths containing `..` are rejected
+   ```
+   {{ read_file(path="../../secret.txt") }}  # ✗ ERROR: Security violation
+   ```
+
+3. **Relative Paths Only** - Only files within the current working directory are accessible
+   ```
+   {{ read_file(path="config.txt") }}        # ✓ OK
+   {{ read_file(path="data/file.txt") }}     # ✓ OK
+   {{ file_exists(path="subdir/test.txt") }} # ✓ OK
+   ```
+
+These restrictions ensure templates can only access files in the current working directory and its subdirectories, preventing unauthorized access to system files or files outside the project.
+
 ### Comments
 ```
 {# This is a comment #}
@@ -1235,6 +1487,15 @@ The project includes comprehensive test coverage. **All tests are located in `te
 - `test_stdout_output.rs` - Stdout output functionality
 - `test_direct_var_access_fails.rs` - Direct variable access fails (security test)
 
+**Unit Tests in `tests/`** (58 tests across multiple test files):
+- `test_filter_env_unit.rs` - Environment variable filtering (6 tests)
+- `test_hash_unit.rs` - Hash functions (6 tests)
+- `test_uuid_unit.rs` - UUID generation (3 tests)
+- `test_random_string_unit.rs` - Random string generation (11 tests)
+- `test_filesystem_unit.rs` - Filesystem functions (23 tests)
+- `test_hash_crypto_functions.rs` - Hash and crypto integration (17 tests)
+- `test_comprehensive.rs` - Comprehensive template validation (2 tests)
+
 **Test Infrastructure:**
 - `common.rs` - Shared test utilities and fixture helpers
 - `fixtures/` - Test fixtures (templates and expected outputs)
@@ -1242,7 +1503,7 @@ The project includes comprehensive test coverage. **All tests are located in `te
 **Documentation Tests** (2 tests):
 - Library documentation examples
 
-Total: **13 tests** covering integration and documentation scenarios.
+Total: **71 tests** covering integration, unit tests, and documentation scenarios.
 
 #### Adding New Integration Tests
 
@@ -1384,6 +1645,13 @@ The project uses minimal dependencies:
   - Provides built-in filters: `slugify`, `date`, `filesizeformat`, `urlencode`, etc.
   - Provides built-in functions: `get_env()`, `now()`, `get_random()`
 - **[clap](https://crates.io/crates/clap)** (v4.x) - Command-line argument parsing
+- **[regex](https://crates.io/crates/regex)** (v1.x) - Regular expressions for pattern matching
+- **[md-5](https://crates.io/crates/md-5)** (v0.10) - MD5 hash implementation
+- **[sha1](https://crates.io/crates/sha1)** (v0.10) - SHA1 hash implementation
+- **[sha2](https://crates.io/crates/sha2)** (v0.10) - SHA256 and SHA512 hash implementations
+- **[uuid](https://crates.io/crates/uuid)** (v1.x) - UUID generation
+- **[rand](https://crates.io/crates/rand)** (v0.8) - Random number generation
+- **[glob](https://crates.io/crates/glob)** (v0.3) - Glob pattern matching for filesystem operations
 
 To update dependencies:
 
