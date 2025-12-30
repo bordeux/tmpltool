@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/bordeux/tmpltool/discussions
+    about: Ask questions or discuss ideas in GitHub Discussions
+  - name: Tera Template Engine Docs
+    url: https://keats.github.io/tera/docs/
+    about: Official Tera template engine documentation

@@ -2,6 +2,12 @@
 name = "tmpltool"
 version = "1.2.0"
 edition = "2024"
+license = "MIT"
+description = "A fast and simple command-line template rendering tool using Tera templates with environment variables"
+repository = "https://github.com/bordeux/tmpltool"
+readme = "README.md"
+keywords = ["template", "tera", "cli", "environment", "variables"]
+categories = ["command-line-utilities", "template-engine"]
 
 [dependencies]
 tera = { version = "1", features = ["builtins"] }
