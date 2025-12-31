@@ -1,80 +1,81 @@
-use std::collections::HashMap;
+use minijinja::value::Kwargs;
 use std::fs;
 use std::path::PathBuf;
-use tera::{Function, Value};
 use tmpltool::TemplateContext;
 use tmpltool::functions::data_parsing::{
-    ParseJson, ParseToml, ParseYaml, ReadJsonFile, ReadTomlFile, ReadYamlFile,
+    create_read_json_file_fn, create_read_toml_file_fn, create_read_yaml_file_fn, parse_json_fn,
+    parse_toml_fn, parse_yaml_fn,
 };
+use std::sync::Arc;
+
+// Helper to create kwargs for testing
+fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
+    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+}
 
 // ========== parse_json tests ==========
 
 #[test]
 fn test_parse_json_simple_object() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String(r#"{"name": "John", "age": 30}"#.to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", r#"{"name": "John", "age": 30}"#)]);
 
-    let result = ParseJson.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert_eq!(obj.get("name").unwrap().as_str().unwrap(), "John");
-    assert_eq!(obj.get("age").unwrap().as_u64().unwrap(), 30);
+    let result = parse_json_fn(kwargs).unwrap();
+    assert_eq!(
+        result.get_attr("name").unwrap().as_str().unwrap(),
+        "John"
+    );
+    assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
 
 #[test]
 fn test_parse_json_array() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String(r#"[1, 2, 3, 4, 5]"#.to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", r#"[1, 2, 3, 4, 5]"#)]);
 
-    let result = ParseJson.call(&args).unwrap();
-    let arr = result.as_array().unwrap();
-    assert_eq!(arr.len(), 5);
-    assert_eq!(arr[0].as_u64().unwrap(), 1);
-    assert_eq!(arr[4].as_u64().unwrap(), 5);
+    let result = parse_json_fn(kwargs).unwrap();
+    assert_eq!(result.len(), Some(5));
+    assert_eq!(
+        result.get_item(&minijinja::Value::from(0))
+            .unwrap()
+            .as_usize(),
+        Some(1)
+    );
+    assert_eq!(
+        result.get_item(&minijinja::Value::from(4))
+            .unwrap()
+            .as_usize(),
+        Some(5)
+    );
 }
 
 #[test]
 fn test_parse_json_nested() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String(r#"{"user": {"name": "Alice", "settings": {"theme": "dark"}}}"#.to_string()),
-    );
+    let kwargs = create_kwargs(vec![(
+        "string",
+        r#"{"user": {"name": "Alice", "settings": {"theme": "dark"}}}"#,
+    )]);
 
-    let result = ParseJson.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    let user = obj.get("user").unwrap().as_object().unwrap();
-    let settings = user.get("settings").unwrap().as_object().unwrap();
-    assert_eq!(settings.get("theme").unwrap().as_str().unwrap(), "dark");
+    let result = parse_json_fn(kwargs).unwrap();
+    let user = result.get_attr("user").unwrap();
+    let settings = user.get_attr("settings").unwrap();
+    assert_eq!(settings.get_attr("theme").unwrap().as_str().unwrap(), "dark");
 }
 
 #[test]
 fn test_parse_json_invalid() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String(r#"{"invalid": json"#.to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", r#"{"invalid": json"#)]);
 
-    let result = ParseJson.call(&args);
+    let result = parse_json_fn(kwargs);
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to parse JSON")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Failed to parse JSON"));
 }
 
 #[test]
 fn test_parse_json_missing_argument() {
-    let args = HashMap::new();
-    let result = ParseJson.call(&args);
+    let kwargs = create_kwargs(vec![]);
+    let result = parse_json_fn(kwargs);
     assert!(result.is_err());
 }
 
@@ -82,74 +83,74 @@ fn test_parse_json_missing_argument() {
 
 #[test]
 fn test_parse_yaml_simple_object() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("name: John\nage: 30".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", "name: John\nage: 30")]);
 
-    let result = ParseYaml.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert_eq!(obj.get("name").unwrap().as_str().unwrap(), "John");
-    assert_eq!(obj.get("age").unwrap().as_u64().unwrap(), 30);
+    let result = parse_yaml_fn(kwargs).unwrap();
+    assert_eq!(
+        result.get_attr("name").unwrap().as_str().unwrap(),
+        "John"
+    );
+    assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
 
 #[test]
 fn test_parse_yaml_array() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("- apple\n- banana\n- cherry".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", "- apple\n- banana\n- cherry")]);
 
-    let result = ParseYaml.call(&args).unwrap();
-    let arr = result.as_array().unwrap();
-    assert_eq!(arr.len(), 3);
-    assert_eq!(arr[0].as_str().unwrap(), "apple");
-    assert_eq!(arr[2].as_str().unwrap(), "cherry");
+    let result = parse_yaml_fn(kwargs).unwrap();
+    assert_eq!(result.len(), Some(3));
+    assert_eq!(
+        result.get_item(&minijinja::Value::from(0))
+            .unwrap()
+            .as_str()
+            .unwrap(),
+        "apple"
+    );
+    assert_eq!(
+        result.get_item(&minijinja::Value::from(2))
+            .unwrap()
+            .as_str()
+            .unwrap(),
+        "cherry"
+    );
 }
 
 #[test]
 fn test_parse_yaml_nested() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String(
-            "user:\n  name: Alice\n  settings:\n    theme: dark\n    notifications: true"
-                .to_string(),
-        ),
-    );
+    let kwargs = create_kwargs(vec![(
+        "string",
+        "user:\n  name: Alice\n  settings:\n    theme: dark\n    notifications: true",
+    )]);
 
-    let result = ParseYaml.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    let user = obj.get("user").unwrap().as_object().unwrap();
-    let settings = user.get("settings").unwrap().as_object().unwrap();
-    assert_eq!(settings.get("theme").unwrap().as_str().unwrap(), "dark");
-    assert!(settings.get("notifications").unwrap().as_bool().unwrap());
+    let result = parse_yaml_fn(kwargs).unwrap();
+    let user = result.get_attr("user").unwrap();
+    let settings = user.get_attr("settings").unwrap();
+    assert_eq!(
+        settings.get_attr("theme").unwrap().as_str().unwrap(),
+        "dark"
+    );
+    assert!(settings.get_attr("notifications").unwrap().is_true());
 }
 
 #[test]
 fn test_parse_yaml_invalid() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("invalid:\n  - yaml\n  missing: indentation".to_string()),
-    );
+    let kwargs = create_kwargs(vec![(
+        "string",
+        "invalid:\n  - yaml\n  missing: indentation",
+    )]);
 
-    let result = ParseYaml.call(&args);
+    let result = parse_yaml_fn(kwargs);
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to parse YAML")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Failed to parse YAML"));
 }
 
 #[test]
 fn test_parse_yaml_missing_argument() {
-    let args = HashMap::new();
-    let result = ParseYaml.call(&args);
+    let kwargs = create_kwargs(vec![]);
+    let result = parse_yaml_fn(kwargs);
     assert!(result.is_err());
 }
 
@@ -157,72 +158,71 @@ fn test_parse_yaml_missing_argument() {
 
 #[test]
 fn test_parse_toml_simple() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("name = \"John\"\nage = 30".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", "name = \"John\"\nage = 30")]);
 
-    let result = ParseToml.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert_eq!(obj.get("name").unwrap().as_str().unwrap(), "John");
-    assert_eq!(obj.get("age").unwrap().as_u64().unwrap(), 30);
+    let result = parse_toml_fn(kwargs).unwrap();
+    assert_eq!(
+        result.get_attr("name").unwrap().as_str().unwrap(),
+        "John"
+    );
+    assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
 
 #[test]
 fn test_parse_toml_array() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("colors = [\"red\", \"green\", \"blue\"]".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", "colors = [\"red\", \"green\", \"blue\"]")]);
 
-    let result = ParseToml.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    let colors = obj.get("colors").unwrap().as_array().unwrap();
-    assert_eq!(colors.len(), 3);
-    assert_eq!(colors[0].as_str().unwrap(), "red");
-    assert_eq!(colors[2].as_str().unwrap(), "blue");
+    let result = parse_toml_fn(kwargs).unwrap();
+    let colors = result.get_attr("colors").unwrap();
+    assert_eq!(colors.len(), Some(3));
+    assert_eq!(
+        colors
+            .get_item(&minijinja::Value::from(0))
+            .unwrap()
+            .as_str()
+            .unwrap(),
+        "red"
+    );
+    assert_eq!(
+        colors
+            .get_item(&minijinja::Value::from(2))
+            .unwrap()
+            .as_str()
+            .unwrap(),
+        "blue"
+    );
 }
 
 #[test]
 fn test_parse_toml_table() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("[database]\nhost = \"localhost\"\nport = 5432\nenabled = true".to_string()),
-    );
+    let kwargs = create_kwargs(vec![(
+        "string",
+        "[database]\nhost = \"localhost\"\nport = 5432\nenabled = true",
+    )]);
 
-    let result = ParseToml.call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    let db = obj.get("database").unwrap().as_object().unwrap();
-    assert_eq!(db.get("host").unwrap().as_str().unwrap(), "localhost");
-    assert_eq!(db.get("port").unwrap().as_u64().unwrap(), 5432);
-    assert!(db.get("enabled").unwrap().as_bool().unwrap());
+    let result = parse_toml_fn(kwargs).unwrap();
+    let db = result.get_attr("database").unwrap();
+    assert_eq!(db.get_attr("host").unwrap().as_str().unwrap(), "localhost");
+    assert_eq!(db.get_attr("port").unwrap().as_usize(), Some(5432));
+    assert!(db.get_attr("enabled").unwrap().is_true());
 }
 
 #[test]
 fn test_parse_toml_invalid() {
-    let mut args = HashMap::new();
-    args.insert(
-        "string".to_string(),
-        Value::String("invalid toml = [missing quote".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("string", "invalid toml = [missing quote")]);
 
-    let result = ParseToml.call(&args);
+    let result = parse_toml_fn(kwargs);
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to parse TOML")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Failed to parse TOML"));
 }
 
 #[test]
 fn test_parse_toml_missing_argument() {
-    let args = HashMap::new();
-    let result = ParseToml.call(&args);
+    let kwargs = create_kwargs(vec![]);
+    let result = parse_toml_fn(kwargs);
     assert!(result.is_err());
 }
 
@@ -235,17 +235,12 @@ fn test_read_json_file_success() {
     let json_file = temp_dir.join("test_data.json");
     fs::write(&json_file, r#"{"name": "Test", "value": 42}"#).unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("test_data.json".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_json_file = create_read_json_file_fn(context);
 
-    let result = ReadJsonFile::new(context).call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert_eq!(obj.get("name").unwrap().as_str().unwrap(), "Test");
-    assert_eq!(obj.get("value").unwrap().as_u64().unwrap(), 42);
+    let result = read_json_file("test_data.json".to_string()).unwrap();
+    assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "Test");
+    assert_eq!(result.get_attr("value").unwrap().as_usize(), Some(42));
 
     // Cleanup
     fs::remove_file(&json_file).unwrap();
@@ -254,21 +249,12 @@ fn test_read_json_file_success() {
 #[test]
 fn test_read_json_file_not_found() {
     let temp_dir = std::env::temp_dir();
-    let context = TemplateContext::new(temp_dir, false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("nonexistent.json".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir, false));
+    let read_json_file = create_read_json_file_fn(context);
 
-    let result = ReadJsonFile::new(context).call(&args);
+    let result = read_json_file("nonexistent.json".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to read file")
-    );
+    assert!(result.unwrap_err().to_string().contains("Failed to read file"));
 }
 
 #[test]
@@ -278,21 +264,15 @@ fn test_read_json_file_invalid_json() {
     let json_file = temp_dir.join("invalid.json");
     fs::write(&json_file, "not valid json").unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("invalid.json".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_json_file = create_read_json_file_fn(context);
 
-    let result = ReadJsonFile::new(context).call(&args);
+    let result = read_json_file("invalid.json".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to parse JSON")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Failed to parse JSON"));
 
     // Cleanup
     fs::remove_file(&json_file).unwrap();
@@ -300,37 +280,28 @@ fn test_read_json_file_invalid_json() {
 
 #[test]
 fn test_read_json_file_security_absolute_path() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("/etc/passwd".to_string()));
+    let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
+    let read_json_file = create_read_json_file_fn(context);
 
-    let result = ReadJsonFile::new(context).call(&args);
+    let result = read_json_file("/etc/passwd".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Absolute paths are not allowed")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Absolute paths are not allowed"));
 }
 
 #[test]
 fn test_read_json_file_security_parent_traversal() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("../../../etc/passwd".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
+    let read_json_file = create_read_json_file_fn(context);
 
-    let result = ReadJsonFile::new(context).call(&args);
+    let result = read_json_file("../../../etc/passwd".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Parent directory (..) traversal")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Parent directory (..) traversal"));
 }
 
 #[test]
@@ -340,27 +311,14 @@ fn test_read_json_file_trust_mode_allows_absolute_path() {
     let json_file = temp_dir.join("trust_test.json");
     fs::write(&json_file, r#"{"trusted": true}"#).unwrap();
 
-    let context = TemplateContext::new(PathBuf::from("."), true);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String(json_file.to_string_lossy().to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(PathBuf::from("."), true));
+    let read_json_file = create_read_json_file_fn(context);
 
-    let result = ReadJsonFile::new(context).call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert!(obj.get("trusted").unwrap().as_bool().unwrap());
+    let result = read_json_file(json_file.to_string_lossy().to_string()).unwrap();
+    assert!(result.get_attr("trusted").unwrap().is_true());
 
     // Cleanup
     fs::remove_file(&json_file).unwrap();
-}
-
-#[test]
-fn test_read_json_file_missing_argument() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let args = HashMap::new();
-    let result = ReadJsonFile::new(context).call(&args);
-    assert!(result.is_err());
 }
 
 // ========== read_yaml_file tests ==========
@@ -372,17 +330,12 @@ fn test_read_yaml_file_success() {
     let yaml_file = temp_dir.join("test_data.yaml");
     fs::write(&yaml_file, "name: Test\nvalue: 42").unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("test_data.yaml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = ReadYamlFile::new(context).call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert_eq!(obj.get("name").unwrap().as_str().unwrap(), "Test");
-    assert_eq!(obj.get("value").unwrap().as_u64().unwrap(), 42);
+    let result = read_yaml_file("test_data.yaml".to_string()).unwrap();
+    assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "Test");
+    assert_eq!(result.get_attr("value").unwrap().as_usize(), Some(42));
 
     // Cleanup
     fs::remove_file(&yaml_file).unwrap();
@@ -391,21 +344,12 @@ fn test_read_yaml_file_success() {
 #[test]
 fn test_read_yaml_file_not_found() {
     let temp_dir = std::env::temp_dir();
-    let context = TemplateContext::new(temp_dir, false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("nonexistent.yaml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir, false));
+    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = ReadYamlFile::new(context).call(&args);
+    let result = read_yaml_file("nonexistent.yaml".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to read file")
-    );
+    assert!(result.unwrap_err().to_string().contains("Failed to read file"));
 }
 
 #[test]
@@ -415,14 +359,18 @@ fn test_read_yaml_file_array() {
     let yaml_file = temp_dir.join("array.yaml");
     fs::write(&yaml_file, "- apple\n- banana\n- cherry").unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("array.yaml".to_string()));
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = ReadYamlFile::new(context).call(&args).unwrap();
-    let arr = result.as_array().unwrap();
-    assert_eq!(arr.len(), 3);
-    assert_eq!(arr[0].as_str().unwrap(), "apple");
+    let result = read_yaml_file("array.yaml".to_string()).unwrap();
+    assert_eq!(result.len(), Some(3));
+    assert_eq!(
+        result.get_item(&minijinja::Value::from(0))
+            .unwrap()
+            .as_str()
+            .unwrap(),
+        "apple"
+    );
 
     // Cleanup
     fs::remove_file(&yaml_file).unwrap();
@@ -430,29 +378,15 @@ fn test_read_yaml_file_array() {
 
 #[test]
 fn test_read_yaml_file_security_absolute_path() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("/etc/config.yaml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
+    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = ReadYamlFile::new(context).call(&args);
+    let result = read_yaml_file("/etc/config.yaml".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Absolute paths are not allowed")
-    );
-}
-
-#[test]
-fn test_read_yaml_file_missing_argument() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let args = HashMap::new();
-    let result = ReadYamlFile::new(context).call(&args);
-    assert!(result.is_err());
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Absolute paths are not allowed"));
 }
 
 // ========== read_toml_file tests ==========
@@ -464,17 +398,12 @@ fn test_read_toml_file_success() {
     let toml_file = temp_dir.join("test_data.toml");
     fs::write(&toml_file, "name = \"Test\"\nvalue = 42").unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("test_data.toml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = ReadTomlFile::new(context).call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    assert_eq!(obj.get("name").unwrap().as_str().unwrap(), "Test");
-    assert_eq!(obj.get("value").unwrap().as_u64().unwrap(), 42);
+    let result = read_toml_file("test_data.toml".to_string()).unwrap();
+    assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "Test");
+    assert_eq!(result.get_attr("value").unwrap().as_usize(), Some(42));
 
     // Cleanup
     fs::remove_file(&toml_file).unwrap();
@@ -483,21 +412,12 @@ fn test_read_toml_file_success() {
 #[test]
 fn test_read_toml_file_not_found() {
     let temp_dir = std::env::temp_dir();
-    let context = TemplateContext::new(temp_dir, false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("nonexistent.toml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir, false));
+    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = ReadTomlFile::new(context).call(&args);
+    let result = read_toml_file("nonexistent.toml".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to read file")
-    );
+    assert!(result.unwrap_err().to_string().contains("Failed to read file"));
 }
 
 #[test]
@@ -507,15 +427,13 @@ fn test_read_toml_file_table() {
     let toml_file = temp_dir.join("config.toml");
     fs::write(&toml_file, "[database]\nhost = \"localhost\"\nport = 5432").unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert("path".to_string(), Value::String("config.toml".to_string()));
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = ReadTomlFile::new(context).call(&args).unwrap();
-    let obj = result.as_object().unwrap();
-    let db = obj.get("database").unwrap().as_object().unwrap();
-    assert_eq!(db.get("host").unwrap().as_str().unwrap(), "localhost");
-    assert_eq!(db.get("port").unwrap().as_u64().unwrap(), 5432);
+    let result = read_toml_file("config.toml".to_string()).unwrap();
+    let db = result.get_attr("database").unwrap();
+    assert_eq!(db.get_attr("host").unwrap().as_str().unwrap(), "localhost");
+    assert_eq!(db.get_attr("port").unwrap().as_usize(), Some(5432));
 
     // Cleanup
     fs::remove_file(&toml_file).unwrap();
@@ -528,21 +446,15 @@ fn test_read_toml_file_invalid_toml() {
     let toml_file = temp_dir.join("invalid.toml");
     fs::write(&toml_file, "invalid = [missing quote").unwrap();
 
-    let context = TemplateContext::new(temp_dir.clone(), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("invalid.toml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
+    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = ReadTomlFile::new(context).call(&args);
+    let result = read_toml_file("invalid.toml".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Failed to parse TOML")
-    );
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Failed to parse TOML"));
 
     // Cleanup
     fs::remove_file(&toml_file).unwrap();
@@ -550,27 +462,13 @@ fn test_read_toml_file_invalid_toml() {
 
 #[test]
 fn test_read_toml_file_security_parent_traversal() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let mut args = HashMap::new();
-    args.insert(
-        "path".to_string(),
-        Value::String("../../config.toml".to_string()),
-    );
+    let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
+    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = ReadTomlFile::new(context).call(&args);
+    let result = read_toml_file("../../config.toml".to_string());
     assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Parent directory (..) traversal")
-    );
-}
-
-#[test]
-fn test_read_toml_file_missing_argument() {
-    let context = TemplateContext::new(PathBuf::from("."), false);
-    let args = HashMap::new();
-    let result = ReadTomlFile::new(context).call(&args);
-    assert!(result.is_err());
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Parent directory (..) traversal"));
 }

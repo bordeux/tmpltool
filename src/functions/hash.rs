@@ -1,85 +1,85 @@
 /// Hash functions for cryptographic operations
 ///
 /// Provides MD5, SHA1, SHA256, and SHA512 hashing functions.
-use std::collections::HashMap;
-use tera::{Function, Result, Value, to_value};
+use minijinja::{Error, ErrorKind, Value};
+use minijinja::value::Kwargs;
 
 /// MD5 hash function
-pub struct Md5;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ md5(string="hello") }}
+/// ```
+pub fn md5_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    use md5::{Digest, Md5 as Md5Hasher};
 
-impl Function for Md5 {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        use md5::{Digest, Md5 as Md5Hasher};
+    let string: String = kwargs.get("string")?;
 
-        let input = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("md5 requires a 'string' argument (e.g., string=\"hello\")")
-        })?;
+    let mut hasher = Md5Hasher::new();
+    hasher.update(string.as_bytes());
+    let result = hasher.finalize();
+    let hash = format!("{:x}", result);
 
-        let mut hasher = Md5Hasher::new();
-        hasher.update(input.as_bytes());
-        let result = hasher.finalize();
-        let hash = format!("{:x}", result);
-
-        to_value(&hash).map_err(|e| tera::Error::msg(format!("Failed to convert hash: {}", e)))
-    }
+    Ok(Value::from(hash))
 }
 
 /// SHA1 hash function
-pub struct Sha1;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ sha1(string="hello") }}
+/// ```
+pub fn sha1_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    use sha1::{Digest, Sha1 as Sha1Hasher};
 
-impl Function for Sha1 {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        use sha1::{Digest, Sha1 as Sha1Hasher};
+    let string: String = kwargs.get("string")?;
 
-        let input = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("sha1 requires a 'string' argument (e.g., string=\"hello\")")
-        })?;
+    let mut hasher = Sha1Hasher::new();
+    hasher.update(string.as_bytes());
+    let result = hasher.finalize();
+    let hash = format!("{:x}", result);
 
-        let mut hasher = Sha1Hasher::new();
-        hasher.update(input.as_bytes());
-        let result = hasher.finalize();
-        let hash = format!("{:x}", result);
-
-        to_value(&hash).map_err(|e| tera::Error::msg(format!("Failed to convert hash: {}", e)))
-    }
+    Ok(Value::from(hash))
 }
 
 /// SHA256 hash function
-pub struct Sha256;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ sha256(string="hello") }}
+/// ```
+pub fn sha256_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    use sha2::{Digest, Sha256 as Sha256Hasher};
 
-impl Function for Sha256 {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        use sha2::{Digest, Sha256 as Sha256Hasher};
+    let string: String = kwargs.get("string")?;
 
-        let input = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("sha256 requires a 'string' argument (e.g., string=\"hello\")")
-        })?;
+    let mut hasher = Sha256Hasher::new();
+    hasher.update(string.as_bytes());
+    let result = hasher.finalize();
+    let hash = format!("{:x}", result);
 
-        let mut hasher = Sha256Hasher::new();
-        hasher.update(input.as_bytes());
-        let result = hasher.finalize();
-        let hash = format!("{:x}", result);
-
-        to_value(&hash).map_err(|e| tera::Error::msg(format!("Failed to convert hash: {}", e)))
-    }
+    Ok(Value::from(hash))
 }
 
 /// SHA512 hash function
-pub struct Sha512;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ sha512(string="hello") }}
+/// ```
+pub fn sha512_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    use sha2::{Digest, Sha512 as Sha512Hasher};
 
-impl Function for Sha512 {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        use sha2::{Digest, Sha512 as Sha512Hasher};
+    let string: String = kwargs.get("string")?;
 
-        let input = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("sha512 requires a 'string' argument (e.g., string=\"hello\")")
-        })?;
+    let mut hasher = Sha512Hasher::new();
+    hasher.update(string.as_bytes());
+    let result = hasher.finalize();
+    let hash = format!("{:x}", result);
 
-        let mut hasher = Sha512Hasher::new();
-        hasher.update(input.as_bytes());
-        let result = hasher.finalize();
-        let hash = format!("{:x}", result);
-
-        to_value(&hash).map_err(|e| tera::Error::msg(format!("Failed to convert hash: {}", e)))
-    }
+    Ok(Value::from(hash))
 }

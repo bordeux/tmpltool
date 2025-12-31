@@ -1,15 +1,14 @@
-//! Custom Tera functions for tmpltool
+//! Custom MiniJinja functions for tmpltool
 //!
-//! This module contains all custom functions that can be used in Tera templates.
+//! This module contains all custom functions that can be used in MiniJinja templates.
 //! Each function is defined in its own file for better organization and maintainability.
 //!
 //! # Built-in Functions
 //!
-//! Tera provides built-in functions when the "builtins" feature is enabled:
-//! - `get_env(name, default)` - Get environment variables with optional default values
+//! MiniJinja provides these functions (implemented in the builtins module):
+//! - `env(name, default)` - Get environment variables with optional default values
 //! - `now()` - Get current timestamp
 //! - `get_random(start, end)` - Generate random integers
-//! - And many built-in filters: slugify, date, filesizeformat, urlencode, etc.
 //!
 //! # Custom Functions
 //!
@@ -61,6 +60,7 @@
 //! }
 //! ```
 
+pub mod builtins;
 pub mod data_parsing;
 pub mod filesystem;
 pub mod filter_env;
@@ -70,75 +70,69 @@ pub mod uuid_gen;
 pub mod validation;
 
 use crate::TemplateContext;
-use tera::Tera;
+use minijinja::Environment;
 
-/// Register all custom functions with the Tera instance
+/// Register all custom functions with the MiniJinja environment
 ///
-/// This function is called when setting up a Tera instance to register
-/// any custom functions. Built-in functions like get_env() are automatically
-/// available when the "builtins" feature is enabled.
+/// This function is called when setting up a MiniJinja environment to register
+/// all custom functions, including built-in function replacements.
 ///
 /// # Arguments
 ///
-/// * `tera` - Mutable reference to a Tera instance
+/// * `env` - Mutable reference to a MiniJinja Environment
 /// * `context` - Template context with base directory and trust mode settings
 ///
 /// # Example
 ///
 /// ```
-/// use tera::Tera;
+/// use minijinja::Environment;
 /// use tmpltool::{TemplateContext, functions::register_all};
 /// use std::path::PathBuf;
 ///
-/// let mut tera = Tera::default();
+/// let mut env = Environment::new();
 /// let ctx = TemplateContext::new(PathBuf::from("."), false);
-/// register_all(&mut tera, ctx);
+/// register_all(&mut env, ctx);
 /// ```
-pub fn register_all(tera: &mut Tera, context: TemplateContext) {
-    // Register custom functions
-    tera.register_function("filter_env", filter_env::FilterEnv);
+pub fn register_all(env: &mut Environment, context: TemplateContext) {
+    use std::sync::Arc;
 
-    // Hash functions
-    tera.register_function("md5", hash::Md5);
-    tera.register_function("sha1", hash::Sha1);
-    tera.register_function("sha256", hash::Sha256);
-    tera.register_function("sha512", hash::Sha512);
+    // Register built-in function replacements (were built-in in Tera)
+    env.add_function("get_env", builtins::env_fn);
+    env.add_function("now", builtins::now_fn);
+    env.add_function("get_random", builtins::get_random_fn);
 
-    // UUID generation
-    tera.register_function("uuid", uuid_gen::UuidV4);
-
-    // Random string generation
-    tera.register_function("random_string", random_string::RandomString);
-
-    // File system functions (with context containing base path and trust mode)
-    tera.register_function("read_file", filesystem::ReadFile::new(context.clone()));
-    tera.register_function("file_exists", filesystem::FileExists::new(context.clone()));
-    tera.register_function("list_dir", filesystem::ListDir::new(context.clone()));
-    tera.register_function("glob", filesystem::GlobFiles::new(context.clone()));
-    tera.register_function("file_size", filesystem::FileSize::new(context.clone()));
-    tera.register_function(
-        "file_modified",
-        filesystem::FileModified::new(context.clone()),
-    );
+    // Register custom functions (simple, no context needed)
+    env.add_function("filter_env", filter_env::filter_env_fn);
+    env.add_function("md5", hash::md5_fn);
+    env.add_function("sha1", hash::sha1_fn);
+    env.add_function("sha256", hash::sha256_fn);
+    env.add_function("sha512", hash::sha512_fn);
+    env.add_function("uuid", uuid_gen::uuid_fn);
+    env.add_function("random_string", random_string::random_string_fn);
 
     // Validation functions
-    tera.register_function("is_email", validation::IsEmail);
-    tera.register_function("is_url", validation::IsUrl);
-    tera.register_function("is_ip", validation::IsIp);
-    tera.register_function("is_uuid", validation::IsUuid);
-    tera.register_function("matches_regex", validation::MatchesRegex);
+    env.add_function("is_email", validation::is_email_fn);
+    env.add_function("is_url", validation::is_url_fn);
+    env.add_function("is_ip", validation::is_ip_fn);
+    env.add_function("is_uuid", validation::is_uuid_fn);
+    env.add_function("matches_regex", validation::matches_regex_fn);
 
-    // Data parsing functions
-    tera.register_function("parse_json", data_parsing::ParseJson);
-    tera.register_function("parse_yaml", data_parsing::ParseYaml);
-    tera.register_function("parse_toml", data_parsing::ParseToml);
-    tera.register_function(
-        "read_json_file",
-        data_parsing::ReadJsonFile::new(context.clone()),
-    );
-    tera.register_function(
-        "read_yaml_file",
-        data_parsing::ReadYamlFile::new(context.clone()),
-    );
-    tera.register_function("read_toml_file", data_parsing::ReadTomlFile::new(context));
+    // Data parsing functions (simple, no context)
+    env.add_function("parse_json", data_parsing::parse_json_fn);
+    env.add_function("parse_yaml", data_parsing::parse_yaml_fn);
+    env.add_function("parse_toml", data_parsing::parse_toml_fn);
+
+    // File system functions (need context)
+    let context_arc = Arc::new(context);
+    env.add_function("read_file", filesystem::create_read_file_fn(context_arc.clone()));
+    env.add_function("file_exists", filesystem::create_file_exists_fn(context_arc.clone()));
+    env.add_function("list_dir", filesystem::create_list_dir_fn(context_arc.clone()));
+    env.add_function("glob", filesystem::create_glob_fn(context_arc.clone()));
+    env.add_function("file_size", filesystem::create_file_size_fn(context_arc.clone()));
+    env.add_function("file_modified", filesystem::create_file_modified_fn(context_arc.clone()));
+
+    // Data parsing file functions (need context)
+    env.add_function("read_json_file", data_parsing::create_read_json_file_fn(context_arc.clone()));
+    env.add_function("read_yaml_file", data_parsing::create_read_yaml_file_fn(context_arc.clone()));
+    env.add_function("read_toml_file", data_parsing::create_read_toml_file_fn(context_arc));
 }

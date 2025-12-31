@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-use tera::Value;
-use tmpltool::functions::filter_env::FilterEnv;
+use minijinja::value::Kwargs;
+use tmpltool::functions::filter_env::filter_env_fn;
 
-// Import the Function trait to use call()
-use tera::Function;
+// Helper to create kwargs for testing
+fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
+    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+}
 
 #[test]
 fn test_filter_env_basic() {
@@ -14,21 +15,24 @@ fn test_filter_env_basic() {
         std::env::set_var("OTHER_VAR", "other");
     }
 
-    let mut args = HashMap::new();
-    args.insert(
-        "pattern".to_string(),
-        Value::String("TEST_VAR_*".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("pattern", "TEST_VAR_*")]);
 
-    let result = FilterEnv.call(&args).unwrap();
-    let array = result.as_array().unwrap();
+    let result = filter_env_fn(kwargs).unwrap();
 
-    assert_eq!(array.len(), 2);
+    assert_eq!(result.len(), Some(2));
 
     // Verify both TEST_VAR_* variables are present
-    let keys: Vec<String> = array
-        .iter()
-        .map(|item| item.get("key").unwrap().as_str().unwrap().to_string())
+    let keys: Vec<String> = (0..result.len().unwrap())
+        .map(|i| {
+            result
+                .get_item(&minijinja::Value::from(i))
+                .unwrap()
+                .get_attr("key")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string()
+        })
         .collect();
 
     assert!(keys.contains(&"TEST_VAR_ONE".to_string()));
@@ -49,16 +53,11 @@ fn test_filter_env_wildcard_middle() {
         std::env::set_var("PREFIX_OTHER_SUFFIX", "value2");
     }
 
-    let mut args = HashMap::new();
-    args.insert(
-        "pattern".to_string(),
-        Value::String("PREFIX_*_SUFFIX".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("pattern", "PREFIX_*_SUFFIX")]);
 
-    let result = FilterEnv.call(&args).unwrap();
-    let array = result.as_array().unwrap();
+    let result = filter_env_fn(kwargs).unwrap();
 
-    assert_eq!(array.len(), 2);
+    assert_eq!(result.len(), Some(2));
 
     unsafe {
         std::env::remove_var("PREFIX_MIDDLE_SUFFIX");
@@ -74,14 +73,12 @@ fn test_filter_env_question_mark() {
         std::env::set_var("VAR_AB", "value_ab");
     }
 
-    let mut args = HashMap::new();
-    args.insert("pattern".to_string(), Value::String("VAR_?".to_string()));
+    let kwargs = create_kwargs(vec![("pattern", "VAR_?")]);
 
-    let result = FilterEnv.call(&args).unwrap();
-    let array = result.as_array().unwrap();
+    let result = filter_env_fn(kwargs).unwrap();
 
     // Should match VAR_A and VAR_B, but not VAR_AB (two characters)
-    assert_eq!(array.len(), 2);
+    assert_eq!(result.len(), Some(2));
 
     unsafe {
         std::env::remove_var("VAR_A");
@@ -92,22 +89,17 @@ fn test_filter_env_question_mark() {
 
 #[test]
 fn test_filter_env_no_matches() {
-    let mut args = HashMap::new();
-    args.insert(
-        "pattern".to_string(),
-        Value::String("NONEXISTENT_PATTERN_*".to_string()),
-    );
+    let kwargs = create_kwargs(vec![("pattern", "NONEXISTENT_PATTERN_*")]);
 
-    let result = FilterEnv.call(&args).unwrap();
-    let array = result.as_array().unwrap();
+    let result = filter_env_fn(kwargs).unwrap();
 
-    assert_eq!(array.len(), 0);
+    assert_eq!(result.len(), Some(0));
 }
 
 #[test]
 fn test_filter_env_no_pattern() {
-    let args = HashMap::new();
-    let result = FilterEnv.call(&args);
+    let kwargs = create_kwargs(vec![]);
+    let result = filter_env_fn(kwargs);
 
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("pattern"));
@@ -122,17 +114,23 @@ fn test_glob_to_regex() {
         std::env::set_var("CLIENT_HOST", "example.com");
     }
 
-    let mut args = HashMap::new();
-    args.insert("pattern".to_string(), Value::String("SERVER_*".to_string()));
+    let kwargs = create_kwargs(vec![("pattern", "SERVER_*")]);
 
-    let result = FilterEnv.call(&args).unwrap();
-    let array = result.as_array().unwrap();
+    let result = filter_env_fn(kwargs).unwrap();
 
-    assert_eq!(array.len(), 2);
+    assert_eq!(result.len(), Some(2));
 
-    let keys: Vec<String> = array
-        .iter()
-        .map(|item| item.get("key").unwrap().as_str().unwrap().to_string())
+    let keys: Vec<String> = (0..result.len().unwrap())
+        .map(|i| {
+            result
+                .get_item(&minijinja::Value::from(i))
+                .unwrap()
+                .get_attr("key")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string()
+        })
         .collect();
 
     assert!(keys.contains(&"SERVER_HOST".to_string()));
