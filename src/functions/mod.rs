@@ -71,6 +71,7 @@
 pub mod data_parsing;
 pub mod datetime;
 pub mod environment;
+pub mod exec;
 pub mod filesystem;
 pub mod hash;
 pub mod network;
@@ -191,8 +192,12 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     );
     env.add_function(
         "read_toml_file",
-        data_parsing::create_read_toml_file_fn(context_arc),
+        data_parsing::create_read_toml_file_fn(context_arc.clone()),
     );
+
+    // Execution functions (need context)
+    env.add_function("exec", exec::create_exec_fn(context_arc.clone()));
+    env.add_function("exec_raw", exec::create_exec_raw_fn(context_arc));
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);

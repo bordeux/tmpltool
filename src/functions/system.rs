@@ -111,7 +111,7 @@ mod tests {
         let result = get_hostname_fn(kwargs);
         assert!(result.is_ok());
         let hostname = result.unwrap();
-        assert!(hostname.as_str().unwrap().len() > 0);
+        assert!(!hostname.as_str().unwrap().is_empty());
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod tests {
         let result = get_username_fn(kwargs);
         assert!(result.is_ok());
         let username = result.unwrap();
-        assert!(username.as_str().unwrap().len() > 0);
+        assert!(!username.as_str().unwrap().is_empty());
     }
 
     #[test]
@@ -129,7 +129,7 @@ mod tests {
         let result = get_home_dir_fn(kwargs);
         assert!(result.is_ok());
         let home_dir = result.unwrap();
-        assert!(home_dir.as_str().unwrap().len() > 0);
+        assert!(!home_dir.as_str().unwrap().is_empty());
     }
 
     #[test]
@@ -138,6 +138,6 @@ mod tests {
         let result = get_temp_dir_fn(kwargs);
         assert!(result.is_ok());
         let temp_dir = result.unwrap();
-        assert!(temp_dir.as_str().unwrap().len() > 0);
+        assert!(!temp_dir.as_str().unwrap().is_empty());
     }
 }
