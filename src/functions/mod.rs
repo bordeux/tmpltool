@@ -70,6 +70,7 @@
 
 pub mod data_parsing;
 pub mod datetime;
+pub mod debug;
 pub mod encoding;
 pub mod environment;
 pub mod exec;
@@ -231,6 +232,14 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("escape_html", encoding::escape_html_fn);
     env.add_function("escape_xml", encoding::escape_xml_fn);
     env.add_function("escape_shell", encoding::escape_shell_fn);
+
+    // Debug and development functions
+    env.add_function("debug", debug::debug_fn);
+    env.add_function("type_of", debug::type_of_fn);
+    env.add_function("inspect", debug::inspect_fn);
+    env.add_function("assert", debug::assert_fn);
+    env.add_function("warn", debug::warn_fn);
+    env.add_function("abort", debug::abort_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
