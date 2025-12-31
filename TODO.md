@@ -60,6 +60,14 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `to_yaml(object)` - Convert object to YAML string
 - [x] `to_toml(object)` - Convert object to TOML string
 
+### ✅ Object Manipulation
+- [x] `object_merge(obj1, obj2)` - Deep merge two objects
+- [x] `object_get(object, path)` - Get nested value by path
+- [x] `object_set(object, path, value)` - Set nested value by path
+- [x] `object_keys(object)` - Get object keys as array
+- [x] `object_values(object)` - Get object values as array
+- [x] `object_has_key(object, key)` - Check if object has key
+
 ### ✅ Validation
 - [x] `is_email(string)` - Validate email format
 - [x] `is_url(string)` - Validate URL format
@@ -177,12 +185,12 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `to_toml(object)` - Convert object to TOML string
 
 **Object Functions:**
-- [ ] `object_merge(obj1, obj2)` - Deep merge two objects
-- [ ] `object_get(object, path)` - Get nested value by path (e.g., "a.b.c")
-- [ ] `object_set(object, path, value)` - Set nested value by path
-- [ ] `object_keys(object)` - Get object keys as array
-- [ ] `object_values(object)` - Get object values as array
-- [ ] `object_has_key(object, key)` - Check if object has key
+- [x] `object_merge(obj1, obj2)` - Deep merge two objects
+- [x] `object_get(object, path)` - Get nested value by path (e.g., "a.b.c")
+- [x] `object_set(object, path, value)` - Set nested value by path
+- [x] `object_keys(object)` - Get object keys as array
+- [x] `object_values(object)` - Get object values as array
+- [x] `object_has_key(object, key)` - Check if object has key
 
 **Array Functions:**
 - [ ] `array_sort_by(array, key)` - Sort array by object key

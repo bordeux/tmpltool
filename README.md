@@ -27,6 +27,7 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
   - [Path Manipulation Functions](#path-manipulation-functions)
   - [Data Parsing Functions](#data-parsing-functions)
   - [Data Serialization Functions](#data-serialization-functions)
+  - [Object Manipulation Functions](#object-manipulation-functions)
   - [Validation Functions](#validation-functions)
   - [Debugging & Development Functions](#debugging--development-functions)
 - [Advanced Examples](#advanced-examples)
@@ -47,9 +48,8 @@ Get started in 30 seconds:
 # Or use Docker to copy the binary (recommended for CI/CD):
 # Create a Dockerfile to extract the binary
 cat > Dockerfile << 'EOF'
-FROM ghcr.io/bordeux/tmpltool:latest AS tmpltool
 FROM alpine:latest
-COPY --from=tmpltool /tmpltool /usr/local/bin/tmpltool
+COPY --from=ghcr.io/bordeux/tmpltool:latest /tmpltool /usr/local/bin/tmpltool
 EOF
 
 docker build -t myapp .
@@ -69,6 +69,7 @@ tmpltool greeting.tmpl
 - **Filesystem**: Read files, check existence, list directories, glob patterns, file info, path manipulation
 - **Data Parsing**: Parse and read JSON, YAML, TOML files
 - **Data Serialization**: Convert objects to JSON, YAML, TOML strings with pretty-printing options
+- **Object Manipulation**: Deep merge, get/set nested values by path, extract keys/values, check key existence
 - **Validation**: Validate emails, URLs, IPs, UUIDs, regex matching
 - **System & Network**: Get hostname, username, directories, IP addresses, DNS resolution, port availability
 - **Debugging & Development**: Debug output, type checking, assertions, warnings, error handling
@@ -2043,6 +2044,331 @@ port = 5432
 } %}
 
 {{ to_toml(object=env_config) }}
+```
+
+### Object Manipulation Functions
+
+Work with objects (maps/dictionaries) to merge, access nested values, and inspect structure. These functions are essential for complex configuration generation and data transformation.
+
+#### `object_merge(obj1, obj2)`
+
+Deep merge two objects. When keys conflict, values from `obj2` override values from `obj1`. Nested objects are merged recursively.
+
+**Arguments:**
+- `obj1` (required) - First object (base)
+- `obj2` (required) - Second object (overlay, takes precedence)
+
+**Returns:** New object with merged values
+
+**Examples:**
+```jinja
+{# Simple merge #}
+{% set base = {"a": 1, "b": 2} %}
+{% set overlay = {"c": 3, "d": 4} %}
+{% set merged = object_merge(obj1=base, obj2=overlay) %}
+{{ to_json(object=merged) }}
+{# Output: {"a":1,"b":2,"c":3,"d":4} #}
+
+{# Override values #}
+{% set defaults = {"host": "localhost", "port": 8080, "debug": false} %}
+{% set custom = {"port": 3000, "debug": true} %}
+{% set config = object_merge(obj1=defaults, obj2=custom) %}
+{{ to_json(object=config) }}
+{# Output: {"host":"localhost","port":3000,"debug":true} #}
+
+{# Deep merge nested objects #}
+{% set base_config = {
+  "server": {"host": "localhost", "port": 8080},
+  "database": {"host": "db.local", "port": 5432}
+} %}
+{% set env_overrides = {
+  "server": {"port": 9000, "ssl": true},
+  "cache": {"enabled": true}
+} %}
+{% set final_config = object_merge(obj1=base_config, obj2=env_overrides) %}
+{{ to_json(object=final_config, pretty=true) }}
+{# Output:
+{
+  "server": {
+    "host": "localhost",
+    "port": 9000,
+    "ssl": true
+  },
+  "database": {
+    "host": "db.local",
+    "port": 5432
+  },
+  "cache": {
+    "enabled": true
+  }
+}
+#}
+```
+
+#### `object_get(object, path)`
+
+Get nested value from an object using dot-separated path notation. Supports accessing nested objects and array indices.
+
+**Arguments:**
+- `object` (required) - Object to query
+- `path` (required) - Dot-separated path (e.g., "a.b.c" or "items.0")
+
+**Returns:** Value at the specified path, or undefined if not found
+
+**Examples:**
+```jinja
+{# Simple property access #}
+{% set config = {"host": "localhost", "port": 8080} %}
+{{ object_get(object=config, path="host") }}
+{# Output: localhost #}
+
+{# Nested property access #}
+{% set config = {
+  "server": {
+    "database": {
+      "host": "db.example.com",
+      "port": 5432
+    }
+  }
+} %}
+{{ object_get(object=config, path="server.database.host") }}
+{# Output: db.example.com #}
+
+{# Array index access #}
+{% set data = {"items": [10, 20, 30, 40]} %}
+{{ object_get(object=data, path="items.1") }}
+{# Output: 20 #}
+
+{# Safe access with default fallback #}
+{% set config = {"server": {"host": "localhost"}} %}
+{% set port = object_get(object=config, path="server.port") %}
+{% if port is undefined %}
+  Port not configured, using default: 8080
+{% else %}
+  Port: {{ port }}
+{% endif %}
+
+{# Complex nested access #}
+{% set k8s_config = {
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {"name": "app", "image": "myapp:latest"}
+        ]
+      }
+    }
+  }
+} %}
+{{ object_get(object=k8s_config, path="spec.template.spec.containers.0.image") }}
+{# Output: myapp:latest #}
+```
+
+#### `object_set(object, path, value)`
+
+Set nested value in an object using dot-separated path notation. Creates intermediate objects as needed.
+
+**Arguments:**
+- `object` (required) - Object to modify
+- `path` (required) - Dot-separated path (e.g., "a.b.c")
+- `value` (required) - Value to set
+
+**Returns:** New object with the value set at the specified path
+
+**Examples:**
+```jinja
+{# Simple property set #}
+{% set config = {"host": "localhost"} %}
+{% set updated = object_set(object=config, path="port", value=8080) %}
+{{ to_json(object=updated) }}
+{# Output: {"host":"localhost","port":8080} #}
+
+{# Set nested property #}
+{% set config = {"server": {"host": "localhost"}} %}
+{% set updated = object_set(object=config, path="server.port", value=8080) %}
+{{ to_json(object=updated) }}
+{# Output: {"server":{"host":"localhost","port":8080}} #}
+
+{# Create nested path automatically #}
+{% set config = {} %}
+{% set updated = object_set(object=config, path="database.primary.host", value="db1.example.com") %}
+{{ to_json(object=updated, pretty=true) }}
+{# Output:
+{
+  "database": {
+    "primary": {
+      "host": "db1.example.com"
+    }
+  }
+}
+#}
+
+{# Build configuration step by step #}
+{% set config = {} %}
+{% set config = object_set(object=config, path="server.host", value=get_env(name="HOST", default="0.0.0.0")) %}
+{% set config = object_set(object=config, path="server.port", value=get_env(name="PORT", default="8080") | int) %}
+{% set config = object_set(object=config, path="database.url", value=get_env(name="DATABASE_URL")) %}
+{{ to_json(object=config, pretty=true) }}
+```
+
+#### `object_keys(object)`
+
+Get all keys from an object as an array.
+
+**Arguments:**
+- `object` (required) - Object to get keys from
+
+**Returns:** Array of string keys
+
+**Examples:**
+```jinja
+{# Get all keys #}
+{% set config = {"host": "localhost", "port": 8080, "debug": true} %}
+{% set keys = object_keys(object=config) %}
+{{ to_json(object=keys) }}
+{# Output: ["host","port","debug"] #}
+
+{# Iterate over keys #}
+{% set config = {"host": "localhost", "port": 8080, "debug": true} %}
+Configuration keys:
+{% for key in object_keys(object=config) %}
+  - {{ key }}
+{% endfor %}
+{# Output:
+Configuration keys:
+  - host
+  - port
+  - debug
+#}
+
+{# Dynamic configuration display #}
+{% set config = {
+  "SERVER_HOST": "localhost",
+  "SERVER_PORT": 8080,
+  "DATABASE_URL": "postgres://localhost/mydb"
+} %}
+# Environment Variables
+{% for key in object_keys(object=config) %}
+{{ key }}={{ config[key] }}
+{% endfor %}
+```
+
+#### `object_values(object)`
+
+Get all values from an object as an array.
+
+**Arguments:**
+- `object` (required) - Object to get values from
+
+**Returns:** Array of values
+
+**Examples:**
+```jinja
+{# Get all values #}
+{% set config = {"a": 1, "b": 2, "c": 3} %}
+{% set values = object_values(object=config) %}
+{{ to_json(object=values) }}
+{# Output: [1,2,3] #}
+
+{# Process all values #}
+{% set ports = {"http": 80, "https": 443, "app": 8080} %}
+Open ports:
+{% for port in object_values(object=ports) %}
+  - {{ port }}
+{% endfor %}
+{# Output:
+Open ports:
+  - 80
+  - 443
+  - 8080
+#}
+
+{# Mixed type values #}
+{% set config = {"str": "hello", "num": 42, "bool": true} %}
+{% for value in object_values(object=config) %}
+  Value: {{ value }} (type: {{ type_of(value=value) }})
+{% endfor %}
+```
+
+#### `object_has_key(object, key)`
+
+Check if an object has a specific key.
+
+**Arguments:**
+- `object` (required) - Object to check
+- `key` (required) - Key to check for
+
+**Returns:** Boolean - true if key exists, false otherwise
+
+**Examples:**
+```jinja
+{# Simple key check #}
+{% set config = {"host": "localhost", "port": 8080} %}
+{{ object_has_key(object=config, key="host") }}
+{# Output: true #}
+
+{{ object_has_key(object=config, key="database") }}
+{# Output: false #}
+
+{# Conditional configuration #}
+{% set config = {"host": "localhost", "port": 8080} %}
+{% if object_has_key(object=config, key="debug") %}
+Debug mode: {{ config.debug }}
+{% else %}
+Debug mode not configured (using default: false)
+{% endif %}
+
+{# Validate required fields #}
+{% set config = read_json_file(path="config.json") %}
+{% set required_keys = ["host", "port", "database_url"] %}
+{% for key in required_keys %}
+  {% if not object_has_key(object=config, key=key) %}
+ERROR: Missing required configuration key: {{ key }}
+  {% endif %}
+{% endfor %}
+
+{# Feature flags #}
+{% set features = {"api": true, "websockets": true} %}
+{% if object_has_key(object=features, key="websockets") and features.websockets %}
+  WebSocket support enabled
+{% endif %}
+```
+
+**Practical Example - Configuration Merging:**
+```jinja
+{# Load base configuration #}
+{% set base_config = read_json_file(path="config.base.json") %}
+
+{# Load environment-specific overrides #}
+{% set env = get_env(name="ENVIRONMENT", default="development") %}
+{% set env_config_path = "config." ~ env ~ ".json" %}
+
+{% if file_exists(path=env_config_path) %}
+  {% set env_config = read_json_file(path=env_config_path) %}
+  {% set config = object_merge(obj1=base_config, obj2=env_config) %}
+{% else %}
+  {% set config = base_config %}
+{% endif %}
+
+{# Apply environment variable overrides #}
+{% if get_env(name="DATABASE_URL") %}
+  {% set config = object_set(object=config, path="database.url", value=get_env(name="DATABASE_URL")) %}
+{% endif %}
+
+{% if get_env(name="PORT") %}
+  {% set config = object_set(object=config, path="server.port", value=get_env(name="PORT") | int) %}
+{% endif %}
+
+{# Validate required keys #}
+{% set required = ["server.host", "server.port", "database.url"] %}
+{% for key_path in required %}
+  {% if object_get(object=config, path=key_path) is undefined %}
+ERROR: Missing required configuration: {{ key_path }}
+  {% endif %}
+{% endfor %}
+
+{# Output final configuration #}
+{{ to_json(object=config, pretty=true) }}
 ```
 
 ### System & Network Functions

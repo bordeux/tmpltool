@@ -77,6 +77,7 @@ pub mod exec;
 pub mod filesystem;
 pub mod hash;
 pub mod network;
+pub mod object;
 pub mod random;
 pub mod serialization;
 pub mod system;
@@ -246,6 +247,14 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("to_json", serialization::to_json_fn);
     env.add_function("to_yaml", serialization::to_yaml_fn);
     env.add_function("to_toml", serialization::to_toml_fn);
+
+    // Object manipulation functions
+    env.add_function("object_merge", object::object_merge_fn);
+    env.add_function("object_get", object::object_get_fn);
+    env.add_function("object_set", object::object_set_fn);
+    env.add_function("object_keys", object::object_keys_fn);
+    env.add_function("object_values", object::object_values_fn);
+    env.add_function("object_has_key", object::object_has_key_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
