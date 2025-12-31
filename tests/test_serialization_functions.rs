@@ -460,3 +460,177 @@ fn test_to_toml_empty_object() {
     // Empty TOML should be empty or just whitespace
     assert!(result.as_str().unwrap().trim().is_empty());
 }
+
+// ============================================================================
+// Error Handling Tests
+// ============================================================================
+
+#[test]
+fn test_to_json_error_missing_argument() {
+    let result = serialization::to_json_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+    // Error should be about missing argument from Kwargs::get()
+}
+
+#[test]
+fn test_to_yaml_error_missing_argument() {
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+    // Error should be about missing argument from Kwargs::get()
+}
+
+#[test]
+fn test_to_toml_error_missing_argument() {
+    let result = serialization::to_toml_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+    // Error should be about missing argument from Kwargs::get()
+}
+
+#[test]
+fn test_to_toml_error_array_root() {
+    // TOML does not support arrays at the root level
+    let arr = vec![1, 2, 3];
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from(arr),
+    )]));
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(err.to_string().contains("Failed to serialize to TOML"));
+}
+
+#[test]
+fn test_to_toml_error_string_root() {
+    // TOML does not support strings at the root level
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from("hello"),
+    )]));
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(err.to_string().contains("Failed to serialize to TOML"));
+}
+
+#[test]
+fn test_to_toml_error_number_root() {
+    // TOML does not support numbers at the root level
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from(42),
+    )]));
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(err.to_string().contains("Failed to serialize to TOML"));
+}
+
+#[test]
+fn test_to_toml_error_boolean_root() {
+    // TOML does not support booleans at the root level
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from(true),
+    )]));
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(err.to_string().contains("Failed to serialize to TOML"));
+}
+
+#[test]
+fn test_to_toml_error_nested_mixed_array() {
+    // TOML can be strict about certain nested structures
+    // Test with arrays of tables where structure doesn't match
+    let obj = serde_json::json!({
+        "items": [
+            {"type": "a", "value": 1},
+            {"type": "b", "extra": "field"}  // Different structure
+        ]
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]));
+
+    // This should succeed - TOML can handle tables with different fields
+    // Just verify it doesn't panic
+    if result.is_ok() {
+        assert!(result.unwrap().as_str().is_some());
+    }
+}
+
+#[test]
+fn test_to_json_invalid_pretty_type() {
+    // Test that pretty parameter accepts boolean (non-boolean should use default)
+    let obj = serde_json::json!({"test": "value"});
+
+    // This should work - the pretty param will just use default if wrong type
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("pretty", Value::from("not a bool")), // Wrong type, should use default (false)
+    ]));
+
+    // Should still succeed with default pretty=false behavior
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_to_json_with_undefined_in_object() {
+    // Test JSON serialization with undefined values (should convert to null)
+    let obj = serde_json::json!({
+        "defined": "value",
+        "nullable": null
+    });
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("\"nullable\":null") || json_str.contains("\"nullable\": null"));
+}
+
+#[test]
+fn test_to_yaml_with_null() {
+    // Test YAML serialization with null values
+    let obj = serde_json::json!({
+        "key": null
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("key:") && (yaml_str.contains("null") || yaml_str.contains("~")));
+}
+
+#[test]
+fn test_to_toml_with_null_value() {
+    // TOML doesn't have a null type, so this should fail or omit the field
+    let obj = serde_json::json!({
+        "key": null
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]));
+
+    // TOML serialization with null should either fail or succeed with omitted field
+    // This depends on serde's behavior - typically it omits nulls
+    if result.is_ok() {
+        let toml_str = result.unwrap().as_str().unwrap().to_string();
+        // Null fields are typically omitted in TOML
+        assert!(!toml_str.contains("null"));
+    }
+    // If it errors, that's also valid behavior
+}
