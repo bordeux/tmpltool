@@ -74,21 +74,23 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [ ] `bytes_to_mb(bytes)` - Convert bytes to megabytes
 - [ ] `mb_to_bytes(mb)` - Convert megabytes to bytes
 
-### 📝 String Manipulation Functions
+### 📝 String Manipulation Functions (Filters)
 *Extended string operations for config generation*
 
-- [ ] `indent(string, spaces)` - Indent text by N spaces
-- [ ] `dedent(string)` - Remove common leading whitespace
-- [ ] `quote(string, style)` - Quote string (single/double/backtick)
-- [ ] `escape_quotes(string)` - Escape quotes in string
-- [ ] `to_snake_case(string)` - Convert to snake_case
-- [ ] `to_camel_case(string)` - Convert to camelCase
-- [ ] `to_pascal_case(string)` - Convert to PascalCase
-- [ ] `to_kebab_case(string)` - Convert to kebab-case
-- [ ] `pad_left(string, length, char)` - Pad string on left
-- [ ] `pad_right(string, length, char)` - Pad string on right
-- [ ] `repeat(string, count)` - Repeat string N times
-- [ ] `reverse(string)` - Reverse string
+- [x] `indent(spaces)` - Indent text by N spaces
+- [x] `dedent` - Remove common leading whitespace
+- [x] `quote(style)` - Quote string (single/double/backtick)
+- [x] `escape_quotes` - Escape quotes in string
+- [x] `to_snake_case` - Convert to snake_case
+- [x] `to_camel_case` - Convert to camelCase
+- [x] `to_pascal_case` - Convert to PascalCase
+- [x] `to_kebab_case` - Convert to kebab-case
+- [x] `pad_left(length, char)` - Pad string on left
+- [x] `pad_right(length, char)` - Pad string on right
+- [x] `repeat(count)` - Repeat string N times
+- [x] `reverse` - Reverse string
+
+**Note:** These are implemented as filters (e.g., `{{ "text" | indent(2) }}`), not functions.
 
 ### 📅 Date & Time Functions
 *Enhanced datetime handling for logs, timestamps*

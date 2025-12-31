@@ -340,15 +340,50 @@ Access loop metadata:
 {{ variable | filter_name(arg=value) }}
 ```
 
-**Common filters:**
+**Built-in MiniJinja filters:**
 - `upper`, `lower`, `title` - Case conversion
 - `trim`, `truncate` - String operations
-- `slugify` - Convert to URL-friendly slug
-- `urlencode` - URL encoding
-- `filesizeformat` - Format bytes (e.g., "1.5 KB")
 - `date(format="%Y-%m-%d")` - Date formatting
 - `split(pat=",")` - Split string into array
 - `length` - Get array/string length
+
+**Custom string manipulation filters:**
+- `slugify` - Convert to URL-friendly slug (e.g., "Hello World" → "hello-world")
+- `indent(spaces=4)` - Indent text by N spaces (useful for YAML/configs)
+- `dedent` - Remove common leading whitespace
+- `quote(style="double")` - Quote string (single/double/backtick)
+- `escape_quotes` - Escape quotes in string
+- `to_snake_case` - Convert to snake_case (e.g., "HelloWorld" → "hello_world")
+- `to_camel_case` - Convert to camelCase (e.g., "hello_world" → "helloWorld")
+- `to_pascal_case` - Convert to PascalCase (e.g., "hello_world" → "HelloWorld")
+- `to_kebab_case` - Convert to kebab-case (e.g., "HelloWorld" → "hello-world")
+- `pad_left(length, char=" ")` - Pad string on left
+- `pad_right(length, char=" ")` - Pad string on right
+- `repeat(count)` - Repeat string N times
+- `reverse` - Reverse string
+
+**Formatting filters:**
+- `urlencode` - URL encoding
+- `filesizeformat` - Format bytes (e.g., "1.5 KB")
+
+**Examples:**
+```
+{# Case conversion #}
+{{ "hello_world" | to_camel_case }}  {# Output: helloWorld #}
+{{ "HelloWorld" | to_snake_case }}   {# Output: hello_world #}
+
+{# Indentation for configs #}
+{{ "host: localhost\nport: 8080" | indent(2) }}
+
+{# Padding for alignment #}
+{{ "1" | pad_left(4, "0") }}  {# Output: 0001 #}
+
+{# Creating separators #}
+{{ "=" | repeat(40) }}  {# Output: ======================================== #}
+
+{# Chaining filters #}
+{{ "hello_world" | to_pascal_case | reverse }}  {# Output: dlroWolleH #}
+```
 
 ### Comments
 

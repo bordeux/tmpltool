@@ -1,0 +1,155 @@
+# String Filters Demonstration
+# ===========================
+
+## Case Conversion Filters
+
+### to_snake_case
+Input: "HelloWorld"
+Output: {{ "HelloWorld" | to_snake_case }}
+
+Input: "hello-world"
+Output: {{ "hello-world" | to_snake_case }}
+
+### to_camel_case
+Input: "hello_world"
+Output: {{ "hello_world" | to_camel_case }}
+
+Input: "hello-world"
+Output: {{ "hello-world" | to_camel_case }}
+
+### to_pascal_case
+Input: "hello_world"
+Output: {{ "hello_world" | to_pascal_case }}
+
+Input: "hello-world"
+Output: {{ "hello-world" | to_pascal_case }}
+
+### to_kebab_case
+Input: "HelloWorld"
+Output: {{ "HelloWorld" | to_kebab_case }}
+
+Input: "hello_world"
+Output: {{ "hello_world" | to_kebab_case }}
+
+## Indentation Filters
+
+### indent (default 4 spaces)
+Input: "line1\nline2"
+Output:
+{{ "line1\nline2" | indent }}
+
+### indent (custom 2 spaces)
+Input: "host: localhost\nport: 8080"
+Output:
+{{ "host: localhost\nport: 8080" | indent(2) }}
+
+### dedent
+Input: "  line1\n  line2"
+Output:
+{{ "  line1\n  line2" | dedent }}
+
+## Quote Filters
+
+### quote (default double)
+Input: "hello world"
+Output: {{ "hello world" | quote }}
+
+### quote (single)
+Input: "hello world"
+Output: {{ "hello world" | quote("single") }}
+
+### quote (backtick)
+Input: "hello world"
+Output: {{ "hello world" | quote("backtick") }}
+
+### escape_quotes
+Input: It's a "test"
+Output: {{ "It's a \"test\"" | escape_quotes }}
+
+## Padding Filters
+
+### pad_left (default space)
+Input: "42"
+Output: {{ "42" | pad_left(5) }}|
+
+### pad_left (with zero)
+Input: "1"
+Output: {{ "1" | pad_left(4, "0") }}
+
+### pad_right (default space)
+Input: "42"
+Output: |{{ "42" | pad_right(5) }}|
+
+### pad_right (with dash)
+Input: "test"
+Output: {{ "test" | pad_right(10, "-") }}
+
+## Repeat Filter
+
+### repeat (3 times)
+Input: "ab"
+Output: {{ "ab" | repeat(3) }}
+
+### repeat (separator)
+Input: "="
+Output: {{ "=" | repeat(40) }}
+
+## Reverse Filter
+
+### reverse
+Input: "hello"
+Output: {{ "hello" | reverse }}
+
+Input: "12345"
+Output: {{ "12345" | reverse }}
+
+## Filter Chaining Examples
+
+### Example 1: Convert and reverse
+Input: "hello_world"
+Steps: to_pascal_case → reverse
+Output: {{ "hello_world" | to_pascal_case | reverse }}
+
+### Example 2: Repeat and quote
+Input: "test"
+Steps: repeat(3) → quote("single")
+Output: {{ "test" | repeat(3) | quote("single") }}
+
+### Example 3: Convert and pad
+Input: "api_key"
+Steps: to_camel_case → pad_right(15, "_")
+Output: {{ "api_key" | to_camel_case | pad_right(15, "_") }}
+
+## Real-World Use Cases
+
+### 1. Generating Code Identifiers
+{% set field_name = "user_email_address" %}
+Database column: {{ field_name }}
+Python variable: {{ field_name }}
+JavaScript variable: {{ field_name | to_camel_case }}
+Class name: {{ field_name | to_pascal_case }}
+CSS class: {{ field_name | to_kebab_case }}
+
+### 2. YAML Configuration Indentation
+server:
+{{ "host: localhost" | indent(2) }}
+{{ "port: 8080" | indent(2) }}
+database:
+{{ "host: postgres" | indent(2) }}
+{{ "port: 5432" | indent(2) }}
+
+### 3. Padding for Alignment
+{% set items = ["1", "42", "999"] %}
+Item IDs:
+{% for item in items %}
+  ID: {{ item | pad_left(5, "0") }}
+{% endfor %}
+
+### 4. Creating Separators
+{{ "=" | repeat(50) }}
+SECTION HEADER
+{{ "=" | repeat(50) }}
+
+{{ "-" | repeat(50) }}
+SUBSECTION
+{{ "-" | repeat(50) }}
