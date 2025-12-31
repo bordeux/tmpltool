@@ -62,6 +62,14 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `is_uuid(string)` - Validate UUID format
 - [x] `matches_regex(pattern, string)` - Regex pattern matching
 
+### ✅ Debugging & Development
+- [x] `debug(value)` - Print value to stderr and return it
+- [x] `type_of(value)` - Get type of value
+- [x] `inspect(value)` - Pretty-print value structure
+- [x] `assert(condition, message)` - Assert condition or fail
+- [x] `warn(message)` - Print warning to stderr
+- [x] `abort(message)` - Abort rendering with error
+
 ### ✅ Filters
 - [x] `slugify` - Convert string to URL-friendly slug
 - [x] `urlencode` - URL encode string
@@ -158,19 +166,24 @@ This document contains ideas for new functions and features to make tmpltool mor
 ### 📊 Data Transformation Functions
 *Advanced data manipulation*
 
+**Serialization:**
 - [ ] `to_json(object, pretty)` - Convert object to JSON string
 - [ ] `to_yaml(object)` - Convert object to YAML string
 - [ ] `to_toml(object)` - Convert object to TOML string
-- [ ] `merge_objects(obj1, obj2)` - Deep merge two objects
-- [ ] `get_nested(object, path)` - Get nested value by path (e.g., "a.b.c")
-- [ ] `set_nested(object, path, value)` - Set nested value by path
-- [ ] `keys(object)` - Get object keys as array
-- [ ] `values(object)` - Get object values as array
-- [ ] `has_key(object, key)` - Check if object has key
-- [ ] `sort_by(array, key)` - Sort array by object key
-- [ ] `group_by(array, key)` - Group array items by key
-- [ ] `unique(array)` - Remove duplicates from array
-- [ ] `flatten(array)` - Flatten nested arrays
+
+**Object Functions:**
+- [ ] `object_merge(obj1, obj2)` - Deep merge two objects
+- [ ] `object_get(object, path)` - Get nested value by path (e.g., "a.b.c")
+- [ ] `object_set(object, path, value)` - Set nested value by path
+- [ ] `object_keys(object)` - Get object keys as array
+- [ ] `object_values(object)` - Get object values as array
+- [ ] `object_has_key(object, key)` - Check if object has key
+
+**Array Functions:**
+- [ ] `array_sort_by(array, key)` - Sort array by object key
+- [ ] `array_group_by(array, key)` - Group array items by key
+- [ ] `array_unique(array)` - Remove duplicates from array
+- [ ] `array_flatten(array)` - Flatten nested arrays
 
 ### 🌍 Internationalization & Localization
 *i18n support for multi-language configs*
@@ -183,15 +196,20 @@ This document contains ideas for new functions and features to make tmpltool mor
 ### 🔍 Conditional & Logic Functions
 *Enhanced conditional logic*
 
+**General Logic:**
 - [ ] `default(value, default)` - Return default if value is falsy
 - [ ] `coalesce(values...)` - Return first non-null value
 - [ ] `ternary(condition, true_val, false_val)` - Ternary operator
-- [ ] `any(array, predicate)` - Check if any item matches
-- [ ] `all(array, predicate)` - Check if all items match
-- [ ] `contains(array, value)` - Check if array contains value
+- [ ] `in_range(value, min, max)` - Check if value in range
+
+**Array Predicates:**
+- [ ] `array_any(array, predicate)` - Check if any item matches
+- [ ] `array_all(array, predicate)` - Check if all items match
+- [ ] `array_contains(array, value)` - Check if array contains value
+
+**String Predicates:**
 - [ ] `starts_with(string, prefix)` - Check string starts with prefix
 - [ ] `ends_with(string, suffix)` - Check string ends with suffix
-- [ ] `in_range(value, min, max)` - Check if value in range
 
 ### 🐳 Container & Orchestration Helpers
 *Specific for Docker, Kubernetes, docker-compose*
@@ -215,27 +233,30 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [ ] `mime_type(filename)` - Guess MIME type from filename
 - [ ] `http_status_text(code)` - Get HTTP status text from code
 
-### 🔧 Debugging & Development Functions
+### ✅ Debugging & Development Functions
 *Helpful during template development*
 
-- [ ] `debug(value)` - Print value to stderr and return it
-- [ ] `type_of(value)` - Get type of value (string, number, array, etc.)
-- [ ] `inspect(value)` - Pretty-print value structure
-- [ ] `assert(condition, message)` - Assert condition or fail with message
-- [ ] `warn(message)` - Print warning to stderr
-- [ ] `abort(message)` - Abort rendering with error message
+- [x] `debug(value)` - Print value to stderr and return it
+- [x] `type_of(value)` - Get type of value (string, number, array, etc.)
+- [x] `inspect(value)` - Pretty-print value structure
+- [x] `assert(condition, message)` - Assert condition or fail with message
+- [x] `warn(message)` - Print warning to stderr
+- [x] `abort(message)` - Abort rendering with error message
 
 ### 📈 Statistical & Array Functions
 *For data processing and analysis*
 
-- [ ] `sum(array)` - Sum of array values
-- [ ] `avg(array)` - Average of array values
-- [ ] `median(array)` - Median of array values
-- [ ] `count(array)` - Count array items
-- [ ] `min_value(array)` - Minimum value in array
-- [ ] `max_value(array)` - Maximum value in array
-- [ ] `chunk(array, size)` - Split array into chunks
-- [ ] `zip(array1, array2)` - Combine two arrays into pairs
+**Statistical Functions:**
+- [ ] `array_sum(array)` - Sum of array values
+- [ ] `array_avg(array)` - Average of array values
+- [ ] `array_median(array)` - Median of array values
+- [ ] `array_min(array)` - Minimum value in array
+- [ ] `array_max(array)` - Maximum value in array
+
+**Array Manipulation:**
+- [ ] `array_count(array)` - Count array items (alias for length)
+- [ ] `array_chunk(array, size)` - Split array into chunks
+- [ ] `array_zip(array1, array2)` - Combine two arrays into pairs
 
 ### 🎨 Template Composition
 *Advanced templating features*
@@ -264,8 +285,8 @@ This document contains ideas for new functions and features to make tmpltool mor
 5. `resource_request()` - Format resource limits
 
 ### For Application Configs
-1. `merge_objects()` - Merge configuration objects
-2. `get_nested()` - Access nested config values
+1. `object_merge()` - Merge configuration objects
+2. `object_get()` - Access nested config values
 3. `default()` - Provide fallback values
 4. `to_json()` / `to_yaml()` - Convert between formats
 5. `coalesce()` - First non-null value
