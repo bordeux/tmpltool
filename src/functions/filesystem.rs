@@ -409,7 +409,10 @@ pub fn join_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
         )
     })?;
 
-    Ok(Value::from(joined))
+    // Normalize to forward slashes for cross-platform consistency
+    let normalized = joined.replace('\\', "/");
+
+    Ok(Value::from(normalized))
 }
 
 /// Normalize a path (resolve .. and . components)
@@ -456,7 +459,10 @@ pub fn normalize_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
         )
     })?;
 
-    Ok(Value::from(result))
+    // Normalize to forward slashes for cross-platform consistency
+    let normalized_slashes = result.replace('\\', "/");
+
+    Ok(Value::from(normalized_slashes))
 }
 
 /// Check if a path is a file
