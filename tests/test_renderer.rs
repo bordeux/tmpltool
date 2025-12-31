@@ -219,9 +219,7 @@ fn test_render_template_validate_json_failure() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(
-        err.to_string().contains("JSON") || err.to_string().contains("validation")
-    );
+    assert!(err.to_string().contains("JSON") || err.to_string().contains("validation"));
 }
 
 #[test]
@@ -230,11 +228,7 @@ fn test_render_template_validate_yaml_success() {
     let input_path = temp_dir.path().join("input.tmpl");
     let output_path = temp_dir.path().join("output.yaml");
 
-    fs::write(
-        &input_path,
-        "server:\n  host: localhost\n  port: 8080",
-    )
-    .unwrap();
+    fs::write(&input_path, "server:\n  host: localhost\n  port: 8080").unwrap();
 
     let result = render_template(
         Some(input_path.to_str().unwrap()),
@@ -256,9 +250,7 @@ fn test_render_template_validate_yaml_failure() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(
-        err.to_string().contains("YAML") || err.to_string().contains("validation")
-    );
+    assert!(err.to_string().contains("YAML") || err.to_string().contains("validation"));
 }
 
 #[test]
@@ -289,9 +281,7 @@ fn test_render_template_validate_toml_failure() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(
-        err.to_string().contains("TOML") || err.to_string().contains("validation")
-    );
+    assert!(err.to_string().contains("TOML") || err.to_string().contains("validation"));
 }
 
 // ============================================================================
@@ -378,11 +368,7 @@ fn test_render_template_with_loops() {
     let input_path = temp_dir.path().join("input.tmpl");
     let output_path = temp_dir.path().join("output.txt");
 
-    fs::write(
-        &input_path,
-        "{% for i in [1, 2, 3] %}{{ i }}{% endfor %}",
-    )
-    .unwrap();
+    fs::write(&input_path, "{% for i in [1, 2, 3] %}{{ i }}{% endfor %}").unwrap();
 
     let result = render_template(
         Some(input_path.to_str().unwrap()),
