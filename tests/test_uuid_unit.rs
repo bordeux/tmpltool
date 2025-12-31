@@ -1,13 +1,8 @@
-use std::collections::HashMap;
-use tmpltool::functions::uuid_gen::UuidV4;
-
-// Import the Function trait to use call()
-use tera::Function;
+use tmpltool::functions::uuid_gen::uuid_fn;
 
 #[test]
 fn test_uuid_v4_format() {
-    let args = HashMap::new();
-    let result = UuidV4.call(&args).unwrap();
+    let result = uuid_fn();
     let uuid_str = result.as_str().unwrap();
 
     // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
@@ -24,9 +19,8 @@ fn test_uuid_v4_format() {
 
 #[test]
 fn test_uuid_v4_uniqueness() {
-    let args = HashMap::new();
-    let result1 = UuidV4.call(&args).unwrap();
-    let result2 = UuidV4.call(&args).unwrap();
+    let result1 = uuid_fn();
+    let result2 = uuid_fn();
 
     // Two UUIDs should be different
     assert_ne!(result1.as_str().unwrap(), result2.as_str().unwrap());
@@ -34,8 +28,7 @@ fn test_uuid_v4_uniqueness() {
 
 #[test]
 fn test_uuid_v4_valid_hex() {
-    let args = HashMap::new();
-    let result = UuidV4.call(&args).unwrap();
+    let result = uuid_fn();
     let uuid_str = result.as_str().unwrap();
 
     // Remove dashes and check if all characters are valid hex

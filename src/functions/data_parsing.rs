@@ -1,3 +1,5 @@
+use minijinja::value::Kwargs;
+use minijinja::{Error, ErrorKind, Value};
 /// Data parsing functions
 ///
 /// Provides functions for parsing structured data formats:
@@ -7,248 +9,217 @@
 /// - read_json_file: Read and parse JSON file
 /// - read_yaml_file: Read and parse YAML file
 /// - read_toml_file: Read and parse TOML file
-use std::collections::HashMap;
 use std::fs;
-use tera::{Function, Result, Value};
+use std::sync::Arc;
 
 use crate::TemplateContext;
 
 /// Parse JSON string into object
-pub struct ParseJson;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ parse_json(string='{"key": "value"}') }}
+/// ```
+pub fn parse_json_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    // Extract string from kwargs
+    let string: String = kwargs.get("string")?;
 
-impl Function for ParseJson {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let string = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg(
-                "parse_json requires a 'string' argument (e.g., string='{\"key\": \"value\"}')",
-            )
-        })?;
+    // Parse JSON string
+    let json_value: serde_json::Value = serde_json::from_str(&string).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to parse JSON: {}", e),
+        )
+    })?;
 
-        // Parse JSON string
-        let json_value: serde_json::Value = serde_json::from_str(string)
-            .map_err(|e| tera::Error::msg(format!("Failed to parse JSON: {}", e)))?;
-
-        // Convert serde_json::Value to tera::Value
-        // Tera's Value is based on serde_json::Value, so we can convert directly
-        let tera_value = serde_json::from_value(json_value).map_err(|e| {
-            tera::Error::msg(format!("Failed to convert JSON to Tera value: {}", e))
-        })?;
-
-        Ok(tera_value)
-    }
+    Ok(Value::from_serialize(&json_value))
 }
 
 /// Parse YAML string into object
-pub struct ParseYaml;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ parse_yaml(string='key: value') }}
+/// ```
+pub fn parse_yaml_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    // Extract string from kwargs
+    let string: String = kwargs.get("string")?;
 
-impl Function for ParseYaml {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let string = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("parse_yaml requires a 'string' argument (e.g., string='key: value')")
-        })?;
+    // Parse YAML string to serde_yaml::Value
+    let yaml_value: serde_yaml::Value = serde_yaml::from_str(&string).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to parse YAML: {}", e),
+        )
+    })?;
 
-        // Parse YAML string to serde_yaml::Value
-        let yaml_value: serde_yaml::Value = serde_yaml::from_str(string)
-            .map_err(|e| tera::Error::msg(format!("Failed to parse YAML: {}", e)))?;
+    // Convert serde_yaml::Value to serde_json::Value
+    let json_value = serde_yaml_to_json(yaml_value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert YAML to JSON: {}", e),
+        )
+    })?;
 
-        // Convert serde_yaml::Value to serde_json::Value (Tera uses serde_json::Value)
-        let json_value = serde_yaml_to_json(yaml_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert YAML to JSON: {}", e)))?;
-
-        // Convert to Tera Value
-        let tera_value = serde_json::from_value(json_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert to Tera value: {}", e)))?;
-
-        Ok(tera_value)
-    }
+    Ok(Value::from_serialize(&json_value))
 }
 
 /// Parse TOML string into object
-pub struct ParseToml;
+///
+/// # Example
+///
+/// ```jinja
+/// {{ parse_toml(string='key = "value"') }}
+/// ```
+pub fn parse_toml_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    // Extract string from kwargs
+    let string: String = kwargs.get("string")?;
 
-impl Function for ParseToml {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let string = args.get("string").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg(
-                "parse_toml requires a 'string' argument (e.g., string='key = \"value\"')",
-            )
-        })?;
+    // Parse TOML string to toml::Value
+    let toml_value: toml::Value = toml::from_str(&string).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to parse TOML: {}", e),
+        )
+    })?;
 
-        // Parse TOML string to toml::Value
-        let toml_value: toml::Value = toml::from_str(string)
-            .map_err(|e| tera::Error::msg(format!("Failed to parse TOML: {}", e)))?;
+    // Convert toml::Value to serde_json::Value
+    let json_value = toml_to_json(toml_value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert TOML to JSON: {}", e),
+        )
+    })?;
 
-        // Convert toml::Value to serde_json::Value
-        let json_value = toml_to_json(toml_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert TOML to JSON: {}", e)))?;
-
-        // Convert to Tera Value
-        let tera_value = serde_json::from_value(json_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert to Tera value: {}", e)))?;
-
-        Ok(tera_value)
-    }
+    Ok(Value::from_serialize(&json_value))
 }
 
-/// Read and parse JSON file
-pub struct ReadJsonFile {
-    context: TemplateContext,
-}
-
-impl ReadJsonFile {
-    pub fn new(context: TemplateContext) -> Self {
-        Self { context }
-    }
-}
-
-impl Function for ReadJsonFile {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("read_json_file requires a 'path' argument (e.g., path=\"data.json\")")
-        })?;
-
+/// Create read_json_file function with context
+pub fn create_read_json_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
+    move |path: String| {
         // Security checks (unless trust mode is enabled)
-        if !self.context.is_trust_mode() {
-            crate::functions::filesystem::validate_path_security(path)?;
+        if !context.is_trust_mode() {
+            crate::functions::filesystem::validate_path_security(&path)?;
         }
 
         // Resolve path relative to template's directory
-        let resolved_path = self.context.resolve_path(path);
+        let resolved_path = context.resolve_path(&path);
 
         // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
-            tera::Error::msg(format!(
-                "Failed to read file '{}': {}",
-                resolved_path.display(),
-                e
-            ))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
+            )
         })?;
 
         // Parse JSON
         let json_value: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
-            tera::Error::msg(format!(
-                "Failed to parse JSON from file '{}': {}",
-                resolved_path.display(),
-                e
-            ))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "Failed to parse JSON from file '{}': {}",
+                    resolved_path.display(),
+                    e
+                ),
+            )
         })?;
 
-        // Convert to Tera Value
-        let tera_value = serde_json::from_value(json_value).map_err(|e| {
-            tera::Error::msg(format!("Failed to convert JSON to Tera value: {}", e))
-        })?;
-
-        Ok(tera_value)
+        Ok(Value::from_serialize(&json_value))
     }
 }
 
-/// Read and parse YAML file
-pub struct ReadYamlFile {
-    context: TemplateContext,
-}
-
-impl ReadYamlFile {
-    pub fn new(context: TemplateContext) -> Self {
-        Self { context }
-    }
-}
-
-impl Function for ReadYamlFile {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("read_yaml_file requires a 'path' argument (e.g., path=\"data.yaml\")")
-        })?;
-
+/// Create read_yaml_file function with context
+pub fn create_read_yaml_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
+    move |path: String| {
         // Security checks (unless trust mode is enabled)
-        if !self.context.is_trust_mode() {
-            crate::functions::filesystem::validate_path_security(path)?;
+        if !context.is_trust_mode() {
+            crate::functions::filesystem::validate_path_security(&path)?;
         }
 
         // Resolve path relative to template's directory
-        let resolved_path = self.context.resolve_path(path);
+        let resolved_path = context.resolve_path(&path);
 
         // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
-            tera::Error::msg(format!(
-                "Failed to read file '{}': {}",
-                resolved_path.display(),
-                e
-            ))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
+            )
         })?;
 
         // Parse YAML
         let yaml_value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
-            tera::Error::msg(format!(
-                "Failed to parse YAML from file '{}': {}",
-                resolved_path.display(),
-                e
-            ))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "Failed to parse YAML from file '{}': {}",
+                    resolved_path.display(),
+                    e
+                ),
+            )
         })?;
 
         // Convert to JSON Value
-        let json_value = serde_yaml_to_json(yaml_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert YAML to JSON: {}", e)))?;
-
-        // Convert to Tera Value
-        let tera_value = serde_json::from_value(json_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert to Tera value: {}", e)))?;
-
-        Ok(tera_value)
-    }
-}
-
-/// Read and parse TOML file
-pub struct ReadTomlFile {
-    context: TemplateContext,
-}
-
-impl ReadTomlFile {
-    pub fn new(context: TemplateContext) -> Self {
-        Self { context }
-    }
-}
-
-impl Function for ReadTomlFile {
-    fn call(&self, args: &HashMap<String, Value>) -> Result<Value> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
-            tera::Error::msg("read_toml_file requires a 'path' argument (e.g., path=\"data.toml\")")
+        let json_value = serde_yaml_to_json(yaml_value).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert YAML to JSON: {}", e),
+            )
         })?;
 
+        Ok(Value::from_serialize(&json_value))
+    }
+}
+
+/// Create read_toml_file function with context
+pub fn create_read_toml_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
+    move |path: String| {
         // Security checks (unless trust mode is enabled)
-        if !self.context.is_trust_mode() {
-            crate::functions::filesystem::validate_path_security(path)?;
+        if !context.is_trust_mode() {
+            crate::functions::filesystem::validate_path_security(&path)?;
         }
 
         // Resolve path relative to template's directory
-        let resolved_path = self.context.resolve_path(path);
+        let resolved_path = context.resolve_path(&path);
 
         // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
-            tera::Error::msg(format!(
-                "Failed to read file '{}': {}",
-                resolved_path.display(),
-                e
-            ))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
+            )
         })?;
 
         // Parse TOML
         let toml_value: toml::Value = toml::from_str(&content).map_err(|e| {
-            tera::Error::msg(format!(
-                "Failed to parse TOML from file '{}': {}",
-                resolved_path.display(),
-                e
-            ))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "Failed to parse TOML from file '{}': {}",
+                    resolved_path.display(),
+                    e
+                ),
+            )
         })?;
 
         // Convert to JSON Value
-        let json_value = toml_to_json(toml_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert TOML to JSON: {}", e)))?;
+        let json_value = toml_to_json(toml_value).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert TOML to JSON: {}", e),
+            )
+        })?;
 
-        // Convert to Tera Value
-        let tera_value = serde_json::from_value(json_value)
-            .map_err(|e| tera::Error::msg(format!("Failed to convert to Tera value: {}", e)))?;
-
-        Ok(tera_value)
+        Ok(Value::from_serialize(&json_value))
     }
 }
 

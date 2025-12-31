@@ -1,8 +1,8 @@
 use crate::{TemplateContext, functions};
-use std::error::Error;
+use minijinja::Environment;
+use serde::Serialize;
 use std::fs;
 use std::io::{self, Read, Write};
-use tera::{Context, Tera};
 
 /// Renders a template with environment variables
 ///
@@ -29,8 +29,8 @@ pub fn render_template(
         None => TemplateContext::from_stdin(trust_mode)?,
     };
 
-    // Create empty Tera context - env vars only accessible via env() function
-    let context = Context::new();
+    // Create empty context - env vars only accessible via env() function
+    let context = serde_json::json!({});
 
     // Render the template
     let rendered = render(
@@ -77,47 +77,41 @@ fn read_template(template_source: Option<&str>) -> Result<String, Box<dyn std::e
 fn render(
     template_source: Option<&str>,
     template_content: &str,
-    context: &Context,
+    context: &impl Serialize,
     template_context: TemplateContext,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let mut tera = Tera::default();
+    let mut env = Environment::new();
+
+    // Set strict undefined behavior - fail on undefined variables (like Tera)
+    env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
 
     // Register all custom functions
-    functions::register_all(&mut tera, template_context);
+    functions::register_all(&mut env, template_context);
 
     // Use full file path as template name if it's a file, otherwise use "template"
     let template_name = template_source.unwrap_or("template");
 
-    tera.add_raw_template(template_name, template_content)
-        .map_err(|e| format_tera_error("Failed to parse template", &e))?;
+    env.add_template(template_name, template_content)
+        .map_err(|e| format_minijinja_error("Failed to parse template", &e))?;
 
-    tera.render(template_name, context)
-        .map_err(|e| format_tera_error("Failed to render template", &e).into())
+    let tmpl = env.get_template(template_name)?;
+    tmpl.render(context)
+        .map_err(|e| format_minijinja_error("Failed to render template", &e).into())
 }
 
-/// Formats Tera errors with detailed information
-fn format_tera_error(prefix: &str, error: &tera::Error) -> String {
+/// Formats MiniJinja errors with detailed information
+fn format_minijinja_error(prefix: &str, error: &minijinja::Error) -> String {
     use std::fmt::Write;
 
     let mut msg = String::new();
     writeln!(&mut msg, "{}", prefix).ok();
     writeln!(&mut msg).ok();
-
-    // Main error message
     writeln!(&mut msg, "Error: {}", error).ok();
 
-    // Add source information if available
-    if let Some(source) = Error::source(error) {
+    // MiniJinja has excellent error messages built-in
+    if let Some(detail) = error.detail() {
         writeln!(&mut msg).ok();
-        writeln!(&mut msg, "Caused by:").ok();
-        writeln!(&mut msg, "  {}", source).ok();
-
-        // Chain of causes
-        let mut current_source = Error::source(source);
-        while let Some(cause) = current_source {
-            writeln!(&mut msg, "  {}", cause).ok();
-            current_source = Error::source(cause);
-        }
+        writeln!(&mut msg, "{}", detail).ok();
     }
 
     msg
