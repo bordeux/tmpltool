@@ -277,6 +277,10 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("array_count", array::array_count_fn);
     env.add_function("array_chunk", array::array_chunk_fn);
     env.add_function("array_zip", array::array_zip_fn);
+    env.add_function("array_sort_by", array::array_sort_by_fn);
+    env.add_function("array_group_by", array::array_group_by_fn);
+    env.add_function("array_unique", array::array_unique_fn);
+    env.add_function("array_flatten", array::array_flatten_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);

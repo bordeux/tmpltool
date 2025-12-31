@@ -2855,6 +2855,179 @@ export DATABASE_USER="${DATABASE_USER:-postgres}"
 #}
 ```
 
+#### `array_sort_by(array, key)`
+
+Sort an array of objects by a specified key.
+
+**Arguments:**
+- `array` (required): Array of objects to sort
+- `key` (required): Object key name to sort by
+
+**Returns:** New array sorted by the key value (ascending order)
+
+**Example:**
+```jinja
+{# Sort users by age #}
+{% set users = [
+  {"name": "Alice", "age": 30},
+  {"name": "Bob", "age": 25},
+  {"name": "Charlie", "age": 35}
+] %}
+{% for user in array_sort_by(array=users, key="age") %}
+  {{ user.name }}: {{ user.age }}
+{% endfor %}
+{# Output:
+   Bob: 25
+   Alice: 30
+   Charlie: 35
+#}
+
+{# Sort by string key #}
+{% set products = [
+  {"name": "Zebra Toy", "price": 15},
+  {"name": "Apple Pie", "price": 10},
+  {"name": "Mango Juice", "price": 12}
+] %}
+{% for product in array_sort_by(array=products, key="name") %}
+  {{ product.name }}
+{% endfor %}
+{# Output: Apple Pie, Mango Juice, Zebra Toy #}
+```
+
+#### `array_group_by(array, key)`
+
+Group array items by a key value.
+
+**Arguments:**
+- `array` (required): Array of objects to group
+- `key` (required): Object key name to group by
+
+**Returns:** Object with keys as group names and values as arrays of grouped items
+
+**Example:**
+```jinja
+{# Group users by department #}
+{% set users = [
+  {"name": "Alice", "dept": "Engineering"},
+  {"name": "Bob", "dept": "Sales"},
+  {"name": "Charlie", "dept": "Engineering"}
+] %}
+{% set grouped = array_group_by(array=users, key="dept") %}
+{% for dept, members in grouped %}
+  {{ dept }}:
+  {% for user in members %}
+    - {{ user.name }}
+  {% endfor %}
+{% endfor %}
+{# Output:
+   Engineering:
+     - Alice
+     - Charlie
+   Sales:
+     - Bob
+#}
+
+{# Group by numeric value #}
+{% set tasks = [
+  {"name": "Task1", "priority": 1},
+  {"name": "Task2", "priority": 2},
+  {"name": "Task3", "priority": 1}
+] %}
+{% set by_priority = array_group_by(array=tasks, key="priority") %}
+High priority: {{ by_priority["1"] | length }} tasks
+```
+
+#### `array_unique(array)`
+
+Remove duplicate values from an array.
+
+**Arguments:**
+- `array` (required): Array to deduplicate
+
+**Returns:** New array with duplicates removed (first occurrence kept)
+
+**Example:**
+```jinja
+{# Remove duplicate numbers #}
+{% set nums = [1, 2, 2, 3, 1, 4, 3, 5] %}
+{{ array_unique(array=nums) }}
+{# Output: [1, 2, 3, 4, 5] #}
+
+{# Unique tags #}
+{% set tags = ["docker", "kubernetes", "docker", "helm", "kubernetes"] %}
+Unique tags: {{ array_unique(array=tags) | join(", ") }}
+{# Output: Unique tags: docker, kubernetes, helm #}
+
+{# Use in conditional #}
+{% set all_tags = ["prod", "dev", "prod", "staging", "dev"] %}
+{% set unique_envs = array_unique(array=all_tags) %}
+{% if unique_envs | length > 2 %}
+  Multiple environments detected
+{% endif %}
+```
+
+#### `array_flatten(array)`
+
+Flatten nested arrays by one level.
+
+**Arguments:**
+- `array` (required): Array with nested arrays
+
+**Returns:** New array with nested arrays flattened one level
+
+**Example:**
+```jinja
+{# Flatten nested arrays #}
+{% set nested = [[1, 2], [3, 4], [5]] %}
+{{ array_flatten(array=nested) }}
+{# Output: [1, 2, 3, 4, 5] #}
+
+{# Mixed with non-arrays #}
+{% set mixed = [["a", "b"], "c", ["d", "e"]] %}
+{{ array_flatten(array=mixed) }}
+{# Output: ["a", "b", "c", "d", "e"] #}
+
+{# Only flattens one level #}
+{% set deep = [[1, [2, 3]], [4]] %}
+{{ array_flatten(array=deep) }}
+{# Output: [1, [2, 3], 4] #}
+
+{# Collect values from multiple sources #}
+{% set server1_ips = ["10.0.1.1", "10.0.1.2"] %}
+{% set server2_ips = ["10.0.2.1", "10.0.2.2"] %}
+{% set server3_ips = ["10.0.3.1"] %}
+{% set all_ips = array_flatten(array=[server1_ips, server2_ips, server3_ips]) %}
+Total IPs: {{ all_ips | length }}
+```
+
+**Real-world use case - Task management dashboard:**
+```jinja
+{% set tasks = [
+  {"name": "Fix bug #123", "status": "done", "assignee": "Alice"},
+  {"name": "Deploy v2.0", "status": "in_progress", "assignee": "Bob"},
+  {"name": "Write docs", "status": "done", "assignee": "Alice"},
+  {"name": "Code review", "status": "pending", "assignee": "Charlie"}
+] %}
+
+{# Group by status #}
+{% set by_status = array_group_by(array=tasks, key="status") %}
+
+Task Status Dashboard:
+{% for status, items in by_status %}
+{{ status | upper }} ({{ items | length }} tasks):
+  {% for task in array_sort_by(array=items, key="name") %}
+  - {{ task.name }} ({{ task.assignee }})
+  {% endfor %}
+{% endfor %}
+
+{# Get unique assignees #}
+{% set all_assignees = [] %}
+{% for task in tasks %}
+  {% set _ = all_assignees.append(task.assignee) %}
+{% endfor %}
+Unique assignees: {{ array_unique(array=all_assignees) | join(", ") }}
+```
+
 ### System & Network Functions
 
 Access system information and perform network operations.

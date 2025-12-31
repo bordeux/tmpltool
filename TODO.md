@@ -193,10 +193,10 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `object_has_key(object, key)` - Check if object has key
 
 **Array Functions:**
-- [ ] `array_sort_by(array, key)` - Sort array by object key
-- [ ] `array_group_by(array, key)` - Group array items by key
-- [ ] `array_unique(array)` - Remove duplicates from array
-- [ ] `array_flatten(array)` - Flatten nested arrays
+- [x] `array_sort_by(array, key)` - Sort array by object key
+- [x] `array_group_by(array, key)` - Group array items by key
+- [x] `array_unique(array)` - Remove duplicates from array
+- [x] `array_flatten(array)` - Flatten nested arrays
 
 ### 🌍 Internationalization & Localization
 *i18n support for multi-language configs*
