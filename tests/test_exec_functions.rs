@@ -1,10 +1,10 @@
 use minijinja::Environment;
-use minijinja::value::Kwargs;
 use minijinja::Value;
+use minijinja::value::Kwargs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tmpltool::{TemplateContext, functions};
 use tmpltool::functions::exec;
+use tmpltool::{TemplateContext, functions};
 
 fn create_env(trust_mode: bool) -> Environment<'static> {
     let mut env = Environment::new();
@@ -556,8 +556,7 @@ fn test_exec_raw_unit_exit_code() {
     let exec_raw_fn = exec::create_exec_raw_fn(context);
 
     // Command that exits with code 42
-    let result =
-        exec_raw_fn(Kwargs::from_iter(vec![("command", Value::from("exit 42"))])).unwrap();
+    let result = exec_raw_fn(Kwargs::from_iter(vec![("command", Value::from("exit 42"))])).unwrap();
 
     assert_eq!(result.get_attr("exit_code").unwrap().as_i64(), Some(42));
     assert!(!result.get_attr("success").unwrap().is_true());

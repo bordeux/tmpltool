@@ -1,5 +1,5 @@
-use minijinja::value::Kwargs;
 use minijinja::Value;
+use minijinja::value::Kwargs;
 use std::net::IpAddr;
 use tmpltool::functions::network;
 
@@ -29,10 +29,8 @@ fn test_resolve_dns_missing_hostname() {
 #[test]
 fn test_is_port_available_valid() {
     // Test with a likely available high port
-    let result = network::is_port_available_fn(Kwargs::from_iter(vec![(
-        "port",
-        Value::from(54321),
-    )]));
+    let result =
+        network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(54321))]));
     assert!(result.is_ok());
     // Result should be a boolean
     let val = result.unwrap();
@@ -43,10 +41,12 @@ fn test_is_port_available_valid() {
 fn test_is_port_available_invalid_port_low() {
     let result = network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(0))]));
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("between 1 and 65535"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("between 1 and 65535")
+    );
 }
 
 #[test]
@@ -54,8 +54,10 @@ fn test_is_port_available_invalid_port_high() {
     let result =
         network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(65536))]));
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("between 1 and 65535"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("between 1 and 65535")
+    );
 }

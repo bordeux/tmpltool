@@ -1,5 +1,5 @@
-use minijinja::value::Kwargs;
 use minijinja::Value;
+use minijinja::value::Kwargs;
 use tmpltool::functions::system;
 
 #[test]

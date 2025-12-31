@@ -529,24 +529,28 @@ fn test_component_boundary_values() {
 fn test_date_add_invalid_timestamp() {
     let env = create_env();
     // Timestamp too large to be valid
-    let result = render_template(
-        &env,
-        "{{ date_add(timestamp=99999999999999, days=1) }}",
-    );
+    let result = render_template(&env, "{{ date_add(timestamp=99999999999999, days=1) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
 fn test_date_add_negative_invalid_timestamp() {
     let env = create_env();
     // Negative timestamp that's out of range
-    let result = render_template(
-        &env,
-        "{{ date_add(timestamp=-99999999999999, days=1) }}",
-    );
+    let result = render_template(&env, "{{ date_add(timestamp=-99999999999999, days=1) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -557,7 +561,12 @@ fn test_date_diff_invalid_timestamp1() {
         "{{ date_diff(timestamp1=99999999999999, timestamp2=1704067200) }}",
     );
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp1"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp1")
+    );
 }
 
 #[test]
@@ -568,7 +577,12 @@ fn test_date_diff_invalid_timestamp2() {
         "{{ date_diff(timestamp1=1704067200, timestamp2=99999999999999) }}",
     );
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp2"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp2")
+    );
 }
 
 #[test]
@@ -580,7 +594,12 @@ fn test_date_diff_both_invalid_timestamps() {
     );
     assert!(result.is_err());
     // Should fail on timestamp1 first
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -588,7 +607,12 @@ fn test_get_year_invalid_timestamp() {
     let env = create_env();
     let result = render_template(&env, "{{ get_year(timestamp=99999999999999) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -596,7 +620,12 @@ fn test_get_month_invalid_timestamp() {
     let env = create_env();
     let result = render_template(&env, "{{ get_month(timestamp=99999999999999) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -604,7 +633,12 @@ fn test_get_day_invalid_timestamp() {
     let env = create_env();
     let result = render_template(&env, "{{ get_day(timestamp=99999999999999) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -612,7 +646,12 @@ fn test_get_hour_invalid_timestamp() {
     let env = create_env();
     let result = render_template(&env, "{{ get_hour(timestamp=99999999999999) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -620,7 +659,12 @@ fn test_get_minute_invalid_timestamp() {
     let env = create_env();
     let result = render_template(&env, "{{ get_minute(timestamp=99999999999999) }}");
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
@@ -631,7 +675,12 @@ fn test_timezone_convert_invalid_timestamp() {
         "{{ timezone_convert(timestamp=99999999999999, from_tz=\"UTC\", to_tz=\"America/New_York\") }}",
     );
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid timestamp")
+    );
 }
 
 #[test]
