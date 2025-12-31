@@ -1,13 +1,46 @@
+/// Environment variable access functions for templates
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
-/// Filter environment variables by pattern
-///
-/// This module provides a MiniJinja function to filter environment variables
-/// matching a glob pattern (e.g., "SERVER_*", "DB_*", etc.)
 use std::collections::HashMap;
-use std::env;
 
-/// A MiniJinja function that filters environment variables by pattern
+/// Get environment variable with optional default
+///
+/// Replacement for Tera's built-in get_env() function
+///
+/// # Arguments
+///
+/// * `name` - Environment variable name
+/// * `default` - Optional default value if variable is not set
+///
+/// # Example
+///
+/// ```jinja
+/// {{ get_env(name="HOME") }}
+/// {{ get_env(name="MISSING", default="/tmp") }}
+/// ```
+pub fn env_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let name: String = kwargs.get("name")?;
+    let default: Option<String> = kwargs.get("default").ok();
+
+    match std::env::var(&name) {
+        Ok(value) => Ok(Value::from(value)),
+        Err(_) => {
+            if let Some(def) = default {
+                Ok(Value::from(def))
+            } else {
+                Err(Error::new(
+                    ErrorKind::UndefinedError,
+                    format!(
+                        "Environment variable '{}' is not set and no default provided",
+                        name
+                    ),
+                ))
+            }
+        }
+    }
+}
+
+/// Filter environment variables by pattern
 ///
 /// Returns a list of objects with `key` and `value` fields for all
 /// environment variables matching the given glob pattern.
@@ -46,7 +79,7 @@ pub fn filter_env_fn(kwargs: Kwargs) -> Result<Value, Error> {
     })?;
 
     // Filter environment variables
-    let mut results: Vec<HashMap<String, String>> = env::vars()
+    let mut results: Vec<HashMap<String, String>> = std::env::vars()
         .filter(|(key, _)| re.is_match(key))
         .map(|(key, value)| {
             let mut map = HashMap::new();

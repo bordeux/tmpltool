@@ -1,5 +1,5 @@
 use minijinja::value::Kwargs;
-use tmpltool::functions::filter_env::filter_env_fn;
+use tmpltool::functions::environment::filter_env_fn;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {

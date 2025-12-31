@@ -61,13 +61,12 @@
 //! }
 //! ```
 
-pub mod builtins;
 pub mod data_parsing;
+pub mod datetime;
+pub mod environment;
 pub mod filesystem;
-pub mod filter_env;
-pub mod filters;
 pub mod hash;
-pub mod random_string;
+pub mod random;
 pub mod uuid_gen;
 pub mod validation;
 
@@ -99,18 +98,18 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     use std::sync::Arc;
 
     // Register built-in function replacements (were built-in in Tera)
-    env.add_function("get_env", builtins::env_fn);
-    env.add_function("now", builtins::now_fn);
-    env.add_function("get_random", builtins::get_random_fn);
+    env.add_function("get_env", environment::env_fn);
+    env.add_function("now", datetime::now_fn);
+    env.add_function("get_random", random::get_random_fn);
 
     // Register custom functions (simple, no context needed)
-    env.add_function("filter_env", filter_env::filter_env_fn);
+    env.add_function("filter_env", environment::filter_env_fn);
     env.add_function("md5", hash::md5_fn);
     env.add_function("sha1", hash::sha1_fn);
     env.add_function("sha256", hash::sha256_fn);
     env.add_function("sha512", hash::sha512_fn);
     env.add_function("uuid", uuid_gen::uuid_fn);
-    env.add_function("random_string", random_string::random_string_fn);
+    env.add_function("random_string", random::random_string_fn);
 
     // Validation functions
     env.add_function("is_email", validation::is_email_fn);
@@ -162,8 +161,6 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
         data_parsing::create_read_toml_file_fn(context_arc),
     );
 
-    // Register custom filters
-    env.add_filter("slugify", filters::slugify_filter);
-    env.add_filter("filesizeformat", filters::filesizeformat_filter);
-    env.add_filter("urlencode", filters::urlencode_filter);
+    // Register custom filters from the filters module
+    crate::filters::register_all(env);
 }

@@ -1,5 +1,5 @@
 use minijinja::value::Kwargs;
-use tmpltool::functions::random_string::random_string_fn;
+use tmpltool::functions::random::random_string_fn;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, minijinja::Value)>) -> Kwargs {
