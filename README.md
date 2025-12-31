@@ -7,7 +7,7 @@
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/bordeux/tmpltool/pkgs/container/tmpltool)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A fast and simple command-line template rendering tool using [Tera](https://keats.github.io/tera/) templates with environment variables.
+A fast and simple command-line template rendering tool using [MiniJinja](https://github.com/mitsuhiko/minijinja) templates with environment variables.
 
 ## Table of Contents
 
@@ -71,7 +71,7 @@ tmpltool greeting.tmpl
 - **Validation**: Validate emails, URLs, IPs, UUIDs, regex matching
 - **Security**: Built-in protections with optional `--trust` mode
 - **Flexible I/O**: File or stdin input, file or stdout output
-- **Full Tera Syntax**: Conditionals, loops, filters, and more
+- **Full Jinja2 Syntax**: Conditionals, loops, filters, and more
 - **Single Binary**: No runtime dependencies
 - **Docker Support**: Multi-arch images available
 
@@ -285,7 +285,7 @@ tmpltool build-report.tmpl
 
 ## Template Syntax
 
-tmpltool uses the [Tera](https://keats.github.io/tera/) template engine. For complete documentation, visit: https://keats.github.io/tera/docs/
+tmpltool uses the [MiniJinja](https://github.com/mitsuhiko/minijinja) template engine, which is compatible with Python's Jinja2. For complete documentation, visit: https://docs.rs/minijinja/
 
 ### Variables
 
@@ -1346,4 +1346,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For more examples, see the [examples/](examples/) directory and [examples/README.md](examples/README.md).
 
-For complete Tera syntax documentation, visit: https://keats.github.io/tera/docs/
+For complete MiniJinja/Jinja2 syntax documentation, visit:
+- MiniJinja Docs: https://docs.rs/minijinja/
+- Jinja2 Template Designer: https://jinja.palletsprojects.com/templates/
