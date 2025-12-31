@@ -205,7 +205,7 @@ When adding new template functions:
    ```
 3. **Add module declaration** in `src/functions/mod.rs`: `pub mod network;`
 4. **Register function** in `register_all()`: `env.add_function("my_function", network::my_function);`
-5. **Write tests** in `tests/test_my_function.rs`
+5. **Write tests** in `tests/test_my_function.rs`. IMPORTANT: always in tests folder write tests. src folder should be clean from the tests.
 6. **Document** in README.md with examples
 
 **For context-aware functions (filesystem access):**
