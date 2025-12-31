@@ -9,11 +9,11 @@ fn test_now_fn_returns_timestamp() {
     assert!(!timestamp.is_empty());
 
     // Check it contains basic ISO 8601 components
-    assert!(timestamp.contains('T'), "Should contain date-time separator");
     assert!(
-        timestamp.contains('-'),
-        "Should contain date separators"
+        timestamp.contains('T'),
+        "Should contain date-time separator"
     );
+    assert!(timestamp.contains('-'), "Should contain date separators");
     assert!(timestamp.contains(':'), "Should contain time separators");
 }
 
@@ -30,16 +30,8 @@ fn test_now_fn_format_iso8601() {
     let date_part = parts[0];
     let date_components: Vec<&str> = date_part.split('-').collect();
     assert_eq!(date_components.len(), 3, "Date should have year-month-day");
-    assert_eq!(
-        date_components[0].len(),
-        4,
-        "Year should be 4 digits"
-    );
-    assert_eq!(
-        date_components[1].len(),
-        2,
-        "Month should be 2 digits"
-    );
+    assert_eq!(date_components[0].len(), 4, "Year should be 4 digits");
+    assert_eq!(date_components[1].len(), 2, "Month should be 2 digits");
     assert_eq!(date_components[2].len(), 2, "Day should be 2 digits");
 }
 
@@ -53,7 +45,7 @@ fn test_now_fn_valid_year() {
 
     // Check year is reasonable (between 2020 and 2100)
     assert!(
-        year >= 2020 && year <= 2100,
+        (2020..=2100).contains(&year),
         "Year should be reasonable: {}",
         year
     );
@@ -106,7 +98,7 @@ fn test_now_fn_valid_month() {
     let month_str = &timestamp[5..7];
     let month: u32 = month_str.parse().unwrap();
 
-    assert!(month >= 1 && month <= 12, "Month should be 1-12: {}", month);
+    assert!((1..=12).contains(&month), "Month should be 1-12: {}", month);
 }
 
 #[test]
@@ -117,7 +109,7 @@ fn test_now_fn_valid_day() {
     let day_str = &timestamp[8..10];
     let day: u32 = day_str.parse().unwrap();
 
-    assert!(day >= 1 && day <= 31, "Day should be 1-31: {}", day);
+    assert!((1..=31).contains(&day), "Day should be 1-31: {}", day);
 }
 
 #[test]
@@ -150,5 +142,9 @@ fn test_now_fn_valid_second() {
     let second_str = &timestamp[17..19];
     let second: u32 = second_str.parse().unwrap();
 
-    assert!(second <= 60, "Second should be 0-60 (leap second): {}", second);
+    assert!(
+        second <= 60,
+        "Second should be 0-60 (leap second): {}",
+        second
+    );
 }

@@ -36,11 +36,13 @@ fn test_env_fn_missing_no_default() {
     let kwargs = create_kwargs(vec![("name", "NONEXISTENT_VAR_67890")]);
     let result = env_fn(kwargs);
     assert!(result.is_err());
-    assert!(result
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("is not set and no default provided"));
+    assert!(
+        result
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("is not set and no default provided")
+    );
 }
 
 #[test]

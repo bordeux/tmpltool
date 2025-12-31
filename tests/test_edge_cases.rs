@@ -200,7 +200,8 @@ fn test_special_characters_in_output() {
 
 #[test]
 fn test_function_with_default_and_filter() {
-    let template_content = r#"{{ get_env(name="NONEXISTENT_VAR", default="hello world") | slugify | upper }}"#;
+    let template_content =
+        r#"{{ get_env(name="NONEXISTENT_VAR", default="hello world") | slugify | upper }}"#;
     let template_path = get_test_file_path("template_default_filter.txt");
     let output_path = get_test_file_path("output_default_filter.txt");
 

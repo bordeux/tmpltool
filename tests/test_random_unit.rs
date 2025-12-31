@@ -3,7 +3,10 @@ use tmpltool::functions::random::get_random_fn;
 
 // Helper to create kwargs for testing
 fn create_kwargs_i64(args: Vec<(&str, i64)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+    Kwargs::from_iter(
+        args.into_iter()
+            .map(|(k, v)| (k, minijinja::Value::from(v))),
+    )
 }
 
 #[test]
@@ -13,7 +16,11 @@ fn test_get_random_default_range() {
     let value = result.as_i64().unwrap();
 
     // Default range is 0-100 (exclusive)
-    assert!(value >= 0 && value < 100, "Value should be in [0, 100): {}", value);
+    assert!(
+        (0..100).contains(&value),
+        "Value should be in [0, 100): {}",
+        value
+    );
 }
 
 #[test]
@@ -22,7 +29,11 @@ fn test_get_random_custom_range() {
     let result = get_random_fn(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
-    assert!(value >= 10 && value < 20, "Value should be in [10, 20): {}", value);
+    assert!(
+        (10..20).contains(&value),
+        "Value should be in [10, 20): {}",
+        value
+    );
 }
 
 #[test]
@@ -41,7 +52,11 @@ fn test_get_random_negative_range() {
     let result = get_random_fn(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
-    assert!(value >= -10 && value < 0, "Value should be in [-10, 0): {}", value);
+    assert!(
+        (-10..0).contains(&value),
+        "Value should be in [-10, 0): {}",
+        value
+    );
 }
 
 #[test]
@@ -50,7 +65,11 @@ fn test_get_random_crossing_zero() {
     let result = get_random_fn(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
-    assert!(value >= -5 && value < 5, "Value should be in [-5, 5): {}", value);
+    assert!(
+        (-5..5).contains(&value),
+        "Value should be in [-5, 5): {}",
+        value
+    );
 }
 
 #[test]
@@ -60,7 +79,7 @@ fn test_get_random_large_range() {
     let value = result.as_i64().unwrap();
 
     assert!(
-        value >= 0 && value < 1000000,
+        (0..1000000).contains(&value),
         "Value should be in [0, 1000000): {}",
         value
     );
@@ -72,11 +91,13 @@ fn test_get_random_invalid_range_equal() {
     let result = get_random_fn(kwargs);
 
     assert!(result.is_err());
-    assert!(result
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("must be less than end"));
+    assert!(
+        result
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("must be less than end")
+    );
 }
 
 #[test]
@@ -85,11 +106,13 @@ fn test_get_random_invalid_range_reversed() {
     let result = get_random_fn(kwargs);
 
     assert!(result.is_err());
-    assert!(result
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("must be less than end"));
+    assert!(
+        result
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("must be less than end")
+    );
 }
 
 #[test]
@@ -99,7 +122,11 @@ fn test_get_random_only_start() {
     let value = result.as_i64().unwrap();
 
     // Should use default end of 100
-    assert!(value >= 50 && value < 100, "Value should be in [50, 100): {}", value);
+    assert!(
+        (50..100).contains(&value),
+        "Value should be in [50, 100): {}",
+        value
+    );
 }
 
 #[test]
@@ -109,7 +136,11 @@ fn test_get_random_only_end() {
     let value = result.as_i64().unwrap();
 
     // Should use default start of 0
-    assert!(value >= 0 && value < 50, "Value should be in [0, 50): {}", value);
+    assert!(
+        (0..50).contains(&value),
+        "Value should be in [0, 50): {}",
+        value
+    );
 }
 
 #[test]
@@ -140,7 +171,7 @@ fn test_get_random_always_in_range() {
         let result = get_random_fn(kwargs.clone()).unwrap();
         let value = result.as_i64().unwrap();
         assert!(
-            value >= 1 && value < 10,
+            (1..10).contains(&value),
             "Value should always be in [1, 10): {}",
             value
         );
