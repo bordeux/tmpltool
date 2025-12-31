@@ -1,3 +1,10 @@
+## 1.0.0 (2025-12-31)
+
+
+### Features
+
+* initial release of tmpltool v0.1.0 ([29d3910](https://github.com/bordeux/tmpltool/commit/29d3910d494470920550cd35cd98e938f6e5f0d6))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
