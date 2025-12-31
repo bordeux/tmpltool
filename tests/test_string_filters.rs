@@ -439,7 +439,12 @@ fn test_indent_error_not_string() {
     let value = Value::from(123);
     let result = indent_filter(&value, None);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -447,7 +452,12 @@ fn test_dedent_error_not_string() {
     let value = Value::from(vec![1, 2, 3]);
     let result = dedent_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -455,7 +465,12 @@ fn test_quote_error_not_string() {
     let value = Value::from(42);
     let result = quote_filter(&value, None);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -463,15 +478,25 @@ fn test_escape_quotes_error_not_string() {
     let value = Value::from(true);
     let result = escape_quotes_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
 fn test_to_snake_case_error_not_string() {
-    let value = Value::from(3.14);
+    let value = Value::from(3.5);
     let result = to_snake_case_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -479,7 +504,12 @@ fn test_to_camel_case_error_not_string() {
     let value = Value::from(false);
     let result = to_camel_case_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -487,7 +517,12 @@ fn test_to_pascal_case_error_not_string() {
     let value = Value::from(vec!["not", "a", "string"]);
     let result = to_pascal_case_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -495,31 +530,51 @@ fn test_to_kebab_case_error_not_string() {
     let value = Value::from(100);
     let result = to_kebab_case_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
 fn test_pad_left_error_not_string() {
-    let value = Value::from_serialize(&serde_json::json!({"key": "value"}));
+    let value = Value::from_serialize(serde_json::json!({"key": "value"}));
     let result = pad_left_filter(&value, 10, None);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
 fn test_pad_right_error_not_string() {
-    let value = Value::from_serialize(&serde_json::json!([1, 2, 3]));
+    let value = Value::from_serialize(serde_json::json!([1, 2, 3]));
     let result = pad_right_filter(&value, 10, None);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
 fn test_repeat_error_not_string() {
-    let value = Value::from_serialize(&serde_json::json!(null));
+    let value = Value::from_serialize(serde_json::json!(null));
     let result = repeat_filter(&value, 3);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }
 
 #[test]
@@ -527,5 +582,10 @@ fn test_reverse_error_not_string() {
     let value = Value::from(vec![1, 2, 3]);
     let result = reverse_filter(&value);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("requires a string"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a string")
+    );
 }

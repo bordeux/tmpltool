@@ -491,10 +491,7 @@ fn test_to_toml_error_array_root() {
     // TOML does not support arrays at the root level
     let arr = vec![1, 2, 3];
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
-        "object",
-        Value::from(arr),
-    )]));
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from(arr))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -504,10 +501,8 @@ fn test_to_toml_error_array_root() {
 #[test]
 fn test_to_toml_error_string_root() {
     // TOML does not support strings at the root level
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
-        "object",
-        Value::from("hello"),
-    )]));
+    let result =
+        serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from("hello"))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -517,10 +512,7 @@ fn test_to_toml_error_string_root() {
 #[test]
 fn test_to_toml_error_number_root() {
     // TOML does not support numbers at the root level
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
-        "object",
-        Value::from(42),
-    )]));
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from(42))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -530,10 +522,7 @@ fn test_to_toml_error_number_root() {
 #[test]
 fn test_to_toml_error_boolean_root() {
     // TOML does not support booleans at the root level
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
-        "object",
-        Value::from(true),
-    )]));
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from(true))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -627,8 +616,8 @@ fn test_to_toml_with_null_value() {
 
     // TOML serialization with null should either fail or succeed with omitted field
     // This depends on serde's behavior - typically it omits nulls
-    if result.is_ok() {
-        let toml_str = result.unwrap().as_str().unwrap().to_string();
+    if let Ok(value) = result {
+        let toml_str = value.as_str().unwrap().to_string();
         // Null fields are typically omitted in TOML
         assert!(!toml_str.contains("null"));
     }
