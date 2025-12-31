@@ -547,8 +547,8 @@ fn test_to_toml_error_nested_mixed_array() {
 
     // This should succeed - TOML can handle tables with different fields
     // Just verify it doesn't panic
-    if result.is_ok() {
-        assert!(result.unwrap().as_str().is_some());
+    if let Ok(value) = result {
+        assert!(value.as_str().is_some());
     }
 }
 
