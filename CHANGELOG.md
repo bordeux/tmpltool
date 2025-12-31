@@ -1,3 +1,12 @@
+## [2.0.0](https://github.com/bordeux/tmpltool/compare/v1.2.0...v2.0.0) (2025-12-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* Migrate to minininja
+
+* Merge pull request #13 from bordeux/feature/migrate-to-mininija ([3e2e61d](https://github.com/bordeux/tmpltool/commit/3e2e61df3da5a91bafda783eb4590137b00ff4fd)), closes [#13](https://github.com/bordeux/tmpltool/issues/13)
+
 ## [1.2.0](https://github.com/bordeux/tmpltool/compare/v1.1.1...v1.2.0) (2025-12-30)
 
 
