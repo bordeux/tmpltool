@@ -55,6 +55,11 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `read_yaml_file(path)` - Read and parse YAML file
 - [x] `read_toml_file(path)` - Read and parse TOML file
 
+### ✅ Data Serialization
+- [x] `to_json(object, pretty)` - Convert object to JSON string
+- [x] `to_yaml(object)` - Convert object to YAML string
+- [x] `to_toml(object)` - Convert object to TOML string
+
 ### ✅ Validation
 - [x] `is_email(string)` - Validate email format
 - [x] `is_url(string)` - Validate URL format
@@ -167,9 +172,9 @@ This document contains ideas for new functions and features to make tmpltool mor
 *Advanced data manipulation*
 
 **Serialization:**
-- [ ] `to_json(object, pretty)` - Convert object to JSON string
-- [ ] `to_yaml(object)` - Convert object to YAML string
-- [ ] `to_toml(object)` - Convert object to TOML string
+- [x] `to_json(object, pretty)` - Convert object to JSON string
+- [x] `to_yaml(object)` - Convert object to YAML string
+- [x] `to_toml(object)` - Convert object to TOML string
 
 **Object Functions:**
 - [ ] `object_merge(obj1, obj2)` - Deep merge two objects

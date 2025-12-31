@@ -395,22 +395,19 @@ fn test_read_lines_with_max() {
 }
 
 #[test]
-fn test_read_lines_invalid_max_zero() {
+fn test_read_lines_entire_file() {
     let context = create_trusted_context();
     let read_lines_fn = filesystem::create_read_lines_fn(context);
 
     let result = read_lines_fn(Kwargs::from_iter(vec![
         ("path", Value::from("Cargo.toml")),
         ("max_lines", Value::from(0)),
-    ]));
+    ]))
+    .unwrap();
 
-    assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("between 1 and 10000")
-    );
+    let lines: Vec<_> = result.try_iter().unwrap().collect();
+    // Cargo.toml should have more than 3 lines
+    assert!(lines.len() > 3);
 }
 
 #[test]
@@ -428,8 +425,40 @@ fn test_read_lines_invalid_max_large() {
         result
             .unwrap_err()
             .to_string()
-            .contains("between 1 and 10000")
+            .contains("between 0 and 10000")
     );
+}
+
+#[test]
+fn test_read_lines_last_lines() {
+    let context = create_trusted_context();
+    let read_lines_fn = filesystem::create_read_lines_fn(context);
+
+    let result = read_lines_fn(Kwargs::from_iter(vec![
+        ("path", Value::from("Cargo.toml")),
+        ("max_lines", Value::from(-3)),
+    ]))
+    .unwrap();
+
+    let lines: Vec<_> = result.try_iter().unwrap().collect();
+    assert_eq!(lines.len(), 3);
+}
+
+#[test]
+fn test_read_lines_negative_more_than_file() {
+    let context = create_trusted_context();
+    let read_lines_fn = filesystem::create_read_lines_fn(context);
+
+    // Request more lines than the file has
+    let result = read_lines_fn(Kwargs::from_iter(vec![
+        ("path", Value::from("Cargo.toml")),
+        ("max_lines", Value::from(-10000)),
+    ]))
+    .unwrap();
+
+    let lines: Vec<_> = result.try_iter().unwrap().collect();
+    // Should return all lines when requesting more than available
+    assert!(!lines.is_empty());
 }
 
 #[test]

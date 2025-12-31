@@ -26,6 +26,7 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
   - [Filesystem Functions](#filesystem-functions)
   - [Path Manipulation Functions](#path-manipulation-functions)
   - [Data Parsing Functions](#data-parsing-functions)
+  - [Data Serialization Functions](#data-serialization-functions)
   - [Validation Functions](#validation-functions)
   - [Debugging & Development Functions](#debugging--development-functions)
 - [Advanced Examples](#advanced-examples)
@@ -74,6 +75,7 @@ tmpltool greeting.tmpl
 - **Encoding & Security**: Base64, hex, bcrypt, HMAC, HTML/XML/shell escaping, secure random strings
 - **Filesystem**: Read files, check existence, list directories, glob patterns, file info, path manipulation
 - **Data Parsing**: Parse and read JSON, YAML, TOML files
+- **Data Serialization**: Convert objects to JSON, YAML, TOML strings with pretty-printing options
 - **Validation**: Validate emails, URLs, IPs, UUIDs, regex matching
 - **System & Network**: Get hostname, username, directories, IP addresses, DNS resolution, port availability
 - **Debugging & Development**: Debug output, type checking, assertions, warnings, error handling
@@ -1553,11 +1555,14 @@ Check if a path is a symbolic link.
 
 #### `read_lines(path, max_lines)`
 
-Read the first N lines from a file.
+Read lines from a file with flexible line selection.
 
 **Arguments:**
 - `path` (required) - Path to file
-- `max_lines` (optional) - Maximum number of lines to read (default: 10, max: 10000)
+- `max_lines` (optional) - Number of lines to read (default: 10, max abs value: 10000)
+  - **Positive number**: Read first N lines
+  - **Negative number**: Read last N lines
+  - **Zero**: Read entire file
 
 **Returns:** Array of strings (lines without newline characters)
 
@@ -1566,11 +1571,22 @@ Read the first N lines from a file.
 **Examples:**
 ```jinja
 {# Read first 5 lines #}
-{% set lines = read_lines(path="log.txt", max_lines=5) %}
+{% set first_lines = read_lines(path="log.txt", max_lines=5) %}
 Recent log entries:
-{% for line in lines %}
+{% for line in first_lines %}
   {{ loop.index }}: {{ line }}
 {% endfor %}
+
+{# Read last 5 lines #}
+{% set last_lines = read_lines(path="log.txt", max_lines=-5) %}
+Latest log entries:
+{% for line in last_lines %}
+  {{ line }}
+{% endfor %}
+
+{# Read entire file #}
+{% set all_lines = read_lines(path="config.txt", max_lines=0) %}
+Total lines: {{ all_lines | length }}
 
 {# Preview file content #}
 {% if is_file(path="README.md") %}
@@ -1580,15 +1596,13 @@ Recent log entries:
   {% endfor %}
 {% endif %}
 
-{# Count non-empty lines #}
-{% set lines = read_lines(path="data.csv", max_lines=100) %}
-{% set count = 0 %}
-{% for line in lines %}
-  {% if line | trim %}
-    {% set count = count + 1 %}
+{# Process log file tail #}
+{% set log_tail = read_lines(path="app.log", max_lines=-10) %}
+{% for line in log_tail %}
+  {% if "ERROR" in line %}
+    ⚠️  {{ line }}
   {% endif %}
 {% endfor %}
-Non-empty lines: {{ count }}
 ```
 
 **Practical Example - Project Structure:**
@@ -1815,6 +1829,194 @@ Environment: {{ yaml_config.environment }}
 ## From TOML ({{ toml_config.package.name }})
 Rust Version: {{ toml_config.package.edition }}
 Dependencies: {{ toml_config.dependencies | length }}
+```
+
+### Data Serialization Functions
+
+Convert objects and data structures to formatted strings (JSON, YAML, TOML). Useful for generating configuration files, API payloads, or converting between formats.
+
+#### `to_json(object, pretty)`
+
+Convert an object to a JSON string.
+
+**Arguments:**
+- `object` (required) - Object/value to convert to JSON
+- `pretty` (optional) - Enable pretty-printing with indentation (default: false)
+
+**Returns:** JSON string
+
+**Examples:**
+```jinja
+{# Simple JSON serialization #}
+{% set config = {"host": "localhost", "port": 8080, "debug": true} %}
+{{ to_json(object=config) }}
+{# Output: {"host":"localhost","port":8080,"debug":true} #}
+
+{# Pretty-printed JSON #}
+{{ to_json(object=config, pretty=true) }}
+{# Output:
+{
+  "host": "localhost",
+  "port": 8080,
+  "debug": true
+}
+#}
+
+{# Convert array to JSON #}
+{% set items = [1, 2, 3, 4, 5] %}
+{{ to_json(object=items) }}
+{# Output: [1,2,3,4,5] #}
+
+{# Generate API payload #}
+{% set api_request = {
+  "method": "POST",
+  "endpoint": "/api/users",
+  "data": {
+    "username": get_env(name="USERNAME"),
+    "email": get_env(name="EMAIL")
+  }
+} %}
+{{ to_json(object=api_request, pretty=true) }}
+```
+
+#### `to_yaml(object)`
+
+Convert an object to a YAML string.
+
+**Arguments:**
+- `object` (required) - Object/value to convert to YAML
+
+**Returns:** YAML string
+
+**Examples:**
+```jinja
+{# Simple YAML serialization #}
+{% set config = {"host": "localhost", "port": 8080, "debug": true} %}
+{{ to_yaml(object=config) }}
+{# Output:
+host: localhost
+port: 8080
+debug: true
+#}
+
+{# Convert array to YAML #}
+{% set items = ["apple", "banana", "cherry"] %}
+{{ to_yaml(object=items) }}
+{# Output:
+- apple
+- banana
+- cherry
+#}
+
+{# Generate Kubernetes config #}
+{% set k8s_config = {
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": get_env(name="APP_NAME", default="myapp"),
+    "namespace": get_env(name="NAMESPACE", default="default")
+  },
+  "data": {
+    "database.url": get_env(name="DATABASE_URL"),
+    "cache.enabled": "true"
+  }
+} %}
+{{ to_yaml(object=k8s_config) }}
+```
+
+#### `to_toml(object)`
+
+Convert an object to a TOML string.
+
+**Arguments:**
+- `object` (required) - Object/value to convert to TOML
+
+**Returns:** TOML string
+
+**Note:** TOML has specific requirements:
+- Root level must be a table (object/map)
+- Arrays must contain elements of the same type
+
+**Examples:**
+```jinja
+{# Simple TOML serialization #}
+{% set config = {"title": "My App", "version": "1.0.0"} %}
+{{ to_toml(object=config) }}
+{# Output:
+title = "My App"
+version = "1.0.0"
+#}
+
+{# Generate Cargo.toml dependencies #}
+{% set cargo_config = {
+  "package": {
+    "name": get_env(name="PACKAGE_NAME", default="myapp"),
+    "version": "1.0.0",
+    "edition": "2021"
+  },
+  "dependencies": {
+    "serde": "1.0",
+    "tokio": {"version": "1.0", "features": ["full"]}
+  }
+} %}
+{{ to_toml(object=cargo_config) }}
+{# Output:
+[package]
+name = "myapp"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0"
+
+[dependencies.tokio]
+version = "1.0"
+features = ["full"]
+#}
+
+{# Array of tables #}
+{% set database_config = {
+  "database": [
+    {"name": "primary", "host": "db1.example.com", "port": 5432},
+    {"name": "replica", "host": "db2.example.com", "port": 5432}
+  ]
+} %}
+{{ to_toml(object=database_config) }}
+{# Output:
+[[database]]
+name = "primary"
+host = "db1.example.com"
+port = 5432
+
+[[database]]
+name = "replica"
+host = "db2.example.com"
+port = 5432
+#}
+```
+
+**Practical Example - Format Conversion:**
+```jinja
+{# Read JSON, convert to YAML #}
+{% set json_config = read_json_file(path="config.json") %}
+
+# Generated YAML from JSON config
+{{ to_yaml(object=json_config) }}
+
+{# Read environment variables and generate TOML #}
+{% set env_config = {
+  "server": {
+    "host": get_env(name="SERVER_HOST", default="0.0.0.0"),
+    "port": get_env(name="SERVER_PORT", default="8080") | int,
+    "workers": get_env(name="WORKERS", default="4") | int
+  },
+  "database": {
+    "url": get_env(name="DATABASE_URL", default="postgres://localhost/mydb"),
+    "max_connections": get_env(name="DB_MAX_CONN", default="10") | int
+  }
+} %}
+
+{{ to_toml(object=env_config) }}
 ```
 
 ### System & Network Functions

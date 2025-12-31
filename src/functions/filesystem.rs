@@ -567,12 +567,15 @@ pub fn create_is_symlink_fn(
     }
 }
 
-/// Read first N lines from a file
+/// Read lines from a file
 ///
 /// # Arguments
 ///
 /// * `path` (required) - Path to file
-/// * `max_lines` (optional) - Maximum number of lines to read (default: 10)
+/// * `max_lines` (optional) - Number of lines to read (default: 10)
+///   - Positive number: Read first N lines
+///   - Negative number: Read last N lines
+///   - Zero: Read entire file
 ///
 /// # Returns
 ///
@@ -581,27 +584,30 @@ pub fn create_is_symlink_fn(
 /// # Example
 ///
 /// ```jinja
-/// {% set lines = read_lines(path="log.txt", max_lines=5) %}
-/// {% for line in lines %}
-///   {{ line }}
-/// {% endfor %}
+/// {# Read first 5 lines #}
+/// {% set first_lines = read_lines(path="log.txt", max_lines=5) %}
+///
+/// {# Read last 5 lines #}
+/// {% set last_lines = read_lines(path="log.txt", max_lines=-5) %}
+///
+/// {# Read entire file #}
+/// {% set all_lines = read_lines(path="config.txt", max_lines=0) %}
 /// ```
 pub fn create_read_lines_fn(
     context: Arc<TemplateContext>,
 ) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         let path: String = kwargs.get("path")?;
-        let max_lines: usize = kwargs
-            .get::<i64>("max_lines")
-            .ok()
-            .map(|n| n as usize)
-            .unwrap_or(10);
+        let max_lines: i64 = kwargs.get::<i64>("max_lines").ok().unwrap_or(10);
 
-        // Validate max_lines
-        if max_lines == 0 || max_lines > 10000 {
+        // Validate max_lines range
+        if max_lines.abs() > 10000 {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
-                format!("max_lines must be between 1 and 10000, got {}", max_lines),
+                format!(
+                    "max_lines absolute value must be between 0 and 10000, got {}",
+                    max_lines
+                ),
             ));
         }
 
@@ -627,12 +633,33 @@ pub fn create_read_lines_fn(
             )
         })?;
 
-        // Split into lines and take max_lines
-        let lines: Vec<Value> = content
-            .lines()
-            .take(max_lines)
-            .map(|line| Value::from(line.to_string()))
-            .collect();
+        // Collect all lines
+        let all_lines: Vec<&str> = content.lines().collect();
+
+        // Select lines based on max_lines
+        let lines: Vec<Value> = if max_lines == 0 {
+            // Read entire file
+            all_lines
+                .iter()
+                .map(|line| Value::from(line.to_string()))
+                .collect()
+        } else if max_lines > 0 {
+            // Read first N lines
+            all_lines
+                .iter()
+                .take(max_lines as usize)
+                .map(|line| Value::from(line.to_string()))
+                .collect()
+        } else {
+            // Read last N lines (max_lines is negative)
+            let n = (-max_lines) as usize;
+            let start_index = all_lines.len().saturating_sub(n);
+            all_lines
+                .iter()
+                .skip(start_index)
+                .map(|line| Value::from(line.to_string()))
+                .collect()
+        };
 
         Ok(Value::from(lines))
     }

@@ -78,6 +78,7 @@ pub mod filesystem;
 pub mod hash;
 pub mod network;
 pub mod random;
+pub mod serialization;
 pub mod system;
 pub mod uuid_gen;
 pub mod validation;
@@ -240,6 +241,11 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("assert", debug::assert_fn);
     env.add_function("warn", debug::warn_fn);
     env.add_function("abort", debug::abort_fn);
+
+    // Serialization functions
+    env.add_function("to_json", serialization::to_json_fn);
+    env.add_function("to_yaml", serialization::to_yaml_fn);
+    env.add_function("to_toml", serialization::to_toml_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
