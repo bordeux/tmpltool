@@ -222,7 +222,6 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [ ] `render_string(template_string, context)` - Render template from string
 - [ ] `include_raw(path)` - Include file without rendering
 - [ ] `include_once(path)` - Include file only once (prevent duplicates)
-- [ ] `cache_result(key, expression)` - Cache expensive operation result
 
 ---
 
@@ -291,10 +290,11 @@ For each new function, document:
 ## 🔄 Ongoing Improvements
 
 ### Performance Optimizations
-- [ ] Cache compiled templates
-- [ ] Optimize glob operations for large directories
-- [ ] Add benchmarks for all functions
-- [ ] Profile template rendering performance
+- [ ] Optimize glob operations for large directories (reduce syscalls)
+- [ ] Add benchmarks for all functions (identify bottlenecks)
+- [ ] Profile template rendering performance (measure overhead)
+- [ ] Lazy-load dependencies (faster startup time)
+- [ ] Parallel file operations for glob/list_dir (when safe)
 
 ### Developer Experience
 - [ ] Better error messages with line numbers
