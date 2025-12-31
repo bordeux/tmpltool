@@ -111,6 +111,19 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("now", datetime::now_fn);
     env.add_function("get_random", random::get_random_fn);
 
+    // Date/Time functions
+    env.add_function("format_date", datetime::format_date_fn);
+    env.add_function("parse_date", datetime::parse_date_fn);
+    env.add_function("date_add", datetime::date_add_fn);
+    env.add_function("date_diff", datetime::date_diff_fn);
+    env.add_function("get_year", datetime::get_year_fn);
+    env.add_function("get_month", datetime::get_month_fn);
+    env.add_function("get_day", datetime::get_day_fn);
+    env.add_function("get_hour", datetime::get_hour_fn);
+    env.add_function("get_minute", datetime::get_minute_fn);
+    env.add_function("timezone_convert", datetime::timezone_convert_fn);
+    env.add_function("is_leap_year", datetime::is_leap_year_fn);
+
     // Register custom functions (simple, no context needed)
     env.add_function("filter_env", environment::filter_env_fn);
     env.add_function("md5", hash::md5_fn);

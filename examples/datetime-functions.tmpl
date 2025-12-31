@@ -1,0 +1,204 @@
+# Date and Time Functions Demonstration
+# ========================================
+
+{% set test_timestamp = 1704067200 %}
+{% set test_timestamp2 = 1704153600 %}
+
+## Date Formatting
+
+### format_date() - Format Unix timestamps
+
+Default format:
+{{ format_date(timestamp=test_timestamp) }}
+
+Custom formats:
+  ISO date:        {{ format_date(timestamp=test_timestamp, format="%Y-%m-%d") }}
+  US format:       {{ format_date(timestamp=test_timestamp, format="%m/%d/%Y") }}
+  Full month:      {{ format_date(timestamp=test_timestamp, format="%B %d, %Y") }}
+  With time:       {{ format_date(timestamp=test_timestamp, format="%Y-%m-%d %H:%M:%S") }}
+  12-hour format:  {{ format_date(timestamp=test_timestamp, format="%I:%M %p") }}
+  Day of week:     {{ format_date(timestamp=test_timestamp, format="%A, %B %d, %Y") }}
+
+## Date Parsing
+
+### parse_date() - Parse date strings to Unix timestamps
+
+{% set parsed = parse_date(string="2024-01-01 12:00:00", format="%Y-%m-%d %H:%M:%S") %}
+Parsed timestamp: {{ parsed }}
+Verify: {{ format_date(timestamp=parsed) }}
+
+Parse US format:
+{% set us_date = parse_date(string="12/25/2024", format="%m/%d/%Y") %}
+  Input: 12/25/2024
+  Output: {{ format_date(timestamp=us_date, format="%Y-%m-%d") }}
+
+## Date Arithmetic
+
+### date_add() - Add/subtract days
+
+Original: {{ format_date(timestamp=test_timestamp, format="%Y-%m-%d") }}
+  +7 days:  {{ format_date(timestamp=date_add(timestamp=test_timestamp, days=7), format="%Y-%m-%d") }}
+  +30 days: {{ format_date(timestamp=date_add(timestamp=test_timestamp, days=30), format="%Y-%m-%d") }}
+  -7 days:  {{ format_date(timestamp=date_add(timestamp=test_timestamp, days=-7), format="%Y-%m-%d") }}
+  +365 days: {{ format_date(timestamp=date_add(timestamp=test_timestamp, days=365), format="%Y-%m-%d") }}
+
+### date_diff() - Calculate difference in days
+
+Date 1: {{ format_date(timestamp=test_timestamp, format="%Y-%m-%d") }}
+Date 2: {{ format_date(timestamp=test_timestamp2, format="%Y-%m-%d") }}
+Difference: {{ date_diff(timestamp1=test_timestamp2, timestamp2=test_timestamp) }} days
+
+## Date Component Extraction
+
+Timestamp: {{ test_timestamp }} ({{ format_date(timestamp=test_timestamp) }})
+
+  Year:   {{ get_year(timestamp=test_timestamp) }}
+  Month:  {{ get_month(timestamp=test_timestamp) }}
+  Day:    {{ get_day(timestamp=test_timestamp) }}
+  Hour:   {{ get_hour(timestamp=test_timestamp) }}
+  Minute: {{ get_minute(timestamp=test_timestamp) }}
+
+## Timezone Conversion
+
+### timezone_convert() - Convert between timezones
+
+UTC timestamp: {{ test_timestamp }}
+  UTC time:     {{ format_date(timestamp=test_timestamp, format="%Y-%m-%d %H:%M:%S %Z") }}
+
+Note: timezone_convert returns the same Unix timestamp, but it's useful when
+formatting times in different timezones. Unix timestamps are timezone-independent.
+
+## Leap Year Check
+
+### is_leap_year() - Check if a year is a leap year
+
+{% set years = [2020, 2021, 2022, 2023, 2024, 2000, 1900, 2100] %}
+{% for year in years %}
+  {{ year }}: {% if is_leap_year(year=year) %}Leap Year ✓{% else %}Not a Leap Year ✗{% endif %}
+{% endfor %}
+
+## Real-World Use Cases
+
+### 1. Log File Rotation
+```yaml
+{% set now_ts = parse_date(string="2024-12-31 14:30:00", format="%Y-%m-%d %H:%M:%S") %}
+logs:
+  current: /var/log/app.log
+  archive:
+    {% for day_offset in range(1, 8) %}
+    - /var/log/app-{{ format_date(timestamp=date_add(timestamp=now_ts, days=-day_offset), format="%Y%m%d") }}.log
+    {% endfor %}
+```
+
+### 2. Backup Schedule
+```bash
+#!/bin/bash
+{% set backup_ts = parse_date(string="2024-01-15 02:00:00", format="%Y-%m-%d %H:%M:%S") %}
+# Backup schedule for January 2024
+
+# Full backup (1st of month)
+FULL_BACKUP_DATE="{{ format_date(timestamp=parse_date(string="2024-01-01", format="%Y-%m-%d"), format="%Y-%m-%d") }}"
+
+# Weekly backups
+{% for week in range(0, 4) %}
+WEEKLY_BACKUP_{{ week + 1 }}="{{ format_date(timestamp=date_add(timestamp=backup_ts, days=week * 7), format="%Y-%m-%d") }}"
+{% endfor %}
+
+# Retention: Keep backups for 30 days
+{% set retention_cutoff = date_add(timestamp=backup_ts, days=-30) %}
+DELETE_BEFORE="{{ format_date(timestamp=retention_cutoff, format="%Y-%m-%d") }}"
+```
+
+### 3. Event Countdown
+```yaml
+{% set event_date = parse_date(string="2024-12-25", format="%Y-%m-%d") %}
+{% set today = parse_date(string="2024-01-01", format="%Y-%m-%d") %}
+{% set days_until = date_diff(timestamp1=event_date, timestamp2=today) %}
+
+event:
+  name: "Christmas 2024"
+  date: {{ format_date(timestamp=event_date, format="%B %d, %Y") }}
+  countdown: {{ days_until }} days remaining
+  is_this_year: {{ get_year(timestamp=event_date) == get_year(timestamp=today) }}
+```
+
+### 4. Lease/Subscription Expiration
+```yaml
+{% set start_date = parse_date(string="2024-01-01", format="%Y-%m-%d") %}
+{% set duration_days = 365 %}
+{% set end_date = date_add(timestamp=start_date, days=duration_days) %}
+{% set check_date = parse_date(string="2024-06-15", format="%Y-%m-%d") %}
+{% set days_remaining = date_diff(timestamp1=end_date, timestamp2=check_date) %}
+
+subscription:
+  start_date: {{ format_date(timestamp=start_date, format="%Y-%m-%d") }}
+  end_date: {{ format_date(timestamp=end_date, format="%Y-%m-%d") }}
+  duration: {{ duration_days }} days ({{ is_leap_year(year=get_year(timestamp=start_date)) and "leap year" or "regular year" }})
+
+  status:
+    check_date: {{ format_date(timestamp=check_date, format="%Y-%m-%d") }}
+    days_remaining: {{ days_remaining }}
+    {% if days_remaining > 30 %}
+    status: active
+    {% elif days_remaining > 0 %}
+    status: expiring_soon
+    renewal_reminder: true
+    {% else %}
+    status: expired
+    {% endif %}
+```
+
+### 5. Cron Schedule Generator
+```cron
+# Generated on {{ format_date(timestamp=parse_date(string="2024-01-01", format="%Y-%m-%d"), format="%Y-%m-%d") }}
+
+# Daily backup at 2 AM
+0 2 * * * /usr/local/bin/backup-daily.sh
+
+# Weekly full backup (Sundays at 3 AM)
+0 3 * * 0 /usr/local/bin/backup-full.sh
+
+{% set cleanup_day = get_day(timestamp=date_add(timestamp=parse_date(string="2024-01-01", format="%Y-%m-%d"), days=30)) %}
+# Monthly cleanup (day {{ cleanup_day }} at 4 AM)
+0 4 {{ cleanup_day }} * * /usr/local/bin/cleanup-old-backups.sh
+```
+
+### 6. Certificate Expiration Warning
+```yaml
+{% set cert_expiry = parse_date(string="2025-06-15", format="%Y-%m-%d") %}
+{% set today = parse_date(string="2024-12-31", format="%Y-%m-%d") %}
+{% set days_until_expiry = date_diff(timestamp1=cert_expiry, timestamp2=today) %}
+
+certificates:
+  ssl_cert:
+    expires: {{ format_date(timestamp=cert_expiry, format="%B %d, %Y") }}
+    days_remaining: {{ days_until_expiry }}
+    {% if days_until_expiry < 30 %}
+    warning: "Certificate expires in {{ days_until_expiry }} days - RENEW IMMEDIATELY"
+    priority: critical
+    {% elif days_until_expiry < 90 %}
+    warning: "Certificate expires in {{ days_until_expiry }} days - schedule renewal"
+    priority: high
+    {% else %}
+    status: valid
+    priority: normal
+    {% endif %}
+```
+
+## Format Specifiers Reference
+
+Common format codes for format_date():
+  %Y - Year (4 digits)          Example: 2024
+  %m - Month (01-12)            Example: 01
+  %d - Day (01-31)              Example: 15
+  %H - Hour 24h (00-23)         Example: 14
+  %I - Hour 12h (01-12)         Example: 02
+  %M - Minute (00-59)           Example: 30
+  %S - Second (00-59)           Example: 45
+  %p - AM/PM                    Example: PM
+  %A - Weekday (full)           Example: Monday
+  %a - Weekday (abbr)           Example: Mon
+  %B - Month (full)             Example: January
+  %b - Month (abbr)             Example: Jan
+
+Full reference: https://docs.rs/chrono/latest/chrono/format/strftime/index.html

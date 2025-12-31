@@ -55,14 +55,12 @@ fn get_local_ip() -> Result<Value, Error> {
         )
     })?;
 
-    socket
-        .connect("8.8.8.8:80")
-        .map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidOperation,
-                format!("Failed to determine local IP: {}", e),
-            )
-        })?;
+    socket.connect("8.8.8.8:80").map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to determine local IP: {}", e),
+        )
+    })?;
 
     let local_addr = socket.local_addr().map_err(|e| {
         Error::new(
@@ -159,18 +157,16 @@ pub fn resolve_dns_fn(kwargs: Kwargs) -> Result<Value, Error> {
 /// {% endif %}
 /// ```
 pub fn is_port_available_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let port: u16 = kwargs
-        .get::<i64>("port")
-        .and_then(|p| {
-            if (1..=65535).contains(&p) {
-                Ok(p as u16)
-            } else {
-                Err(Error::new(
-                    ErrorKind::InvalidOperation,
-                    format!("Port must be between 1 and 65535, got {}", p),
-                ))
-            }
-        })?;
+    let port: u16 = kwargs.get::<i64>("port").and_then(|p| {
+        if (1..=65535).contains(&p) {
+            Ok(p as u16)
+        } else {
+            Err(Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Port must be between 1 and 65535, got {}", p),
+            ))
+        }
+    })?;
 
     // Try to bind to the port on all interfaces
     // If successful, the port is available
@@ -218,9 +214,7 @@ mod tests {
     #[test]
     fn test_is_port_available_valid() {
         // Test with a likely available high port
-        let result = is_port_available_fn(
-            Kwargs::from_iter(vec![("port", Value::from(54321))])
-        );
+        let result = is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(54321))]));
         assert!(result.is_ok());
         // Result should be a boolean
         let val = result.unwrap();
@@ -229,19 +223,25 @@ mod tests {
 
     #[test]
     fn test_is_port_available_invalid_port_low() {
-        let result = is_port_available_fn(
-            Kwargs::from_iter(vec![("port", Value::from(0))])
-        );
+        let result = is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(0))]));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("between 1 and 65535"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("between 1 and 65535")
+        );
     }
 
     #[test]
     fn test_is_port_available_invalid_port_high() {
-        let result = is_port_available_fn(
-            Kwargs::from_iter(vec![("port", Value::from(65536))])
-        );
+        let result = is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(65536))]));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("between 1 and 65535"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("between 1 and 65535")
+        );
     }
 }

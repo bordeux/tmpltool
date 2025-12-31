@@ -20,6 +20,7 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
 - [Function Reference](#function-reference)
   - [Environment Variables](#environment-variables)
   - [Hash & Crypto Functions](#hash--crypto-functions)
+  - [Date/Time Functions](#datetime-functions)
   - [Filesystem Functions](#filesystem-functions)
   - [Data Parsing Functions](#data-parsing-functions)
   - [Validation Functions](#validation-functions)
@@ -550,6 +551,235 @@ application:
 
 security:
   password_hash: {{ sha256(string=get_env(name="PASSWORD")) }}
+```
+
+### Date/Time Functions
+
+Work with dates, times, and timestamps. All functions use Unix timestamps (seconds since epoch) for consistent timezone-independent representation.
+
+#### `now()`
+
+Get the current timestamp in ISO 8601 format.
+
+**Returns:** Current timestamp as ISO 8601 string (e.g., `"2024-12-31T12:34:56.789+00:00"`)
+
+**Examples:**
+```
+Current time: {{ now() }}
+{# Output: 2024-12-31T12:34:56.789+00:00 #}
+
+{# Use with date filter for custom formatting #}
+{{ now() | date(format="%Y-%m-%d %H:%M:%S") }}
+```
+
+#### `format_date(timestamp, format)`
+
+Format a Unix timestamp with a custom format string.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+- `format` (optional) - Format string (default: `"%Y-%m-%d %H:%M:%S"`)
+
+**Returns:** Formatted date string
+
+**Common Format Specifiers:**
+- `%Y` - Year (4 digits), e.g., 2024
+- `%m` - Month (01-12)
+- `%d` - Day (01-31)
+- `%H` - Hour 24h (00-23)
+- `%I` - Hour 12h (01-12)
+- `%M` - Minute (00-59)
+- `%S` - Second (00-59)
+- `%p` - AM/PM
+- `%A` - Weekday (full), e.g., Monday
+- `%B` - Month (full), e.g., January
+
+[Full format reference](https://docs.rs/chrono/latest/chrono/format/strftime/index.html)
+
+**Examples:**
+```
+{% set ts = 1704067200 %}
+ISO date: {{ format_date(timestamp=ts, format="%Y-%m-%d") }}
+{# Output: 2024-01-01 #}
+
+US format: {{ format_date(timestamp=ts, format="%m/%d/%Y") }}
+{# Output: 01/01/2024 #}
+
+Full: {{ format_date(timestamp=ts, format="%B %d, %Y at %I:%M %p") }}
+{# Output: January 01, 2024 at 12:00 AM #}
+```
+
+#### `parse_date(string, format)`
+
+Parse a date string into a Unix timestamp.
+
+**Arguments:**
+- `string` (required) - Date string to parse
+- `format` (required) - Format string matching the input
+
+**Returns:** Unix timestamp (integer)
+
+**Examples:**
+```
+{% set ts = parse_date(string="2024-01-01 12:00:00", format="%Y-%m-%d %H:%M:%S") %}
+Timestamp: {{ ts }}
+{# Output: 1704110400 #}
+
+{# Date-only formats (time set to midnight) #}
+{% set ts = parse_date(string="12/25/2024", format="%m/%d/%Y") %}
+{{ format_date(timestamp=ts, format="%Y-%m-%d") }}
+{# Output: 2024-12-25 #}
+```
+
+#### `date_add(timestamp, days)`
+
+Add or subtract days from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+- `days` (required) - Number of days to add (can be negative)
+
+**Returns:** New Unix timestamp
+
+**Examples:**
+```
+{% set today = parse_date(string="2024-01-01", format="%Y-%m-%d") %}
+
+{# Add days #}
+Next week: {{ format_date(timestamp=date_add(timestamp=today, days=7), format="%Y-%m-%d") }}
+{# Output: 2024-01-08 #}
+
+{# Subtract days #}
+Last week: {{ format_date(timestamp=date_add(timestamp=today, days=-7), format="%Y-%m-%d") }}
+{# Output: 2023-12-25 #}
+```
+
+#### `date_diff(timestamp1, timestamp2)`
+
+Calculate the difference in days between two timestamps.
+
+**Arguments:**
+- `timestamp1` (required) - First Unix timestamp
+- `timestamp2` (required) - Second Unix timestamp
+
+**Returns:** Difference in days (timestamp1 - timestamp2)
+
+**Examples:**
+```
+{% set start = parse_date(string="2024-01-01", format="%Y-%m-%d") %}
+{% set end = parse_date(string="2024-01-31", format="%Y-%m-%d") %}
+
+Days between: {{ date_diff(timestamp1=end, timestamp2=start) }}
+{# Output: 30 #}
+```
+
+#### `get_year(timestamp)`, `get_month(timestamp)`, `get_day(timestamp)`
+
+Extract date components from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer component value (year: 4-digit, month: 1-12, day: 1-31)
+
+**Examples:**
+```
+{% set ts = parse_date(string="2024-12-25", format="%Y-%m-%d") %}
+Year: {{ get_year(timestamp=ts) }}    {# Output: 2024 #}
+Month: {{ get_month(timestamp=ts) }}  {# Output: 12 #}
+Day: {{ get_day(timestamp=ts) }}      {# Output: 25 #}
+```
+
+#### `get_hour(timestamp)`, `get_minute(timestamp)`
+
+Extract time components from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer component value (hour: 0-23, minute: 0-59)
+
+**Examples:**
+```
+{% set ts = parse_date(string="2024-01-01 15:30:00", format="%Y-%m-%d %H:%M:%S") %}
+Hour: {{ get_hour(timestamp=ts) }}      {# Output: 15 #}
+Minute: {{ get_minute(timestamp=ts) }}  {# Output: 30 #}
+```
+
+#### `timezone_convert(timestamp, from_tz, to_tz)`
+
+Convert a timestamp between timezones.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+- `from_tz` (required) - Source timezone (e.g., "UTC", "America/New_York")
+- `to_tz` (required) - Target timezone (e.g., "Europe/London", "Asia/Tokyo")
+
+**Returns:** Unix timestamp (note: Unix timestamps are timezone-independent)
+
+**Note:** Unix timestamps are always UTC-relative. This function is useful when formatting times in different timezones.
+
+**Examples:**
+```
+{% set utc_ts = 1704067200 %}
+{{ timezone_convert(timestamp=utc_ts, from_tz="UTC", to_tz="America/New_York") }}
+```
+
+#### `is_leap_year(year)`
+
+Check if a year is a leap year.
+
+**Arguments:**
+- `year` (required) - Year to check (4-digit integer)
+
+**Returns:** Boolean (true if leap year, false otherwise)
+
+**Examples:**
+```
+{% if is_leap_year(year=2024) %}
+2024 is a leap year
+{% endif %}
+
+{% set years = [2020, 2021, 2022, 2023, 2024] %}
+{% for year in years %}
+{{ year }}: {% if is_leap_year(year=year) %}Leap{% else %}Regular{% endif %}
+{% endfor %}
+```
+
+**Practical Example - Certificate Expiration:**
+```yaml
+{% set cert_expiry = parse_date(string="2025-06-15", format="%Y-%m-%d") %}
+{% set today = parse_date(string="2024-12-31", format="%Y-%m-%d") %}
+{% set days_until_expiry = date_diff(timestamp1=cert_expiry, timestamp2=today) %}
+
+certificates:
+  ssl_cert:
+    expires: {{ format_date(timestamp=cert_expiry, format="%B %d, %Y") }}
+    days_remaining: {{ days_until_expiry }}
+    {% if days_until_expiry < 30 %}
+    warning: "Certificate expires in {{ days_until_expiry }} days - RENEW IMMEDIATELY"
+    priority: critical
+    {% elif days_until_expiry < 90 %}
+    warning: "Certificate expires in {{ days_until_expiry }} days - schedule renewal"
+    priority: high
+    {% else %}
+    status: valid
+    priority: normal
+    {% endif %}
+```
+
+**Practical Example - Backup Schedule:**
+```bash
+#!/bin/bash
+{% set backup_ts = parse_date(string="2024-01-15 02:00:00", format="%Y-%m-%d %H:%M:%S") %}
+# Weekly backups
+{% for week in range(0, 4) %}
+WEEKLY_BACKUP_{{ week + 1 }}="{{ format_date(timestamp=date_add(timestamp=backup_ts, days=week * 7), format="%Y-%m-%d") }}"
+{% endfor %}
+
+# Retention: Keep backups for 30 days
+{% set retention_cutoff = date_add(timestamp=backup_ts, days=-30) %}
+DELETE_BEFORE="{{ format_date(timestamp=retention_cutoff, format="%Y-%m-%d") }}"
 ```
 
 ### Filesystem Functions

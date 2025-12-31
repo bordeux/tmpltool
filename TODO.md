@@ -92,20 +92,20 @@ This document contains ideas for new functions and features to make tmpltool mor
 
 **Note:** These are implemented as filters (e.g., `{{ "text" | indent(2) }}`), not functions.
 
-### 📅 Date & Time Functions
+### ✅ Date & Time Functions
 *Enhanced datetime handling for logs, timestamps*
 
-- [ ] `format_date(timestamp, format)` - Format Unix timestamp
-- [ ] `parse_date(string, format)` - Parse date string to timestamp
-- [ ] `date_add(timestamp, days)` - Add days to timestamp
-- [ ] `date_diff(timestamp1, timestamp2)` - Difference in days
-- [ ] `get_year(timestamp)` - Extract year
-- [ ] `get_month(timestamp)` - Extract month
-- [ ] `get_day(timestamp)` - Extract day
-- [ ] `get_hour(timestamp)` - Extract hour
-- [ ] `get_minute(timestamp)` - Extract minute
-- [ ] `timezone_convert(timestamp, from_tz, to_tz)` - Convert timezones
-- [ ] `is_leap_year(year)` - Check if leap year
+- [x] `format_date(timestamp, format)` - Format Unix timestamp
+- [x] `parse_date(string, format)` - Parse date string to timestamp
+- [x] `date_add(timestamp, days)` - Add days to timestamp
+- [x] `date_diff(timestamp1, timestamp2)` - Difference in days
+- [x] `get_year(timestamp)` - Extract year
+- [x] `get_month(timestamp)` - Extract month
+- [x] `get_day(timestamp)` - Extract day
+- [x] `get_hour(timestamp)` - Extract hour
+- [x] `get_minute(timestamp)` - Extract minute
+- [x] `timezone_convert(timestamp, from_tz, to_tz)` - Convert timezones
+- [x] `is_leap_year(year)` - Check if leap year
 
 ### 🔐 Security & Encoding Functions
 *Additional security utilities*

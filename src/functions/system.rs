@@ -75,12 +75,8 @@ pub fn get_username_fn(_kwargs: Kwargs) -> Result<Value, Error> {
 /// Home: {{ get_home_dir() }}
 /// ```
 pub fn get_home_dir_fn(_kwargs: Kwargs) -> Result<Value, Error> {
-    let home_dir = dirs::home_dir().ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            "Failed to get home directory",
-        )
-    })?;
+    let home_dir = dirs::home_dir()
+        .ok_or_else(|| Error::new(ErrorKind::InvalidOperation, "Failed to get home directory"))?;
 
     Ok(Value::from(home_dir.to_string_lossy().to_string()))
 }
