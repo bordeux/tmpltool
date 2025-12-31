@@ -357,6 +357,13 @@ fn test_exec_raw_command_not_found() {
 #[test]
 fn test_exec_with_special_characters_in_output() {
     let env = create_env(true);
+
+    // Windows echo includes quotes, Unix doesn't - use a cross-platform approach
+    #[cfg(target_os = "windows")]
+    let result =
+        render_template(&env, "{{ exec(command=\"echo test@example.com\") | trim }}").unwrap();
+
+    #[cfg(not(target_os = "windows"))]
     let result = render_template(
         &env,
         "{{ exec(command=\"echo 'test@example.com'\") | trim }}",
