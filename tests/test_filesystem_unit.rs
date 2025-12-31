@@ -2,8 +2,8 @@ use minijinja::value::Kwargs;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use tmpltool::TemplateContext;
 use tmpltool::functions::filesystem::{
     create_file_exists_fn, create_file_modified_fn, create_file_size_fn, create_glob_fn,
@@ -15,7 +15,7 @@ static TEST_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+    Kwargs::from_iter(args.iter().map(|(k, v)| (*k, minijinja::Value::from(*v))))
 }
 
 // Helper to create a unique test directory
@@ -248,18 +248,22 @@ fn test_glob_basic() {
     let result = glob_files(kwargs).unwrap();
 
     assert_eq!(result.len(), Some(2));
-    assert!(result
-        .get_item(&minijinja::Value::from(0))
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .contains("file1.txt"));
-    assert!(result
-        .get_item(&minijinja::Value::from(1))
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .contains("file2.txt"));
+    assert!(
+        result
+            .get_item(&minijinja::Value::from(0))
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .contains("file1.txt")
+    );
+    assert!(
+        result
+            .get_item(&minijinja::Value::from(1))
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .contains("file2.txt")
+    );
 
     cleanup_test_dir(&test_dir);
 }
@@ -401,11 +405,13 @@ fn test_read_file_trust_mode_allows_absolute_path() {
     let read_file_no_trust = create_read_file_fn(context_no_trust);
     let result_no_trust = read_file_no_trust(kwargs.clone());
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
@@ -427,11 +433,13 @@ fn test_file_exists_trust_mode_allows_absolute_path() {
     let file_exists_no_trust = create_file_exists_fn(context_no_trust);
     let result_no_trust = file_exists_no_trust(kwargs.clone());
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
@@ -458,11 +466,13 @@ fn test_list_dir_trust_mode_allows_parent_directory() {
     let list_dir_no_trust = create_list_dir_fn(context_no_trust);
     let result_no_trust = list_dir_no_trust(kwargs.clone());
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
@@ -483,11 +493,13 @@ fn test_glob_trust_mode_allows_absolute_path() {
     let glob_files_no_trust = create_glob_fn(context_no_trust);
     let result_no_trust = glob_files_no_trust(kwargs.clone());
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
@@ -506,11 +518,13 @@ fn test_file_size_trust_mode_allows_absolute_path() {
     let file_size_no_trust = create_file_size_fn(context_no_trust);
     let result_no_trust = file_size_no_trust(kwargs.clone());
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
@@ -531,11 +545,13 @@ fn test_file_modified_trust_mode_allows_absolute_path() {
     let file_modified_no_trust = create_file_modified_fn(context_no_trust);
     let result_no_trust = file_modified_no_trust(kwargs.clone());
     assert!(result_no_trust.is_err());
-    assert!(result_no_trust
-        .err()
-        .unwrap()
-        .to_string()
-        .contains("Security"));
+    assert!(
+        result_no_trust
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("Security")
+    );
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));

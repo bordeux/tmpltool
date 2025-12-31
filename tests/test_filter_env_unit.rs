@@ -3,7 +3,7 @@ use tmpltool::functions::filter_env::filter_env_fn;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+    Kwargs::from_iter(args.iter().map(|(k, v)| (*k, minijinja::Value::from(*v))))
 }
 
 #[test]

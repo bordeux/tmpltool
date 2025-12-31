@@ -27,7 +27,7 @@ Slugified: {{ name | slugify }}
 Trimmed: {{ "  spaces  " | trim }}
 
 ### Array filters:
-{% set items = get_env(name="TEST_ITEMS", default="apple,banana,cherry") | split(pat=",") -%}
+{% set items = get_env(name="TEST_ITEMS", default="apple,banana,cherry") | split(",") | list -%}
 Items count: {{ items | length }}
 Items:
 {%- for item in items %}
@@ -61,7 +61,7 @@ Database connections:
 
 ## 6. Complex operations
 ### Combining filters and functions:
-{% set tags = get_env(name="TEST_TAGS", default="rust,tera,cli") | split(pat=",") -%}
+{% set tags = get_env(name="TEST_TAGS", default="rust,tera,cli") | split(",") | list -%}
 Tags ({{ tags | length }} total):
 {%- for tag in tags %}
   #{{ tag | upper }}
@@ -99,3 +99,4 @@ Service name: {{ service | upper }}_SERVICE
 Container: {{ service }}-container-{{ get_random(start=100, end=999) }}
 
 ## End of comprehensive test
+

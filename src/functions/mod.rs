@@ -43,7 +43,7 @@
 //! To add a new custom function:
 //!
 //! 1. Create a new file in `src/functions/` (e.g., `my_function.rs`)
-//! 2. Implement your function with signature: `fn my_function(args: &HashMap<String, Value>) -> tera::Result<Value>`
+//! 2. Implement your function using MiniJinja's Kwargs pattern
 //! 3. Add `pub mod my_function;` to this file
 //! 4. Add your function to the `register_all()` function below
 //!
@@ -51,12 +51,13 @@
 //!
 //! ```rust
 //! // In src/functions/my_function.rs
-//! use std::collections::HashMap;
-//! use tera::Value;
+//! use minijinja::value::Kwargs;
+//! use minijinja::{Error, Value};
 //!
-//! pub fn my_function(args: &HashMap<String, Value>) -> tera::Result<Value> {
+//! pub fn my_function(kwargs: Kwargs) -> Result<Value, Error> {
+//!     let input: String = kwargs.get("input")?;
 //!     // Your implementation here
-//!     Ok(Value::String("result".to_string()))
+//!     Ok(Value::from("result"))
 //! }
 //! ```
 
@@ -64,6 +65,7 @@ pub mod builtins;
 pub mod data_parsing;
 pub mod filesystem;
 pub mod filter_env;
+pub mod filters;
 pub mod hash;
 pub mod random_string;
 pub mod uuid_gen;
@@ -124,15 +126,44 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
 
     // File system functions (need context)
     let context_arc = Arc::new(context);
-    env.add_function("read_file", filesystem::create_read_file_fn(context_arc.clone()));
-    env.add_function("file_exists", filesystem::create_file_exists_fn(context_arc.clone()));
-    env.add_function("list_dir", filesystem::create_list_dir_fn(context_arc.clone()));
+    env.add_function(
+        "read_file",
+        filesystem::create_read_file_fn(context_arc.clone()),
+    );
+    env.add_function(
+        "file_exists",
+        filesystem::create_file_exists_fn(context_arc.clone()),
+    );
+    env.add_function(
+        "list_dir",
+        filesystem::create_list_dir_fn(context_arc.clone()),
+    );
     env.add_function("glob", filesystem::create_glob_fn(context_arc.clone()));
-    env.add_function("file_size", filesystem::create_file_size_fn(context_arc.clone()));
-    env.add_function("file_modified", filesystem::create_file_modified_fn(context_arc.clone()));
+    env.add_function(
+        "file_size",
+        filesystem::create_file_size_fn(context_arc.clone()),
+    );
+    env.add_function(
+        "file_modified",
+        filesystem::create_file_modified_fn(context_arc.clone()),
+    );
 
     // Data parsing file functions (need context)
-    env.add_function("read_json_file", data_parsing::create_read_json_file_fn(context_arc.clone()));
-    env.add_function("read_yaml_file", data_parsing::create_read_yaml_file_fn(context_arc.clone()));
-    env.add_function("read_toml_file", data_parsing::create_read_toml_file_fn(context_arc));
+    env.add_function(
+        "read_json_file",
+        data_parsing::create_read_json_file_fn(context_arc.clone()),
+    );
+    env.add_function(
+        "read_yaml_file",
+        data_parsing::create_read_yaml_file_fn(context_arc.clone()),
+    );
+    env.add_function(
+        "read_toml_file",
+        data_parsing::create_read_toml_file_fn(context_arc),
+    );
+
+    // Register custom filters
+    env.add_filter("slugify", filters::slugify_filter);
+    env.add_filter("filesizeformat", filters::filesizeformat_filter);
+    env.add_filter("urlencode", filters::urlencode_filter);
 }

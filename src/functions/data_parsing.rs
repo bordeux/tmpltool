@@ -1,3 +1,5 @@
+use minijinja::value::Kwargs;
+use minijinja::{Error, ErrorKind, Value};
 /// Data parsing functions
 ///
 /// Provides functions for parsing structured data formats:
@@ -8,8 +10,6 @@
 /// - read_yaml_file: Read and parse YAML file
 /// - read_toml_file: Read and parse TOML file
 use std::fs;
-use minijinja::{Error, ErrorKind, Value};
-use minijinja::value::Kwargs;
 use std::sync::Arc;
 
 use crate::TemplateContext;
@@ -26,8 +26,12 @@ pub fn parse_json_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let string: String = kwargs.get("string")?;
 
     // Parse JSON string
-    let json_value: serde_json::Value = serde_json::from_str(&string)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to parse JSON: {}", e)))?;
+    let json_value: serde_json::Value = serde_json::from_str(&string).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to parse JSON: {}", e),
+        )
+    })?;
 
     Ok(Value::from_serialize(&json_value))
 }
@@ -44,12 +48,20 @@ pub fn parse_yaml_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let string: String = kwargs.get("string")?;
 
     // Parse YAML string to serde_yaml::Value
-    let yaml_value: serde_yaml::Value = serde_yaml::from_str(&string)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to parse YAML: {}", e)))?;
+    let yaml_value: serde_yaml::Value = serde_yaml::from_str(&string).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to parse YAML: {}", e),
+        )
+    })?;
 
     // Convert serde_yaml::Value to serde_json::Value
-    let json_value = serde_yaml_to_json(yaml_value)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to convert YAML to JSON: {}", e)))?;
+    let json_value = serde_yaml_to_json(yaml_value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert YAML to JSON: {}", e),
+        )
+    })?;
 
     Ok(Value::from_serialize(&json_value))
 }
@@ -66,18 +78,28 @@ pub fn parse_toml_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let string: String = kwargs.get("string")?;
 
     // Parse TOML string to toml::Value
-    let toml_value: toml::Value = toml::from_str(&string)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to parse TOML: {}", e)))?;
+    let toml_value: toml::Value = toml::from_str(&string).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to parse TOML: {}", e),
+        )
+    })?;
 
     // Convert toml::Value to serde_json::Value
-    let json_value = toml_to_json(toml_value)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to convert TOML to JSON: {}", e)))?;
+    let json_value = toml_to_json(toml_value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert TOML to JSON: {}", e),
+        )
+    })?;
 
     Ok(Value::from_serialize(&json_value))
 }
 
 /// Create read_json_file function with context
-pub fn create_read_json_file_fn(context: Arc<TemplateContext>) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_read_json_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
     move |path: String| {
         // Security checks (unless trust mode is enabled)
         if !context.is_trust_mode() {
@@ -91,11 +113,7 @@ pub fn create_read_json_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
-                format!(
-                    "Failed to read file '{}': {}",
-                    resolved_path.display(),
-                    e
-                )
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
             )
         })?;
 
@@ -107,7 +125,7 @@ pub fn create_read_json_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
                     "Failed to parse JSON from file '{}': {}",
                     resolved_path.display(),
                     e
-                )
+                ),
             )
         })?;
 
@@ -116,7 +134,9 @@ pub fn create_read_json_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
 }
 
 /// Create read_yaml_file function with context
-pub fn create_read_yaml_file_fn(context: Arc<TemplateContext>) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_read_yaml_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
     move |path: String| {
         // Security checks (unless trust mode is enabled)
         if !context.is_trust_mode() {
@@ -130,11 +150,7 @@ pub fn create_read_yaml_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
-                format!(
-                    "Failed to read file '{}': {}",
-                    resolved_path.display(),
-                    e
-                )
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
             )
         })?;
 
@@ -146,20 +162,26 @@ pub fn create_read_yaml_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
                     "Failed to parse YAML from file '{}': {}",
                     resolved_path.display(),
                     e
-                )
+                ),
             )
         })?;
 
         // Convert to JSON Value
-        let json_value = serde_yaml_to_json(yaml_value)
-            .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to convert YAML to JSON: {}", e)))?;
+        let json_value = serde_yaml_to_json(yaml_value).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert YAML to JSON: {}", e),
+            )
+        })?;
 
         Ok(Value::from_serialize(&json_value))
     }
 }
 
 /// Create read_toml_file function with context
-pub fn create_read_toml_file_fn(context: Arc<TemplateContext>) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_read_toml_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
     move |path: String| {
         // Security checks (unless trust mode is enabled)
         if !context.is_trust_mode() {
@@ -173,11 +195,7 @@ pub fn create_read_toml_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
-                format!(
-                    "Failed to read file '{}': {}",
-                    resolved_path.display(),
-                    e
-                )
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
             )
         })?;
 
@@ -189,13 +207,17 @@ pub fn create_read_toml_file_fn(context: Arc<TemplateContext>) -> impl Fn(String
                     "Failed to parse TOML from file '{}': {}",
                     resolved_path.display(),
                     e
-                )
+                ),
             )
         })?;
 
         // Convert to JSON Value
-        let json_value = toml_to_json(toml_value)
-            .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to convert TOML to JSON: {}", e)))?;
+        let json_value = toml_to_json(toml_value).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert TOML to JSON: {}", e),
+            )
+        })?;
 
         Ok(Value::from_serialize(&json_value))
     }

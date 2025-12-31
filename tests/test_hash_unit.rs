@@ -3,7 +3,7 @@ use tmpltool::functions::hash::{md5_fn, sha1_fn, sha256_fn, sha512_fn};
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+    Kwargs::from_iter(args.iter().map(|(k, v)| (*k, minijinja::Value::from(*v))))
 }
 
 #[test]

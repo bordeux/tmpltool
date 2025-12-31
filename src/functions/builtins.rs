@@ -4,9 +4,9 @@
 //! available in Tera when the "builtins" feature was enabled. MiniJinja
 //! requires these to be registered as custom functions.
 
-use minijinja::{Error, ErrorKind, Value};
+use chrono::Utc;
 use minijinja::value::Kwargs;
-use std::time::{SystemTime, UNIX_EPOCH};
+use minijinja::{Error, ErrorKind, Value};
 use rand::Rng;
 
 /// Get environment variable with optional default
@@ -36,28 +36,29 @@ pub fn env_fn(kwargs: Kwargs) -> Result<Value, Error> {
             } else {
                 Err(Error::new(
                     ErrorKind::UndefinedError,
-                    format!("Environment variable '{}' is not set and no default provided", name)
+                    format!(
+                        "Environment variable '{}' is not set and no default provided",
+                        name
+                    ),
                 ))
             }
         }
     }
 }
 
-/// Get current Unix timestamp
+/// Get current timestamp in ISO 8601 format
 ///
 /// Replacement for Tera's built-in now() function
+///
+/// Returns timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SS.sss+00:00
 ///
 /// # Example
 ///
 /// ```jinja
-/// {{ now() }}
+/// {{ now() }}  => "2024-12-31T12:34:56.789+00:00"
 /// ```
 pub fn now_fn() -> Result<Value, Error> {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to get timestamp: {}", e)))?
-        .as_secs();
-
+    let timestamp = Utc::now().to_rfc3339();
     Ok(Value::from(timestamp))
 }
 
@@ -83,7 +84,7 @@ pub fn get_random_fn(kwargs: Kwargs) -> Result<Value, Error> {
     if start >= end {
         return Err(Error::new(
             ErrorKind::InvalidOperation,
-            format!("start ({}) must be less than end ({})", start, end)
+            format!("start ({}) must be less than end ({})", start, end),
         ));
     }
 

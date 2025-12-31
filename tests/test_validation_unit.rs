@@ -5,7 +5,7 @@ use tmpltool::functions::validation::{
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+    Kwargs::from_iter(args.iter().map(|(k, v)| (*k, minijinja::Value::from(*v))))
 }
 
 // ========== is_email tests ==========
@@ -363,7 +363,10 @@ fn test_matches_regex_partial_match() {
 
 #[test]
 fn test_matches_regex_complex_pattern() {
-    let kwargs = create_kwargs(vec![("pattern", r"^[A-Z]{2,4}-\d{3,5}$"), ("string", "ABC-1234")]);
+    let kwargs = create_kwargs(vec![
+        ("pattern", r"^[A-Z]{2,4}-\d{3,5}$"),
+        ("string", "ABC-1234"),
+    ]);
 
     let result = matches_regex_fn(kwargs).unwrap();
     assert!(result.is_true());

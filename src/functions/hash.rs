@@ -1,8 +1,8 @@
+use minijinja::value::Kwargs;
 /// Hash functions for cryptographic operations
 ///
 /// Provides MD5, SHA1, SHA256, and SHA512 hashing functions.
-use minijinja::{Error, ErrorKind, Value};
-use minijinja::value::Kwargs;
+use minijinja::{Error, Value};
 
 /// MD5 hash function
 ///

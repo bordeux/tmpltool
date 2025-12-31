@@ -3,7 +3,7 @@ use tmpltool::functions::random_string::random_string_fn;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, minijinja::Value)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter())
+    Kwargs::from_iter(args)
 }
 
 const CHARSET_ALPHANUMERIC: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

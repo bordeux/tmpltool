@@ -1,8 +1,8 @@
 use crate::{TemplateContext, functions};
-use std::fs;
-use std::io::{self, Read, Write};
 use minijinja::Environment;
 use serde::Serialize;
+use std::fs;
+use std::io::{self, Read, Write};
 
 /// Renders a template with environment variables
 ///
@@ -81,6 +81,9 @@ fn render(
     template_context: TemplateContext,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut env = Environment::new();
+
+    // Set strict undefined behavior - fail on undefined variables (like Tera)
+    env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
 
     // Register all custom functions
     functions::register_all(&mut env, template_context);

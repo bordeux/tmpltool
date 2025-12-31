@@ -1,3 +1,5 @@
+use minijinja::value::Kwargs;
+use minijinja::{Error, ErrorKind, Value};
 /// Validation functions
 ///
 /// Provides functions for validating various string formats:
@@ -7,8 +9,6 @@
 /// - is_uuid: Validate UUID format
 /// - matches_regex: Check if string matches regex pattern
 use regex::Regex;
-use minijinja::{Error, ErrorKind, Value};
-use minijinja::value::Kwargs;
 
 /// Validate email address format
 ///
@@ -39,10 +39,9 @@ pub fn is_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let string: String = kwargs.get("string")?;
 
     // URL validation regex - supports http(s), ftp, file schemes
-    let url_re = Regex::new(
-        r"^(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]$",
-    )
-    .unwrap();
+    let url_re =
+        Regex::new(r"^(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]$")
+            .unwrap();
     Ok(Value::from(url_re.is_match(&string)))
 }
 
@@ -94,8 +93,12 @@ pub fn matches_regex_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let string: String = kwargs.get("string")?;
 
     // Compile and match regex
-    let re = Regex::new(&pattern)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Invalid regex pattern '{}': {}", pattern, e)))?;
+    let re = Regex::new(&pattern).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Invalid regex pattern '{}': {}", pattern, e),
+        )
+    })?;
 
     Ok(Value::from(re.is_match(&string)))
 }

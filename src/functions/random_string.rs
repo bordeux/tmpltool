@@ -1,9 +1,9 @@
+use minijinja::value::Kwargs;
+use minijinja::{Error, ErrorKind, Value};
 /// Random string generation function
 ///
 /// Generates random strings with customizable length and character sets
 use rand::Rng;
-use minijinja::{Error, ErrorKind, Value};
-use minijinja::value::Kwargs;
 
 /// Character set presets
 const CHARSET_ALPHANUMERIC: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -40,7 +40,7 @@ pub fn random_string_fn(kwargs: Kwargs) -> Result<Value, Error> {
     if length > 10000 {
         return Err(Error::new(
             ErrorKind::InvalidOperation,
-            "random_string length must be <= 10000 to prevent excessive memory usage"
+            "random_string length must be <= 10000 to prevent excessive memory usage",
         ));
     }
 
@@ -58,7 +58,10 @@ pub fn random_string_fn(kwargs: Kwargs) -> Result<Value, Error> {
     };
 
     if charset_str.is_empty() {
-        return Err(Error::new(ErrorKind::InvalidOperation, "charset cannot be empty"));
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "charset cannot be empty",
+        ));
     }
 
     // Generate random string

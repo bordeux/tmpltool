@@ -1,16 +1,16 @@
 use minijinja::value::Kwargs;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tmpltool::TemplateContext;
 use tmpltool::functions::data_parsing::{
     create_read_json_file_fn, create_read_toml_file_fn, create_read_yaml_file_fn, parse_json_fn,
     parse_toml_fn, parse_yaml_fn,
 };
-use std::sync::Arc;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
-    Kwargs::from_iter(args.into_iter().map(|(k, v)| (k, minijinja::Value::from(v))))
+    Kwargs::from_iter(args.iter().map(|(k, v)| (*k, minijinja::Value::from(*v))))
 }
 
 // ========== parse_json tests ==========
@@ -20,10 +20,7 @@ fn test_parse_json_simple_object() {
     let kwargs = create_kwargs(vec![("string", r#"{"name": "John", "age": 30}"#)]);
 
     let result = parse_json_fn(kwargs).unwrap();
-    assert_eq!(
-        result.get_attr("name").unwrap().as_str().unwrap(),
-        "John"
-    );
+    assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "John");
     assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
 
@@ -34,13 +31,15 @@ fn test_parse_json_array() {
     let result = parse_json_fn(kwargs).unwrap();
     assert_eq!(result.len(), Some(5));
     assert_eq!(
-        result.get_item(&minijinja::Value::from(0))
+        result
+            .get_item(&minijinja::Value::from(0))
             .unwrap()
             .as_usize(),
         Some(1)
     );
     assert_eq!(
-        result.get_item(&minijinja::Value::from(4))
+        result
+            .get_item(&minijinja::Value::from(4))
             .unwrap()
             .as_usize(),
         Some(5)
@@ -57,7 +56,10 @@ fn test_parse_json_nested() {
     let result = parse_json_fn(kwargs).unwrap();
     let user = result.get_attr("user").unwrap();
     let settings = user.get_attr("settings").unwrap();
-    assert_eq!(settings.get_attr("theme").unwrap().as_str().unwrap(), "dark");
+    assert_eq!(
+        settings.get_attr("theme").unwrap().as_str().unwrap(),
+        "dark"
+    );
 }
 
 #[test]
@@ -66,10 +68,12 @@ fn test_parse_json_invalid() {
 
     let result = parse_json_fn(kwargs);
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Failed to parse JSON"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to parse JSON")
+    );
 }
 
 #[test]
@@ -86,10 +90,7 @@ fn test_parse_yaml_simple_object() {
     let kwargs = create_kwargs(vec![("string", "name: John\nage: 30")]);
 
     let result = parse_yaml_fn(kwargs).unwrap();
-    assert_eq!(
-        result.get_attr("name").unwrap().as_str().unwrap(),
-        "John"
-    );
+    assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "John");
     assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
 
@@ -100,14 +101,16 @@ fn test_parse_yaml_array() {
     let result = parse_yaml_fn(kwargs).unwrap();
     assert_eq!(result.len(), Some(3));
     assert_eq!(
-        result.get_item(&minijinja::Value::from(0))
+        result
+            .get_item(&minijinja::Value::from(0))
             .unwrap()
             .as_str()
             .unwrap(),
         "apple"
     );
     assert_eq!(
-        result.get_item(&minijinja::Value::from(2))
+        result
+            .get_item(&minijinja::Value::from(2))
             .unwrap()
             .as_str()
             .unwrap(),
@@ -141,10 +144,12 @@ fn test_parse_yaml_invalid() {
 
     let result = parse_yaml_fn(kwargs);
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Failed to parse YAML"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to parse YAML")
+    );
 }
 
 #[test]
@@ -161,10 +166,7 @@ fn test_parse_toml_simple() {
     let kwargs = create_kwargs(vec![("string", "name = \"John\"\nage = 30")]);
 
     let result = parse_toml_fn(kwargs).unwrap();
-    assert_eq!(
-        result.get_attr("name").unwrap().as_str().unwrap(),
-        "John"
-    );
+    assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "John");
     assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
 
@@ -213,10 +215,12 @@ fn test_parse_toml_invalid() {
 
     let result = parse_toml_fn(kwargs);
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Failed to parse TOML"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to parse TOML")
+    );
 }
 
 #[test]
@@ -254,7 +258,12 @@ fn test_read_json_file_not_found() {
 
     let result = read_json_file("nonexistent.json".to_string());
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Failed to read file"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read file")
+    );
 }
 
 #[test]
@@ -269,10 +278,12 @@ fn test_read_json_file_invalid_json() {
 
     let result = read_json_file("invalid.json".to_string());
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Failed to parse JSON"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to parse JSON")
+    );
 
     // Cleanup
     fs::remove_file(&json_file).unwrap();
@@ -285,10 +296,12 @@ fn test_read_json_file_security_absolute_path() {
 
     let result = read_json_file("/etc/passwd".to_string());
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Absolute paths are not allowed"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Absolute paths are not allowed")
+    );
 }
 
 #[test]
@@ -298,10 +311,12 @@ fn test_read_json_file_security_parent_traversal() {
 
     let result = read_json_file("../../../etc/passwd".to_string());
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Parent directory (..) traversal"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Parent directory (..) traversal")
+    );
 }
 
 #[test]
@@ -349,7 +364,12 @@ fn test_read_yaml_file_not_found() {
 
     let result = read_yaml_file("nonexistent.yaml".to_string());
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Failed to read file"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read file")
+    );
 }
 
 #[test]
@@ -365,7 +385,8 @@ fn test_read_yaml_file_array() {
     let result = read_yaml_file("array.yaml".to_string()).unwrap();
     assert_eq!(result.len(), Some(3));
     assert_eq!(
-        result.get_item(&minijinja::Value::from(0))
+        result
+            .get_item(&minijinja::Value::from(0))
             .unwrap()
             .as_str()
             .unwrap(),
@@ -383,10 +404,12 @@ fn test_read_yaml_file_security_absolute_path() {
 
     let result = read_yaml_file("/etc/config.yaml".to_string());
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Absolute paths are not allowed"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Absolute paths are not allowed")
+    );
 }
 
 // ========== read_toml_file tests ==========
@@ -417,7 +440,12 @@ fn test_read_toml_file_not_found() {
 
     let result = read_toml_file("nonexistent.toml".to_string());
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Failed to read file"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read file")
+    );
 }
 
 #[test]
@@ -451,10 +479,12 @@ fn test_read_toml_file_invalid_toml() {
 
     let result = read_toml_file("invalid.toml".to_string());
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Failed to parse TOML"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to parse TOML")
+    );
 
     // Cleanup
     fs::remove_file(&toml_file).unwrap();
@@ -467,8 +497,10 @@ fn test_read_toml_file_security_parent_traversal() {
 
     let result = read_toml_file("../../config.toml".to_string());
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Parent directory (..) traversal"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Parent directory (..) traversal")
+    );
 }

@@ -1,11 +1,11 @@
+use minijinja::value::Kwargs;
+use minijinja::{Error, ErrorKind, Value};
 /// Filter environment variables by pattern
 ///
 /// This module provides a MiniJinja function to filter environment variables
 /// matching a glob pattern (e.g., "SERVER_*", "DB_*", etc.)
 use std::collections::HashMap;
 use std::env;
-use minijinja::{Error, ErrorKind, Value};
-use minijinja::value::Kwargs;
 
 /// A MiniJinja function that filters environment variables by pattern
 ///
@@ -38,8 +38,12 @@ pub fn filter_env_fn(kwargs: Kwargs) -> Result<Value, Error> {
 
     // Convert glob pattern to regex
     let regex_pattern = glob_to_regex(&pattern);
-    let re = regex::Regex::new(&regex_pattern)
-        .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Invalid pattern: {}", e)))?;
+    let re = regex::Regex::new(&regex_pattern).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Invalid pattern: {}", e),
+        )
+    })?;
 
     // Filter environment variables
     let mut results: Vec<HashMap<String, String>> = env::vars()

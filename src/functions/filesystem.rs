@@ -8,9 +8,9 @@
 /// - file_size: Get file size
 /// - file_modified: Get file modification timestamp
 use crate::TemplateContext;
-use std::fs;
-use minijinja::{Error, ErrorKind, Value};
 use minijinja::value::Kwargs;
+use minijinja::{Error, ErrorKind, Value};
+use std::fs;
 use std::sync::Arc;
 
 /// Validate path security (prevent absolute paths and parent directory traversal)
@@ -24,7 +24,7 @@ pub fn validate_path_security(path: &str) -> Result<(), Error> {
             format!(
                 "Security: Absolute paths are not allowed: {}. Use --trust to bypass this restriction.",
                 path
-            )
+            ),
         ));
     }
 
@@ -34,7 +34,7 @@ pub fn validate_path_security(path: &str) -> Result<(), Error> {
             format!(
                 "Security: Parent directory (..) traversal is not allowed: {}. Use --trust to bypass this restriction.",
                 path
-            )
+            ),
         ));
     }
 
@@ -42,7 +42,9 @@ pub fn validate_path_security(path: &str) -> Result<(), Error> {
 }
 
 /// Create read_file function with context
-pub fn create_read_file_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_read_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         // Extract path from kwargs
         let path: String = kwargs.get("path")?;
@@ -53,7 +55,7 @@ pub fn create_read_file_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> 
                 format!(
                     "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                     path
-                )
+                ),
             ));
         }
 
@@ -63,11 +65,7 @@ pub fn create_read_file_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> 
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
-                format!(
-                    "Failed to read file '{}': {}",
-                    resolved_path.display(),
-                    e
-                )
+                format!("Failed to read file '{}': {}", resolved_path.display(), e),
             )
         })?;
 
@@ -76,7 +74,9 @@ pub fn create_read_file_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> 
 }
 
 /// Create file_exists function with context
-pub fn create_file_exists_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_file_exists_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         // Extract path from kwargs
         let path: String = kwargs.get("path")?;
@@ -87,7 +87,7 @@ pub fn create_file_exists_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -
                 format!(
                     "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                     path
-                )
+                ),
             ));
         }
 
@@ -98,7 +98,9 @@ pub fn create_file_exists_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -
 }
 
 /// Create list_dir function with context
-pub fn create_list_dir_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_list_dir_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         // Extract path from kwargs
         let path: String = kwargs.get("path")?;
@@ -109,7 +111,7 @@ pub fn create_list_dir_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> R
                 format!(
                     "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                     path
-                )
+                ),
             ));
         }
 
@@ -123,14 +125,18 @@ pub fn create_list_dir_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> R
                     "Failed to read directory '{}': {}",
                     resolved_path.display(),
                     e
-                )
+                ),
             )
         })?;
 
         let mut files: Vec<String> = Vec::new();
         for entry in entries {
-            let entry = entry
-                .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to read directory entry: {}", e)))?;
+            let entry = entry.map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to read directory entry: {}", e),
+                )
+            })?;
             let file_name = entry
                 .file_name()
                 .into_string()
@@ -146,7 +152,9 @@ pub fn create_list_dir_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> R
 }
 
 /// Create glob function with context
-pub fn create_glob_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_glob_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         // Extract pattern from kwargs
         let pattern: String = kwargs.get("pattern")?;
@@ -157,7 +165,7 @@ pub fn create_glob_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
                 format!(
                     "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                     pattern
-                )
+                ),
             ));
         }
 
@@ -166,15 +174,15 @@ pub fn create_glob_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
         let pattern_str = resolved_pattern.to_str().ok_or_else(|| {
             Error::new(
                 ErrorKind::InvalidOperation,
-                format!(
-                    "Invalid path encoding in pattern: {:?}",
-                    resolved_pattern
-                )
+                format!("Invalid path encoding in pattern: {:?}", resolved_pattern),
             )
         })?;
 
         let glob_result = glob::glob(pattern_str).map_err(|e| {
-            Error::new(ErrorKind::InvalidOperation, format!("Invalid glob pattern '{}': {}", pattern_str, e))
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid glob pattern '{}': {}", pattern_str, e),
+            )
         })?;
 
         let mut files: Vec<String> = Vec::new();
@@ -186,7 +194,10 @@ pub fn create_glob_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
                     }
                 }
                 Err(e) => {
-                    return Err(Error::new(ErrorKind::InvalidOperation, format!("Glob error: {}", e)));
+                    return Err(Error::new(
+                        ErrorKind::InvalidOperation,
+                        format!("Glob error: {}", e),
+                    ));
                 }
             }
         }
@@ -199,7 +210,9 @@ pub fn create_glob_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
 }
 
 /// Create file_size function with context
-pub fn create_file_size_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_file_size_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         // Extract path from kwargs
         let path: String = kwargs.get("path")?;
@@ -210,7 +223,7 @@ pub fn create_file_size_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> 
                 format!(
                     "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                     path
-                )
+                ),
             ));
         }
 
@@ -224,7 +237,7 @@ pub fn create_file_size_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> 
                     "Failed to get file metadata for '{}': {}",
                     resolved_path.display(),
                     e
-                )
+                ),
             )
         })?;
 
@@ -233,7 +246,9 @@ pub fn create_file_size_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> 
 }
 
 /// Create file_modified function with context
-pub fn create_file_modified_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+pub fn create_file_modified_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
     move |kwargs: Kwargs| {
         // Extract path from kwargs
         let path: String = kwargs.get("path")?;
@@ -244,7 +259,7 @@ pub fn create_file_modified_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs)
                 format!(
                     "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
                     path
-                )
+                ),
             ));
         }
 
@@ -258,18 +273,26 @@ pub fn create_file_modified_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs)
                     "Failed to get file metadata for '{}': {}",
                     resolved_path.display(),
                     e
-                )
+                ),
             )
         })?;
 
-        let modified = metadata
-            .modified()
-            .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to get modification time: {}", e)))?;
+        let modified = metadata.modified().map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to get modification time: {}", e),
+            )
+        })?;
 
         // Convert to Unix timestamp (seconds since epoch)
         let duration = modified
             .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| Error::new(ErrorKind::InvalidOperation, format!("Failed to convert timestamp: {}", e)))?;
+            .map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert timestamp: {}", e),
+                )
+            })?;
 
         Ok(Value::from(duration.as_secs()))
     }
