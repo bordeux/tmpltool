@@ -41,31 +41,24 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
 Get started in 30 seconds:
 
 ```bash
-# Download for your platform (or use Docker)
-docker pull ghcr.io/bordeux/tmpltool:latest
+# Download binary for your platform from releases
+# https://github.com/bordeux/tmpltool/releases
 
-# Create a simple template
-cat > greeting.tmpl << 'EOF'
-Hello {{ get_env(name="USER", default="World") }}!
+# Or use Docker to copy the binary (recommended for CI/CD):
+# Create a Dockerfile to extract the binary
+cat > Dockerfile << 'EOF'
+FROM ghcr.io/bordeux/tmpltool:latest AS tmpltool
+FROM alpine:latest
+COPY --from=tmpltool /tmpltool /usr/local/bin/tmpltool
 EOF
 
-# Render it
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/bordeux/tmpltool:latest greeting.tmpl
-# Output: Hello World!
-
-# Or with your own name
-docker run --rm -e USER=Alice -v $(pwd):/workspace -w /workspace ghcr.io/bordeux/tmpltool:latest greeting.tmpl
-# Output: Hello Alice!
-```
-
-**Without Docker:**
-```bash
-# Install binary from releases
-# See Installation section below
+docker build -t myapp .
+# Now tmpltool is available in your image at /usr/local/bin/tmpltool
 
 # Create and render template
 echo 'Hello {{ get_env(name="USER", default="World") }}!' > greeting.tmpl
 tmpltool greeting.tmpl
+# Output: Hello World!
 ```
 
 ## Features
@@ -83,8 +76,8 @@ tmpltool greeting.tmpl
 - **Security**: Built-in protections with optional `--trust` mode
 - **Flexible I/O**: File or stdin input, file or stdout output
 - **Full Jinja2 Syntax**: Conditionals, loops, filters, and more
-- **Single Binary**: No runtime dependencies
-- **Docker Support**: Multi-arch images available
+- **Single Binary**: No runtime dependencies, static binaries available
+- **Docker-Friendly**: Extract binary from Docker image (multi-arch support)
 
 ## Installation
 
@@ -107,16 +100,35 @@ chmod +x /usr/local/bin/tmpltool
 
 ### Using Docker
 
-Pull from GitHub Container Registry:
+Docker images are available for extracting the binary into your own images (similar to gomplate pattern):
 
-```bash
-docker pull ghcr.io/bordeux/tmpltool:latest
+**In Your Dockerfile:**
+```dockerfile
+# Multi-stage build to copy tmpltool binary
+FROM ghcr.io/bordeux/tmpltool:latest AS tmpltool
+
+FROM alpine:latest
+# Copy the binary from the tmpltool image
+COPY --from=tmpltool /tmpltool /usr/local/bin/tmpltool
+
+# Now use tmpltool in your build process
+COPY config.tmpl /app/
+RUN tmpltool /app/config.tmpl -o /app/config.json --validate json
 ```
 
-Create a shell alias for convenience:
+**Available Tags:**
+- `latest` - Latest stable release
+- `v1.x.x` - Specific version tags
+- Multi-arch support: `linux/amd64`, `linux/arm64`
 
+**For Local Testing:**
 ```bash
-alias tmpltool='docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/bordeux/tmpltool:latest'
+# Extract binary to local system
+docker create --name tmpltool-tmp ghcr.io/bordeux/tmpltool:latest
+docker cp tmpltool-tmp:/tmpltool ./tmpltool
+docker rm tmpltool-tmp
+chmod +x ./tmpltool
+./tmpltool --version
 ```
 
 ### From Source
