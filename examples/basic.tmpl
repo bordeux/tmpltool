@@ -1,0 +1,13 @@
+Hello from tmpltool!
+
+Current user: {{ get_env(name="USER") }}
+Home directory: {{ get_env(name="HOME") }}
+Shell: {{ get_env(name="SHELL") }}
+Path: {{ get_env(name="PATH") }}
+
+{% set custom_var = get_env(name="CUSTOM_VAR", default="") %}
+{% if custom_var %}
+Custom variable is set to: {{ custom_var }}
+{% else %}
+Custom variable is not set.
+{% endif %}

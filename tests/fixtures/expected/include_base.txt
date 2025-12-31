@@ -1,0 +1,4 @@
+Header: Default Header
+Content from partial template.
+User: guest
+Footer: Done

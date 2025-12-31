@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Build artifacts
+target/
+*.tar.gz
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Documentation
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+*.md
+
+# Release config
+.releaserc.json
+
+# Editor config
+.editorconfig
+
+# Note: Cargo.lock is NOT ignored for binary applications
+# It's required for reproducible Docker builds
+
+# Makefile
+Makefile.toml
+
+# Node.js (not needed in Docker)
+node_modules/
+package.json
+package-lock.json
+.commitlintrc.json
+.husky/

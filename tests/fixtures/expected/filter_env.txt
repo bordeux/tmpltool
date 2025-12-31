@@ -1,0 +1,7 @@
+Server Configuration:
+
+  SERVER_HOST=localhost
+
+  SERVER_NAME=myapp
+
+  SERVER_PORT=8080

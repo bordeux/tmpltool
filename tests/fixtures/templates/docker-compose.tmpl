@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  {{ get_env(name="SERVICE_NAME", default="app") }}:
+    image: {{ get_env(name="IMAGE", default="node:18") }}
+    ports:
+      - "{{ get_env(name="PORT", default="3000") }}:3000"
+    environment:
+      - NODE_ENV={{ get_env(name="ENV", default="development") }}

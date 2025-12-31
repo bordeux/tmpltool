@@ -1,0 +1,37 @@
+# Application Configuration
+# Generated from template using tmpltool with get_env() function
+
+[server]
+host = {{ get_env(name="SERVER_HOST", default="localhost") }}
+port = {{ get_env(name="SERVER_PORT", default="8080") }}
+
+[database]
+url = {{ get_env(name="DATABASE_URL", default="postgres://localhost/mydb") }}
+max_connections = {{ get_env(name="DB_MAX_CONNECTIONS", default="32") }}
+pool_timeout = {{ get_env(name="DB_POOL_TIMEOUT", default="30") }}
+
+[redis]
+url = {{ get_env(name="REDIS_URL", default="redis://localhost:6379") }}
+ttl = {{ get_env(name="REDIS_TTL", default="3600") }}
+
+[logging]
+level = {{ get_env(name="LOG_LEVEL", default="info") }}
+format = {{ get_env(name="LOG_FORMAT", default="json") }}
+{% if get_env(name="DEBUG", default="false") == "true" %}
+debug = true
+verbose = true
+trace_requests = true
+{% else %}
+debug = false
+verbose = false
+{% endif %}
+
+[environment]
+env = {{ get_env(name="APP_ENV", default="development") }}
+version = {{ get_env(name="APP_VERSION", default="0.1.0") }}
+region = {{ get_env(name="AWS_REGION", default="us-east-1") }}
+
+[features]
+enable_caching = {{ get_env(name="ENABLE_CACHING", default="true") }}
+enable_metrics = {{ get_env(name="ENABLE_METRICS", default="false") }}
+max_upload_size = {{ get_env(name="MAX_UPLOAD_SIZE", default="10485760") }}
