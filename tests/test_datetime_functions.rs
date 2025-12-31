@@ -522,3 +522,136 @@ fn test_component_boundary_values() {
     .unwrap();
     assert_eq!(result, "2024/12/31 23:59");
 }
+
+// Error case tests - testing invalid inputs
+
+#[test]
+fn test_date_add_invalid_timestamp() {
+    let env = create_env();
+    // Timestamp too large to be valid
+    let result = render_template(
+        &env,
+        "{{ date_add(timestamp=99999999999999, days=1) }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_date_add_negative_invalid_timestamp() {
+    let env = create_env();
+    // Negative timestamp that's out of range
+    let result = render_template(
+        &env,
+        "{{ date_add(timestamp=-99999999999999, days=1) }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_date_diff_invalid_timestamp1() {
+    let env = create_env();
+    let result = render_template(
+        &env,
+        "{{ date_diff(timestamp1=99999999999999, timestamp2=1704067200) }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp1"));
+}
+
+#[test]
+fn test_date_diff_invalid_timestamp2() {
+    let env = create_env();
+    let result = render_template(
+        &env,
+        "{{ date_diff(timestamp1=1704067200, timestamp2=99999999999999) }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp2"));
+}
+
+#[test]
+fn test_date_diff_both_invalid_timestamps() {
+    let env = create_env();
+    let result = render_template(
+        &env,
+        "{{ date_diff(timestamp1=99999999999999, timestamp2=-99999999999999) }}",
+    );
+    assert!(result.is_err());
+    // Should fail on timestamp1 first
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_get_year_invalid_timestamp() {
+    let env = create_env();
+    let result = render_template(&env, "{{ get_year(timestamp=99999999999999) }}");
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_get_month_invalid_timestamp() {
+    let env = create_env();
+    let result = render_template(&env, "{{ get_month(timestamp=99999999999999) }}");
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_get_day_invalid_timestamp() {
+    let env = create_env();
+    let result = render_template(&env, "{{ get_day(timestamp=99999999999999) }}");
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_get_hour_invalid_timestamp() {
+    let env = create_env();
+    let result = render_template(&env, "{{ get_hour(timestamp=99999999999999) }}");
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_get_minute_invalid_timestamp() {
+    let env = create_env();
+    let result = render_template(&env, "{{ get_minute(timestamp=99999999999999) }}");
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_timezone_convert_invalid_timestamp() {
+    let env = create_env();
+    let result = render_template(
+        &env,
+        "{{ timezone_convert(timestamp=99999999999999, from_tz=\"UTC\", to_tz=\"America/New_York\") }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timestamp"));
+}
+
+#[test]
+fn test_timezone_convert_invalid_from_tz() {
+    let env = create_env();
+    let result = render_template(
+        &env,
+        "{{ timezone_convert(timestamp=1704067200, from_tz=\"Not/A/Timezone\", to_tz=\"UTC\") }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timezone"));
+}
+
+#[test]
+fn test_timezone_convert_invalid_to_tz() {
+    let env = create_env();
+    let result = render_template(
+        &env,
+        "{{ timezone_convert(timestamp=1704067200, from_tz=\"UTC\", to_tz=\"Not/A/Timezone\") }}",
+    );
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Invalid timezone"));
+}
