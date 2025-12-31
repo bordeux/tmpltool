@@ -27,3 +27,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (267 tests)
 - Docker support with multi-arch images
 - CLI with flexible I/O (file or stdin/stdout)
+- Prepare first public release
