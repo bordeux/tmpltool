@@ -69,6 +69,8 @@ tmpltool greeting.tmpl
 - **Filesystem**: Read files, check existence, list directories, glob patterns, file info
 - **Data Parsing**: Parse and read JSON, YAML, TOML files
 - **Validation**: Validate emails, URLs, IPs, UUIDs, regex matching
+- **System & Network**: Get hostname, username, directories, IP addresses, DNS resolution, port availability
+- **String Filters**: 12+ filters for case conversion, indentation, padding, quoting, and more
 - **Security**: Built-in protections with optional `--trust` mode
 - **Flexible I/O**: File or stdin input, file or stdout output
 - **Full Jinja2 Syntax**: Conditionals, loops, filters, and more
@@ -960,6 +962,154 @@ Environment: {{ yaml_config.environment }}
 ## From TOML ({{ toml_config.package.name }})
 Rust Version: {{ toml_config.package.edition }}
 Dependencies: {{ toml_config.dependencies | length }}
+```
+
+### System & Network Functions
+
+Access system information and perform network operations.
+
+#### `get_hostname()`
+
+Get the system hostname.
+
+**Arguments:** None
+
+**Returns:** String containing the system hostname
+
+**Example:**
+```
+Server: {{ get_hostname() }}
+{# Output: Server: myserver.local #}
+```
+
+#### `get_username()`
+
+Get the current system username.
+
+**Arguments:** None
+
+**Returns:** String containing the current username
+
+**Example:**
+```
+User: {{ get_username() }}
+{# Output: User: john #}
+```
+
+#### `get_home_dir()`
+
+Get the user's home directory.
+
+**Arguments:** None
+
+**Returns:** String containing the home directory path
+
+**Example:**
+```
+Home: {{ get_home_dir() }}
+{# Output: Home: /Users/john #}
+```
+
+#### `get_temp_dir()`
+
+Get the system temporary directory.
+
+**Arguments:** None
+
+**Returns:** String containing the temp directory path
+
+**Example:**
+```
+Temp: {{ get_temp_dir() }}
+{# Output: Temp: /tmp #}
+```
+
+#### `get_ip_address(interface)`
+
+Get IP address of a network interface or the primary local IP.
+
+**Arguments:**
+- `interface` (optional) - Network interface name (e.g., "eth0", "en0")
+
+**Returns:** String containing the IP address
+
+**Example:**
+```
+{# Get primary local IP #}
+Local IP: {{ get_ip_address() }}
+{# Output: Local IP: 192.168.1.100 #}
+
+{# Get specific interface IP #}
+Eth0 IP: {{ get_ip_address(interface="eth0") }}
+```
+
+#### `resolve_dns(hostname)`
+
+Resolve a hostname to an IP address using DNS.
+
+**Arguments:**
+- `hostname` (required) - Hostname to resolve
+
+**Returns:** String containing the resolved IP address
+
+**Example:**
+```
+Google IP: {{ resolve_dns(hostname="google.com") }}
+{# Output: Google IP: 142.250.190.46 #}
+
+Local: {{ resolve_dns(hostname="localhost") }}
+{# Output: Local: 127.0.0.1 or ::1 #}
+```
+
+#### `is_port_available(port)`
+
+Check if a port is available (not in use).
+
+**Arguments:**
+- `port` (required) - Port number to check (1-65535)
+
+**Returns:** Boolean (`true` if available, `false` if in use)
+
+**Example:**
+```
+{% if is_port_available(port=8080) %}
+  Port 8080 is available
+{% else %}
+  Port 8080 is already in use
+{% endif %}
+
+{# Dynamic port selection #}
+{% if is_port_available(port=3000) %}
+APP_PORT=3000
+{% elif is_port_available(port=3001) %}
+APP_PORT=3001
+{% else %}
+APP_PORT=8080
+{% endif %}
+```
+
+**Practical Example - Dynamic Application Config:**
+```yaml
+application:
+  hostname: {{ get_hostname() }}
+  user: {{ get_username() }}
+
+network:
+  bind_ip: {{ get_ip_address() }}
+  {% if is_port_available(port=8080) %}
+  port: 8080
+  {% else %}
+  port: 8081  # Fallback port
+  {% endif %}
+
+paths:
+  home: {{ get_home_dir() }}
+  temp: {{ get_temp_dir() }}
+  logs: {{ get_home_dir() }}/logs/app.log
+
+services:
+  database: {{ resolve_dns(hostname="db.local") }}
+  cache: {{ resolve_dns(hostname="redis.local") }}
 ```
 
 ### Validation Functions

@@ -37,6 +37,13 @@
 //! - `read_json_file(path)` - Read and parse JSON file
 //! - `read_yaml_file(path)` - Read and parse YAML file
 //! - `read_toml_file(path)` - Read and parse TOML file
+//! - `get_hostname()` - Get system hostname
+//! - `get_username()` - Get current system username
+//! - `get_home_dir()` - Get user's home directory
+//! - `get_temp_dir()` - Get system temporary directory
+//! - `get_ip_address(interface)` - Get IP address of network interface
+//! - `resolve_dns(hostname)` - Resolve hostname to IP address
+//! - `is_port_available(port)` - Check if port is available
 //!
 //! # Adding Custom Functions
 //!
@@ -66,7 +73,9 @@ pub mod datetime;
 pub mod environment;
 pub mod filesystem;
 pub mod hash;
+pub mod network;
 pub mod random;
+pub mod system;
 pub mod uuid_gen;
 pub mod validation;
 
@@ -117,6 +126,17 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("is_ip", validation::is_ip_fn);
     env.add_function("is_uuid", validation::is_uuid_fn);
     env.add_function("matches_regex", validation::matches_regex_fn);
+
+    // System information functions
+    env.add_function("get_hostname", system::get_hostname_fn);
+    env.add_function("get_username", system::get_username_fn);
+    env.add_function("get_home_dir", system::get_home_dir_fn);
+    env.add_function("get_temp_dir", system::get_temp_dir_fn);
+
+    // Network functions
+    env.add_function("get_ip_address", network::get_ip_address_fn);
+    env.add_function("resolve_dns", network::resolve_dns_fn);
+    env.add_function("is_port_available", network::is_port_available_fn);
 
     // Data parsing functions (simple, no context)
     env.add_function("parse_json", data_parsing::parse_json_fn);

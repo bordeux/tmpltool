@@ -53,13 +53,13 @@ This document contains ideas for new functions and features to make tmpltool mor
 ### 🌐 Network & System Functions
 *Useful for nginx, apache, docker, kubernetes configs*
 
-- [ ] `get_hostname()` - Get system hostname
-- [ ] `get_ip_address(interface)` - Get IP address of network interface
-- [ ] `resolve_dns(hostname)` - Resolve hostname to IP address
-- [ ] `is_port_available(port)` - Check if port is available
-- [ ] `get_username()` - Get current system username
-- [ ] `get_home_dir()` - Get user's home directory
-- [ ] `get_temp_dir()` - Get system temporary directory
+- [x] `get_hostname()` - Get system hostname
+- [x] `get_ip_address(interface)` - Get IP address of network interface (optional interface parameter)
+- [x] `resolve_dns(hostname)` - Resolve hostname to IP address
+- [x] `is_port_available(port)` - Check if port is available
+- [x] `get_username()` - Get current system username
+- [x] `get_home_dir()` - Get user's home directory
+- [x] `get_temp_dir()` - Get system temporary directory
 
 ### 🔢 Math & Calculation Functions
 *Useful for resource calculations, sizing configs*
