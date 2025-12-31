@@ -1,0 +1,63 @@
+{# Example template demonstrating encoding and security functions #}
+
+====== Base64 Encoding ======
+Original: Hello World
+Encoded: {{ base64_encode(string="Hello World") }}
+Decoded: {{ base64_decode(string="SGVsbG8gV29ybGQ=") }}
+
+====== Hexadecimal Encoding ======
+Original: Hello
+Hex: {{ hex_encode(string="Hello") }}
+Decoded: {{ hex_decode(string="48656c6c6f") }}
+
+====== Password Hashing (Bcrypt) ======
+{# Note: Each run produces different hash due to random salt #}
+Password: mypassword
+Hash: {{ bcrypt(password="mypassword", rounds=10) }}
+
+====== Secure Random Strings ======
+Alphanumeric (32 chars): {{ generate_secret(length=32) }}
+Hex (16 chars): {{ generate_secret(length=16, charset="hex") }}
+Base64 (24 chars): {{ generate_secret(length=24, charset="base64") }}
+
+====== HMAC-SHA256 Signature ======
+Key: secret_key
+Message: important data
+HMAC: {{ hmac_sha256(key="secret_key", message="important data") }}
+
+====== HTML Escaping ======
+Original: <script>alert("XSS")</script>
+Escaped: {{ escape_html(string='<script>alert("XSS")</script>') }}
+
+====== XML Escaping ======
+Original: <tag attr="value">'text'</tag>
+Escaped: {{ escape_xml(string='<tag attr="value">\'text\'</tag>') }}
+
+====== Shell Escaping ======
+Original: rm -rf /
+Escaped: {{ escape_shell(string="rm -rf /") }}
+
+Original: it's working
+Escaped: {{ escape_shell(string="it's working") }}
+
+====== Practical Examples ======
+
+{# 1. Generate API credentials #}
+API Key: {{ generate_secret(length=32, charset="hex") }}
+API Secret: {{ generate_secret(length=64, charset="base64") }}
+
+{# 2. Create Basic Auth header #}
+{% set credentials = "admin:password123" %}
+Authorization: Basic {{ base64_encode(string=credentials) }}
+
+{# 3. Generate webhook signature #}
+{% set webhook_data = "user_id=123&action=update" %}
+X-Signature: {{ hmac_sha256(key="webhook_secret", message=webhook_data) }}
+
+{# 4. Safe HTML output #}
+{% set user_input = "<script>alert('hack')</script>" %}
+User Comment: {{ escape_html(string=user_input) }}
+
+{# 5. Safe shell command #}
+{% set filename = "my file with spaces.txt" %}
+Command: cat {{ escape_shell(string=filename) }}

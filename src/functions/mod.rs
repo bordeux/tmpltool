@@ -70,6 +70,7 @@
 
 pub mod data_parsing;
 pub mod datetime;
+pub mod encoding;
 pub mod environment;
 pub mod exec;
 pub mod filesystem;
@@ -198,6 +199,18 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     // Execution functions (need context)
     env.add_function("exec", exec::create_exec_fn(context_arc.clone()));
     env.add_function("exec_raw", exec::create_exec_raw_fn(context_arc));
+
+    // Encoding and security functions
+    env.add_function("base64_encode", encoding::base64_encode_fn);
+    env.add_function("base64_decode", encoding::base64_decode_fn);
+    env.add_function("hex_encode", encoding::hex_encode_fn);
+    env.add_function("hex_decode", encoding::hex_decode_fn);
+    env.add_function("bcrypt", encoding::bcrypt_fn);
+    env.add_function("generate_secret", encoding::generate_secret_fn);
+    env.add_function("hmac_sha256", encoding::hmac_sha256_fn);
+    env.add_function("escape_html", encoding::escape_html_fn);
+    env.add_function("escape_xml", encoding::escape_xml_fn);
+    env.add_function("escape_shell", encoding::escape_shell_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
