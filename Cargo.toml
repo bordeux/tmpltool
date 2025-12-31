@@ -10,7 +10,7 @@ keywords = ["template", "minijinja", "cli", "environment", "variables"]
 categories = ["command-line-utilities", "template-engine"]
 
 [dependencies]
-minijinja = { version = "2", features = ["builtins"] }
+minijinja = { version = "2", features = ["builtins", "loader"] }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 regex = "1"

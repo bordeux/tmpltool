@@ -85,6 +85,49 @@ fn render(
     // Set strict undefined behavior - fail on undefined variables (like Tera)
     env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
 
+    // Clone template_context for use in the loader closure
+    let loader_context = template_context.clone();
+
+    // Set up lazy template loader for includes
+    env.set_loader(move |name: &str| -> Result<Option<String>, minijinja::Error> {
+        // Validate path security unless in trust mode
+        if !loader_context.is_trust_mode() {
+            if name.starts_with('/') {
+                return Err(minijinja::Error::new(
+                    minijinja::ErrorKind::InvalidOperation,
+                    format!(
+                        "Security: Absolute paths are not allowed: {}. Use --trust to bypass this restriction.",
+                        name
+                    ),
+                ));
+            }
+            if name.contains("..") {
+                return Err(minijinja::Error::new(
+                    minijinja::ErrorKind::InvalidOperation,
+                    format!(
+                        "Security: Parent directory (..) traversal is not allowed: {}. Use --trust to bypass this restriction.",
+                        name
+                    ),
+                ));
+            }
+        }
+
+        // Resolve the template path relative to the base directory
+        let resolved_path = loader_context.resolve_path(name);
+
+        // Read the template file
+        match fs::read_to_string(&resolved_path) {
+            Ok(content) => Ok(Some(content)),
+            Err(e) => {
+                // Return a helpful error message
+                Err(minijinja::Error::new(
+                    minijinja::ErrorKind::TemplateNotFound,
+                    format!("Failed to load template '{}': {}", resolved_path.display(), e),
+                ))
+            }
+        }
+    });
+
     // Register all custom functions
     functions::register_all(&mut env, template_context);
 
