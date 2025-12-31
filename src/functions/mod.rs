@@ -68,6 +68,7 @@
 //! }
 //! ```
 
+pub mod array;
 pub mod data_parsing;
 pub mod datetime;
 pub mod debug;
@@ -81,6 +82,7 @@ pub mod object;
 pub mod predicates;
 pub mod random;
 pub mod serialization;
+pub mod statistics;
 pub mod system;
 pub mod uuid_gen;
 pub mod validation;
@@ -263,6 +265,18 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("array_contains", predicates::array_contains_fn);
     env.add_function("starts_with", predicates::starts_with_fn);
     env.add_function("ends_with", predicates::ends_with_fn);
+
+    // Statistical functions
+    env.add_function("array_sum", statistics::array_sum_fn);
+    env.add_function("array_avg", statistics::array_avg_fn);
+    env.add_function("array_median", statistics::array_median_fn);
+    env.add_function("array_min", statistics::array_min_fn);
+    env.add_function("array_max", statistics::array_max_fn);
+
+    // Array manipulation functions
+    env.add_function("array_count", array::array_count_fn);
+    env.add_function("array_chunk", array::array_chunk_fn);
+    env.add_function("array_zip", array::array_zip_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);

@@ -256,20 +256,20 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `warn(message)` - Print warning to stderr
 - [x] `abort(message)` - Abort rendering with error message
 
-### 📈 Statistical & Array Functions
+### ✅ Statistical & Array Functions
 *For data processing and analysis*
 
 **Statistical Functions:**
-- [ ] `array_sum(array)` - Sum of array values
-- [ ] `array_avg(array)` - Average of array values
-- [ ] `array_median(array)` - Median of array values
-- [ ] `array_min(array)` - Minimum value in array
-- [ ] `array_max(array)` - Maximum value in array
+- [x] `array_sum(array)` - Sum of array values
+- [x] `array_avg(array)` - Average of array values
+- [x] `array_median(array)` - Median of array values
+- [x] `array_min(array)` - Minimum value in array
+- [x] `array_max(array)` - Maximum value in array
 
 **Array Manipulation:**
-- [ ] `array_count(array)` - Count array items (alias for length)
-- [ ] `array_chunk(array, size)` - Split array into chunks
-- [ ] `array_zip(array1, array2)` - Combine two arrays into pairs
+- [x] `array_count(array)` - Count array items (alias for length)
+- [x] `array_chunk(array, size)` - Split array into chunks
+- [x] `array_zip(array1, array2)` - Combine two arrays into pairs
 
 ### 🎨 Template Composition
 *Advanced templating features*
