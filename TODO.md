@@ -133,8 +133,6 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [ ] `is_dir(path)` - Check if path is a directory
 - [ ] `is_symlink(path)` - Check if path is a symlink
 - [ ] `read_lines(path, max_lines)` - Read first N lines from file
-- [ ] `file_hash(path, algorithm)` - Get hash of file contents
-- [ ] `find_files(dir, pattern, recursive)` - Advanced file search
 
 ### 📊 Data Transformation Functions
 *Advanced data manipulation*

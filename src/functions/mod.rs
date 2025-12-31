@@ -181,6 +181,26 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
         "file_modified",
         filesystem::create_file_modified_fn(context_arc.clone()),
     );
+    env.add_function(
+        "is_file",
+        filesystem::create_is_file_fn(context_arc.clone()),
+    );
+    env.add_function("is_dir", filesystem::create_is_dir_fn(context_arc.clone()));
+    env.add_function(
+        "is_symlink",
+        filesystem::create_is_symlink_fn(context_arc.clone()),
+    );
+    env.add_function(
+        "read_lines",
+        filesystem::create_read_lines_fn(context_arc.clone()),
+    );
+
+    // Path utility functions (simple, no context)
+    env.add_function("basename", filesystem::basename_fn);
+    env.add_function("dirname", filesystem::dirname_fn);
+    env.add_function("file_extension", filesystem::file_extension_fn);
+    env.add_function("join_path", filesystem::join_path_fn);
+    env.add_function("normalize_path", filesystem::normalize_path_fn);
 
     // Data parsing file functions (need context)
     env.add_function(
