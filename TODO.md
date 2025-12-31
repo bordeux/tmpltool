@@ -18,6 +18,18 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `uuid()` - Generate UUID v4
 - [x] `random_string(length, charset)` - Generate random string
 
+### ✅ Encoding & Security
+- [x] `base64_encode(string)` - Base64 encode
+- [x] `base64_decode(string)` - Base64 decode
+- [x] `hex_encode(string)` - Hexadecimal encode
+- [x] `hex_decode(string)` - Hexadecimal decode
+- [x] `bcrypt(password, rounds)` - Bcrypt hash (for password storage)
+- [x] `generate_secret(length, charset)` - Generate cryptographically secure random string
+- [x] `hmac_sha256(key, message)` - HMAC-SHA256 signature
+- [x] `escape_html(string)` - Escape HTML entities
+- [x] `escape_xml(string)` - Escape XML entities
+- [x] `escape_shell(string)` - Escape shell command arguments
+
 ### ✅ Filesystem Operations
 - [x] `read_file(path)` - Read file content
 - [x] `file_exists(path)` - Check file existence
@@ -25,6 +37,15 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `glob(pattern)` - Find files by glob pattern
 - [x] `file_size(path)` - Get file size
 - [x] `file_modified(path)` - Get file modification time
+- [x] `basename(path)` - Get filename from path
+- [x] `dirname(path)` - Get directory from path
+- [x] `file_extension(path)` - Get file extension
+- [x] `join_path(parts)` - Join path components
+- [x] `normalize_path(path)` - Normalize path
+- [x] `is_file(path)` - Check if path is a file
+- [x] `is_dir(path)` - Check if path is a directory
+- [x] `is_symlink(path)` - Check if path is a symlink
+- [x] `read_lines(path, max_lines)` - Read first N lines from file
 
 ### ✅ Data Parsing
 - [x] `parse_json(string)` - Parse JSON string
@@ -107,32 +128,32 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `timezone_convert(timestamp, from_tz, to_tz)` - Convert timezones
 - [x] `is_leap_year(year)` - Check if leap year
 
-### 🔐 Security & Encoding Functions
+### ✅ Security & Encoding Functions
 *Additional security utilities*
 
-- [ ] `base64_encode(string)` - Base64 encode
-- [ ] `base64_decode(string)` - Base64 decode
-- [ ] `hex_encode(string)` - Hexadecimal encode
-- [ ] `hex_decode(string)` - Hexadecimal decode
-- [ ] `bcrypt(password, rounds)` - Bcrypt hash (for password storage)
-- [ ] `generate_secret(length)` - Generate cryptographically secure random string
-- [ ] `hmac_sha256(key, message)` - HMAC-SHA256
-- [ ] `escape_html(string)` - Escape HTML entities
-- [ ] `escape_xml(string)` - Escape XML entities
-- [ ] `escape_shell(string)` - Escape shell command arguments
+- [x] `base64_encode(string)` - Base64 encode
+- [x] `base64_decode(string)` - Base64 decode
+- [x] `hex_encode(string)` - Hexadecimal encode
+- [x] `hex_decode(string)` - Hexadecimal decode
+- [x] `bcrypt(password, rounds)` - Bcrypt hash (for password storage)
+- [x] `generate_secret(length, charset)` - Generate cryptographically secure random string
+- [x] `hmac_sha256(key, message)` - HMAC-SHA256
+- [x] `escape_html(string)` - Escape HTML entities
+- [x] `escape_xml(string)` - Escape XML entities
+- [x] `escape_shell(string)` - Escape shell command arguments
 
-### 🗂️ Advanced Filesystem Functions
+### ✅ Advanced Filesystem Functions
 *Extended filesystem operations*
 
-- [ ] `basename(path)` - Get filename from path
-- [ ] `dirname(path)` - Get directory from path
-- [ ] `file_extension(path)` - Get file extension
-- [ ] `join_path(parts...)` - Join path components
-- [ ] `normalize_path(path)` - Normalize path (resolve .., .)
-- [ ] `is_file(path)` - Check if path is a file
-- [ ] `is_dir(path)` - Check if path is a directory
-- [ ] `is_symlink(path)` - Check if path is a symlink
-- [ ] `read_lines(path, max_lines)` - Read first N lines from file
+- [x] `basename(path)` - Get filename from path
+- [x] `dirname(path)` - Get directory from path
+- [x] `file_extension(path)` - Get file extension
+- [x] `join_path(parts)` - Join path components
+- [x] `normalize_path(path)` - Normalize path (resolve .., .)
+- [x] `is_file(path)` - Check if path is a file
+- [x] `is_dir(path)` - Check if path is a directory
+- [x] `is_symlink(path)` - Check if path is a symlink
+- [x] `read_lines(path, max_lines)` - Read first N lines from file
 
 ### 📊 Data Transformation Functions
 *Advanced data manipulation*

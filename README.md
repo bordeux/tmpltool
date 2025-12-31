@@ -20,9 +20,11 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
 - [Function Reference](#function-reference)
   - [Environment Variables](#environment-variables)
   - [Hash & Crypto Functions](#hash--crypto-functions)
+  - [Encoding & Security Functions](#encoding--security-functions)
   - [Date/Time Functions](#datetime-functions)
   - [Command Execution Functions](#command-execution-functions)
   - [Filesystem Functions](#filesystem-functions)
+  - [Path Manipulation Functions](#path-manipulation-functions)
   - [Data Parsing Functions](#data-parsing-functions)
   - [Validation Functions](#validation-functions)
 - [Advanced Examples](#advanced-examples)
@@ -68,7 +70,8 @@ tmpltool greeting.tmpl
 
 - **Environment Variables**: Access env vars with `get_env()` and filter with `filter_env()`
 - **Hash & Crypto**: MD5, SHA1, SHA256, SHA512, UUID generation, random strings
-- **Filesystem**: Read files, check existence, list directories, glob patterns, file info
+- **Encoding & Security**: Base64, hex, bcrypt, HMAC, HTML/XML/shell escaping, secure random strings
+- **Filesystem**: Read files, check existence, list directories, glob patterns, file info, path manipulation
 - **Data Parsing**: Parse and read JSON, YAML, TOML files
 - **Validation**: Validate emails, URLs, IPs, UUIDs, regex matching
 - **System & Network**: Get hostname, username, directories, IP addresses, DNS resolution, port availability
@@ -553,6 +556,213 @@ application:
 security:
   password_hash: {{ sha256(string=get_env(name="PASSWORD")) }}
 ```
+
+### Encoding & Security Functions
+
+Functions for encoding, decoding, password hashing, and escaping data for various contexts.
+
+#### `base64_encode(string)`
+
+Encode a string to Base64 format.
+
+**Arguments:**
+- `string` (required) - String to encode
+
+**Returns:** Base64-encoded string
+
+**Examples:**
+```jinja
+{{ base64_encode(string="Hello World") }}
+{# Output: SGVsbG8gV29ybGQ= #}
+
+{# Basic Authentication header #}
+{% set credentials = "admin:password123" %}
+Authorization: Basic {{ base64_encode(string=credentials) }}
+```
+
+#### `base64_decode(string)`
+
+Decode a Base64-encoded string.
+
+**Arguments:**
+- `string` (required) - Base64 string to decode
+
+**Returns:** Decoded string
+
+**Examples:**
+```jinja
+{{ base64_decode(string="SGVsbG8gV29ybGQ=") }}
+{# Output: Hello World #}
+```
+
+#### `hex_encode(string)`
+
+Encode a string to hexadecimal format.
+
+**Arguments:**
+- `string` (required) - String to encode
+
+**Returns:** Hexadecimal string (lowercase)
+
+**Examples:**
+```jinja
+{{ hex_encode(string="Hello") }}
+{# Output: 48656c6c6f #}
+```
+
+#### `hex_decode(string)`
+
+Decode a hexadecimal-encoded string.
+
+**Arguments:**
+- `string` (required) - Hexadecimal string to decode
+
+**Returns:** Decoded string
+
+**Examples:**
+```jinja
+{{ hex_decode(string="48656c6c6f") }}
+{# Output: Hello #}
+```
+
+#### `bcrypt(password, rounds)`
+
+Generate a bcrypt hash for password storage. Each run produces a different hash due to the random salt.
+
+**Arguments:**
+- `password` (required) - Password to hash
+- `rounds` (optional) - Cost factor from 4-31 (default: 12, higher = more secure but slower)
+
+**Returns:** Bcrypt hash string
+
+**Examples:**
+```jinja
+{# Generate password hash #}
+Password hash: {{ bcrypt(password="mypassword") }}
+
+{# Higher security (slower) #}
+Password hash: {{ bcrypt(password="mypassword", rounds=14) }}
+
+{# Use with environment variable #}
+{% set user_pass = get_env(name="USER_PASSWORD") %}
+DB_PASSWORD_HASH={{ bcrypt(password=user_pass, rounds=12) }}
+```
+
+**Note:** Use bcrypt for password storage, not the SHA functions. Bcrypt includes automatic salting and is designed to be computationally expensive to prevent brute-force attacks.
+
+#### `generate_secret(length, charset)`
+
+Generate a cryptographically secure random string.
+
+**Arguments:**
+- `length` (required) - Length of string to generate (1-1024)
+- `charset` (optional) - Character set: `"alphanumeric"` (default), `"hex"`, or `"base64"`
+
+**Returns:** Cryptographically secure random string
+
+**Examples:**
+```jinja
+{# Generate API key #}
+API_KEY={{ generate_secret(length=32) }}
+
+{# Generate hex token #}
+SECRET_TOKEN={{ generate_secret(length=64, charset="hex") }}
+
+{# Generate base64 secret #}
+WEBHOOK_SECRET={{ generate_secret(length=48, charset="base64") }}
+```
+
+**Practical Example:**
+```bash
+# Generate secure credentials
+API_KEY={{ generate_secret(length=32, charset="hex") }}
+JWT_SECRET={{ generate_secret(length=64, charset="base64") }}
+SESSION_SECRET={{ generate_secret(length=32) }}
+CSRF_TOKEN={{ generate_secret(length=40, charset="hex") }}
+```
+
+#### `hmac_sha256(key, message)`
+
+Generate HMAC-SHA256 signature for message authentication.
+
+**Arguments:**
+- `key` (required) - Secret key
+- `message` (required) - Message to sign
+
+**Returns:** HMAC signature as hexadecimal string
+
+**Examples:**
+```jinja
+{# Sign a message #}
+{% set signature = hmac_sha256(key="secret_key", message="important data") %}
+X-Signature: {{ signature }}
+
+{# Webhook signature #}
+{% set payload = '{"user_id": 123, "action": "update"}' %}
+{% set webhook_secret = get_env(name="WEBHOOK_SECRET") %}
+X-Hub-Signature-256: sha256={{ hmac_sha256(key=webhook_secret, message=payload) }}
+```
+
+#### `escape_html(string)`
+
+Escape HTML entities to prevent XSS attacks.
+
+**Arguments:**
+- `string` (required) - String to escape
+
+**Returns:** HTML-escaped string
+
+**Examples:**
+```jinja
+{# Escape user input for HTML #}
+{% set user_input = '<script>alert("XSS")</script>' %}
+<div>{{ escape_html(string=user_input) }}</div>
+{# Output: &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; #}
+
+{# Safe HTML output #}
+<p>User comment: {{ escape_html(string=get_env(name="USER_COMMENT", default="")) }}</p>
+```
+
+#### `escape_xml(string)`
+
+Escape XML entities.
+
+**Arguments:**
+- `string` (required) - String to escape
+
+**Returns:** XML-escaped string
+
+**Examples:**
+```jinja
+{# Escape for XML #}
+{% set content = '<tag attr="value">text & more</tag>' %}
+<data>{{ escape_xml(string=content) }}</data>
+{# Output: &lt;tag attr=&quot;value&quot;&gt;text &amp; more&lt;/tag&gt; #}
+```
+
+#### `escape_shell(string)`
+
+Escape string for safe use in shell commands.
+
+**Arguments:**
+- `string` (required) - String to escape
+
+**Returns:** Shell-escaped string (single-quoted)
+
+**Examples:**
+```jinja
+{# Safe shell argument #}
+{% set filename = "my file with spaces.txt" %}
+Command: cat {{ escape_shell(string=filename) }}
+{# Output: cat 'my file with spaces.txt' #}
+
+{# Escape special characters #}
+{% set message = "it's working!" %}
+echo {{ escape_shell(string=message) }}
+{# Output: echo 'it'\''s working!' #}
+```
+
+**Security Warning:** While `escape_shell` helps prevent injection, the safest approach is to avoid dynamic shell commands entirely when possible. Use `exec()` function only with trusted, hardcoded commands.
 
 ### Date/Time Functions
 
@@ -1140,6 +1350,279 @@ Total Rust files: {{ rs_files | length }}
 ## Tests
 {% set test_files = glob(pattern="tests/**/*.rs") %}
 Test files: {{ test_files | length }}
+```
+
+### Path Manipulation Functions
+
+Functions for manipulating file paths and checking filesystem metadata. These functions do not read file contents and work without security restrictions.
+
+#### `basename(path)`
+
+Extract the filename from a path.
+
+**Arguments:**
+- `path` (required) - File path
+
+**Returns:** Filename (last component of the path)
+
+**Examples:**
+```jinja
+{{ basename(path="/path/to/file.txt") }}
+{# Output: file.txt #}
+
+{{ basename(path="folder/document.pdf") }}
+{# Output: document.pdf #}
+
+{# Use with glob results #}
+{% for file in glob(pattern="src/**/*.rs") %}
+  - {{ basename(path=file) }}
+{% endfor %}
+```
+
+#### `dirname(path)`
+
+Extract the directory portion from a path.
+
+**Arguments:**
+- `path` (required) - File path
+
+**Returns:** Directory path (all components except the last)
+
+**Examples:**
+```jinja
+{{ dirname(path="/path/to/file.txt") }}
+{# Output: /path/to #}
+
+{{ dirname(path="folder/document.pdf") }}
+{# Output: folder #}
+
+{# Get parent directory #}
+{% set file_path = "config/app/settings.json" %}
+Config directory: {{ dirname(path=file_path) }}
+{# Output: config/app #}
+```
+
+#### `file_extension(path)`
+
+Extract the file extension from a path.
+
+**Arguments:**
+- `path` (required) - File path
+
+**Returns:** File extension without the dot (empty string if no extension)
+
+**Examples:**
+```jinja
+{{ file_extension(path="document.pdf") }}
+{# Output: pdf #}
+
+{{ file_extension(path="/path/to/file.tar.gz") }}
+{# Output: gz #}
+
+{{ file_extension(path="README") }}
+{# Output: (empty) #}
+
+{# Group files by extension #}
+{% set files = glob(pattern="docs/*") %}
+{% for file in files %}
+  {% if file_extension(path=file) == "md" %}
+    - Markdown: {{ file }}
+  {% elif file_extension(path=file) == "pdf" %}
+    - PDF: {{ file }}
+  {% endif %}
+{% endfor %}
+```
+
+#### `join_path(parts)`
+
+Join multiple path components into a single path.
+
+**Arguments:**
+- `parts` (required) - Array of path components
+
+**Returns:** Joined path string
+
+**Examples:**
+```jinja
+{{ join_path(parts=["path", "to", "file.txt"]) }}
+{# Output: path/to/file.txt #}
+
+{{ join_path(parts=["/home", "user", "documents"]) }}
+{# Output: /home/user/documents #}
+
+{# Build dynamic paths #}
+{% set base_dir = "config" %}
+{% set env = get_env(name="APP_ENV", default="development") %}
+{% set config_path = join_path(parts=[base_dir, env, "settings.json"]) %}
+Config file: {{ config_path }}
+{# Output: config/development/settings.json #}
+```
+
+#### `normalize_path(path)`
+
+Normalize a path by resolving `.` (current directory) and `..` (parent directory) components.
+
+**Arguments:**
+- `path` (required) - Path to normalize
+
+**Returns:** Normalized path string
+
+**Examples:**
+```jinja
+{{ normalize_path(path="./foo/bar") }}
+{# Output: foo/bar #}
+
+{{ normalize_path(path="foo/../bar") }}
+{# Output: bar #}
+
+{{ normalize_path(path="a/b/c/../../d") }}
+{# Output: a/d #}
+
+{# Clean up path components #}
+{% set messy_path = "./config/../data/./files.txt" %}
+Clean path: {{ normalize_path(path=messy_path) }}
+{# Output: data/files.txt #}
+```
+
+#### `is_file(path)`
+
+Check if a path exists and is a file.
+
+**Arguments:**
+- `path` (required) - Path to check
+
+**Returns:** Boolean (true if path exists and is a file)
+
+**Examples:**
+```jinja
+{% if is_file(path="config.txt") %}
+  Config file found!
+{% else %}
+  Config file missing
+{% endif %}
+
+{# Check before reading #}
+{% if is_file(path="README.md") %}
+  {{ read_file(path="README.md") }}
+{% endif %}
+```
+
+#### `is_dir(path)`
+
+Check if a path exists and is a directory.
+
+**Arguments:**
+- `path` (required) - Path to check
+
+**Returns:** Boolean (true if path exists and is a directory)
+
+**Examples:**
+```jinja
+{% if is_dir(path="src") %}
+  Source directory exists
+{% else %}
+  Source directory not found
+{% endif %}
+
+{# Conditional directory operations #}
+{% if is_dir(path="tests") %}
+  {% set test_files = glob(pattern="tests/**/*.rs") %}
+  Found {{ test_files | length }} test files
+{% endif %}
+```
+
+#### `is_symlink(path)`
+
+Check if a path is a symbolic link.
+
+**Arguments:**
+- `path` (required) - Path to check
+
+**Returns:** Boolean (true if path is a symlink)
+
+**Examples:**
+```jinja
+{% if is_symlink(path="current") %}
+  'current' is a symbolic link
+{% else %}
+  'current' is not a symbolic link
+{% endif %}
+```
+
+#### `read_lines(path, max_lines)`
+
+Read the first N lines from a file.
+
+**Arguments:**
+- `path` (required) - Path to file
+- `max_lines` (optional) - Maximum number of lines to read (default: 10, max: 10000)
+
+**Returns:** Array of strings (lines without newline characters)
+
+**Security:** Requires `--trust` flag for absolute paths or parent directory traversal
+
+**Examples:**
+```jinja
+{# Read first 5 lines #}
+{% set lines = read_lines(path="log.txt", max_lines=5) %}
+Recent log entries:
+{% for line in lines %}
+  {{ loop.index }}: {{ line }}
+{% endfor %}
+
+{# Preview file content #}
+{% if is_file(path="README.md") %}
+  README preview (first 3 lines):
+  {% for line in read_lines(path="README.md", max_lines=3) %}
+    {{ line }}
+  {% endfor %}
+{% endif %}
+
+{# Count non-empty lines #}
+{% set lines = read_lines(path="data.csv", max_lines=100) %}
+{% set count = 0 %}
+{% for line in lines %}
+  {% if line | trim %}
+    {% set count = count + 1 %}
+  {% endif %}
+{% endfor %}
+Non-empty lines: {{ count }}
+```
+
+**Practical Example - Project Structure:**
+```jinja
+# Project Analysis
+
+## Directory Structure
+{% for item in ["src", "tests", "examples", "docs"] %}
+  {% if is_dir(path=item) %}
+    ✓ {{ item }}/ ({{ glob(pattern=item ~ "/**/*") | length }} files)
+  {% else %}
+    ✗ {{ item }}/ (missing)
+  {% endif %}
+{% endfor %}
+
+## Configuration Files
+{% for config_file in ["Cargo.toml", "package.json", ".gitignore"] %}
+  {% if is_file(path=config_file) %}
+    ✓ {{ config_file }}
+    {% set lines = read_lines(path=config_file, max_lines=3) %}
+    Preview: {{ lines[0] | truncate(length=50) }}
+  {% else %}
+    ✗ {{ config_file }} (not found)
+  {% endif %}
+{% endfor %}
+
+## Source Files by Type
+{% set all_files = glob(pattern="src/**/*") %}
+{% for file in all_files %}
+  {% set ext = file_extension(path=file) %}
+  {% if ext == "rs" %}
+    - Rust: {{ basename(path=file) }}
+  {% elif ext == "md" %}
+    - Markdown: {{ basename(path=file) }}
+  {% endif %}
+{% endfor %}
 ```
 
 ### Data Parsing Functions
