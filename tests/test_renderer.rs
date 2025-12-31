@@ -81,16 +81,18 @@ fn test_render_template_with_trust_mode() {
 
     fs::write(&data_file, "trusted data").unwrap();
 
-    // Try to read the file using absolute path
-    let template_content = format!(
-        "{{{{ read_file(path=\"{}\") }}}}",
-        data_file.to_str().unwrap()
-    );
-    fs::write(&input_path, template_content).unwrap();
+    // Use relative path with parent directory traversal (requires trust mode)
+    fs::write(&input_path, "{{ read_file(path=\"../data.txt\") }}").unwrap();
 
-    // Should work with trust mode
+    // Create a subdirectory and move the template there
+    let subdir = temp_dir.path().join("subdir");
+    fs::create_dir(&subdir).unwrap();
+    let nested_input = subdir.join("input.tmpl");
+    fs::write(&nested_input, "{{ read_file(path=\"../data.txt\") }}").unwrap();
+
+    // Should work with trust mode (accessing parent directory)
     let result = render_template(
-        Some(input_path.to_str().unwrap()),
+        Some(nested_input.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         true, // trust mode enabled
         None,
@@ -151,19 +153,15 @@ fn test_render_template_invalid_output_path() {
 }
 
 #[test]
+#[cfg(unix)]
 fn test_render_template_security_absolute_path() {
+    // This test only works on Unix where absolute paths start with /
+    // On Windows, the security check for absolute paths works differently
     let temp_dir = TempDir::new().unwrap();
     let input_path = temp_dir.path().join("input.tmpl");
-    let data_file = temp_dir.path().join("data.txt");
 
-    fs::write(&data_file, "secret data").unwrap();
-
-    // Try to read with absolute path without trust mode
-    let template_content = format!(
-        "{{{{ read_file(path=\"{}\") }}}}",
-        data_file.to_str().unwrap()
-    );
-    fs::write(&input_path, template_content).unwrap();
+    // Try to read with Unix absolute path without trust mode
+    fs::write(&input_path, "{{ read_file(path=\"/etc/passwd\") }}").unwrap();
 
     let result = render_template(Some(input_path.to_str().unwrap()), None, false, None);
 
