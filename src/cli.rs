@@ -1,4 +1,15 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+
+/// Output format for validation
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ValidateFormat {
+    /// Validate as JSON
+    Json,
+    /// Validate as YAML
+    Yaml,
+    /// Validate as TOML
+    Toml,
+}
 
 /// A template rendering tool that uses Tera templates with environment variables
 #[derive(Parser, Debug)]
@@ -16,4 +27,9 @@ pub struct Cli {
     /// WARNING: This disables security restrictions. Only use with trusted templates.
     #[arg(long)]
     pub trust: bool,
+
+    /// Validate output format (json, yaml, or toml)
+    /// If validation fails, the program exits with an error and shows the validation message
+    #[arg(long, value_enum)]
+    pub validate: Option<ValidateFormat>,
 }

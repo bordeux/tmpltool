@@ -18,6 +18,7 @@ fn test_env_with_default() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Verify success

@@ -55,6 +55,7 @@ fn test_read_file_relative_to_template_file() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -90,6 +91,7 @@ fn test_read_file_relative_to_template_in_subdirectory() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -116,6 +118,7 @@ fn test_file_exists_relative_to_template() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -142,6 +145,7 @@ fn test_file_size_relative_to_template() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -172,6 +176,7 @@ fn test_list_dir_relative_to_template() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -207,6 +212,7 @@ fn test_glob_relative_to_template() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -236,6 +242,7 @@ fn test_security_restriction_prevents_parent_directory_access() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_err());
@@ -268,7 +275,8 @@ fn test_trust_mode_allows_parent_directory_access() {
     render_template(
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
-        true, // trust mode enabled
+        true,
+        None, // trust mode enabled
     )
     .unwrap();
 
@@ -295,6 +303,7 @@ fn test_file_modified_relative_to_template() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 
@@ -340,6 +349,7 @@ fn test_multiple_relative_reads_in_same_template() {
         Some(template_file.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     )
     .unwrap();
 

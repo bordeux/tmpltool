@@ -17,6 +17,7 @@ fn test_md5_function() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -44,6 +45,7 @@ fn test_sha1_function() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -71,6 +73,7 @@ fn test_sha256_function() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -101,6 +104,7 @@ fn test_sha512_function() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -137,6 +141,7 @@ fn test_hash_with_env_variable() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -172,6 +177,7 @@ fn test_uuid_function() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -210,6 +216,7 @@ fn test_uuid_uniqueness() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -242,6 +249,7 @@ fn test_random_string_basic() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -278,6 +286,7 @@ fn test_random_string_lowercase() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -313,6 +322,7 @@ fn test_random_string_uppercase() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -348,6 +358,7 @@ fn test_random_string_numeric() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -383,6 +394,7 @@ fn test_random_string_hex() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -418,6 +430,7 @@ fn test_random_string_custom_charset() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -454,6 +467,7 @@ fn test_random_string_uniqueness() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -490,6 +504,7 @@ checksum: {{ md5(string="config-v1") }}"#;
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -529,6 +544,7 @@ fn test_hash_function_missing_argument() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_err(), "MD5 without argument should fail");
@@ -557,6 +573,7 @@ fn test_random_string_missing_length() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_err(), "random_string without length should fail");

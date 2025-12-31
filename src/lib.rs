@@ -18,6 +18,7 @@ pub mod context;
 pub mod filters;
 pub mod functions;
 pub mod renderer;
+pub mod validator;
 
 pub use cli::Cli;
 pub use context::TemplateContext;

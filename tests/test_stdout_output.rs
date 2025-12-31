@@ -18,7 +18,7 @@ fn test_stdout_output() {
     fs::write(&template_path, template_content).unwrap();
 
     // Run the function with no output file (should print to stdout)
-    let result = render_template(Some(template_path.to_str().unwrap()), None, false);
+    let result = render_template(Some(template_path.to_str().unwrap()), None, false, None);
 
     // Verify success
     assert!(result.is_ok());

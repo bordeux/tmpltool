@@ -5,7 +5,12 @@ use tmpltool::{Cli, render_template};
 fn main() {
     let cli = Cli::parse();
 
-    if let Err(e) = render_template(cli.template.as_deref(), cli.output.as_deref(), cli.trust) {
+    if let Err(e) = render_template(
+        cli.template.as_deref(),
+        cli.output.as_deref(),
+        cli.trust,
+        cli.validate,
+    ) {
         eprintln!("Error: {}", e);
         process::exit(1);
     }

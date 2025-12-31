@@ -24,6 +24,7 @@ fn test_multiline_template() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Verify success

@@ -16,6 +16,7 @@ fn test_empty_template() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -40,6 +41,7 @@ fn test_template_only_comments() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -63,6 +65,7 @@ fn test_template_with_unicode() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -92,6 +95,7 @@ fn test_very_long_template() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -121,6 +125,7 @@ fn test_nested_loops() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -158,6 +163,7 @@ FAIL
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -187,6 +193,7 @@ fn test_special_characters_in_output() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -211,6 +218,7 @@ fn test_function_with_default_and_filter() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -236,6 +244,7 @@ fn test_whitespace_control() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());

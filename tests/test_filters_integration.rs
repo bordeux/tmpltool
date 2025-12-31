@@ -16,6 +16,7 @@ fn test_slugify_filter_in_template() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -39,6 +40,7 @@ fn test_filesizeformat_filter_in_template() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -62,6 +64,7 @@ fn test_urlencode_filter_in_template() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -85,6 +88,7 @@ fn test_multiple_filters_chained() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -112,6 +116,7 @@ fn test_filter_with_variable() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -142,6 +147,7 @@ GB: {{ 1073741824 | filesizeformat }}"#;
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());
@@ -170,6 +176,7 @@ fn test_filter_in_loop() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());

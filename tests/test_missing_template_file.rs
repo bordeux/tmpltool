@@ -16,6 +16,7 @@ fn test_missing_template_file() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Verify error

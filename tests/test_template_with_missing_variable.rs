@@ -18,6 +18,7 @@ fn test_template_with_missing_variable() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Verify it fails (get_env() without default should error on missing var)

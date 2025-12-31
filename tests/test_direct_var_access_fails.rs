@@ -22,6 +22,7 @@ fn test_direct_var_access_fails() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Should fail because env vars not auto-added to context
