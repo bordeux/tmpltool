@@ -2,6 +2,30 @@
 
 This directory contains integration tests that test the compiled binary itself, not the code directly.
 
+## Structure
+
+```
+tests/integration/
+├── test_binary.sh          # Main test runner - executes all tests
+├── common.sh               # Shared helper functions and utilities
+├── tests/                  # Individual test files
+│   ├── 01_binary_execution.sh
+│   ├── 02_simple_rendering.sh
+│   ├── 03_environment_variables.sh
+│   ├── 04_conditionals_loops.sh
+│   ├── 05_hash_functions.sh
+│   ├── 06_output_and_stdin.sh
+│   ├── 07_uuid_timestamp_random.sh
+│   ├── 08_error_handling.sh
+│   ├── 09_filesystem_functions.sh
+│   ├── 10_json_and_filters.sh
+│   ├── 11_object_functions.sh
+│   ├── 12_serialization.sh
+│   ├── 13_validation.sh
+│   └── 14_complex_scenarios.sh
+└── README.md               # This file
+```
+
 ## Purpose
 
 While unit tests (`cargo test`) validate the code logic, these integration tests ensure that:
@@ -19,11 +43,17 @@ While unit tests (`cargo test`) validate the code logic, these integration tests
 # Build the release binary first
 cargo build --release
 
-# Run tests with the release binary
+# Run all tests with the release binary
 bash tests/integration/test_binary.sh
 
 # Or specify a custom binary path
 bash tests/integration/test_binary.sh /path/to/tmpltool
+
+# Run a specific test file
+source tests/integration/common.sh
+export BINARY=./target/release/tmpltool
+export TEST_DIR=$(mktemp -d)
+bash tests/integration/tests/01_binary_execution.sh
 ```
 
 ### In CI/CD
@@ -92,29 +122,61 @@ assert_equals "expected" "$OUTPUT" "test description"
 
 To add a new integration test:
 
-1. Add a new test section in `test_binary.sh`
-2. Follow the existing pattern:
+1. Create a new file in `tests/integration/tests/` with a descriptive name (use number prefix for ordering):
    ```bash
-   echo ""
-   echo "Test N: Description"
-   cat > "$TEST_DIR/mytest.tmpl" << 'EOF'
-   Template content here
-   EOF
-   OUTPUT=$("$BINARY" "$TEST_DIR/mytest.tmpl" 2>&1)
+   # Example: tests/integration/tests/15_my_new_feature.sh
+   #!/usr/bin/env bash
+   # Test: My new feature description
+
+   echo "Test: My new feature"
+
+   # Test 1: Description
+   create_template "mytest.tmpl" 'Template content here'
+   OUTPUT=$(run_binary "mytest.tmpl")
    assert_equals "expected output" "$OUTPUT" "Test passes when..."
    ```
-3. Test locally before committing
-4. CI will automatically run the new test
 
-## Helper Functions
+2. Make it executable:
+   ```bash
+   chmod +x tests/integration/tests/15_my_new_feature.sh
+   ```
 
-Available assertion functions:
+3. Test locally:
+   ```bash
+   bash tests/integration/test_binary.sh
+   ```
+
+4. CI will automatically discover and run the new test
+
+## Helper Functions (from common.sh)
+
+### Assertion Functions
 
 - `assert_equals expected actual description` - Check exact match
 - `assert_contains haystack needle description` - Check substring
+- `assert_matches text pattern description` - Check regex pattern match
 - `assert_exit_code expected actual description` - Check exit code
+- `assert_file_exists file description` - Check file exists
+- `assert_in_range value min max description` - Check value in range
 - `pass description` - Mark test as passed
 - `fail description details` - Mark test as failed
+
+### Template Helper Functions
+
+- `create_template filename content` - Create a template file in TEST_DIR
+- `run_binary template [args...]` - Run binary with template from TEST_DIR
+- `run_binary_in_dir dir template [args...]` - Run binary from specific directory
+- `run_binary_stdin input [args...]` - Run binary with stdin input
+- `run_binary_exit_code template [args...]` - Run binary and return exit code
+
+### Environment Variables
+
+All test files have access to:
+- `$BINARY` - Path to the binary being tested
+- `$TEST_DIR` - Temporary directory for test files
+- `$TESTS_RUN` - Number of tests executed
+- `$TESTS_PASSED` - Number of tests passed
+- `$TESTS_FAILED` - Number of tests failed
 
 ## Platform Differences
 
