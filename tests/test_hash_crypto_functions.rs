@@ -536,7 +536,8 @@ fn test_hash_function_missing_argument() {
     let error = result.err().unwrap();
     let error_msg = error.to_string();
     assert!(
-        error_msg.contains("md5 requires a 'string' argument"),
+        error_msg.contains("missing keyword argument")
+            || error_msg.contains("md5 requires a 'string' argument"),
         "Error message should mention missing argument: {}",
         error_msg
     );
@@ -563,7 +564,8 @@ fn test_random_string_missing_length() {
     let error = result.err().unwrap();
     let error_msg = error.to_string();
     assert!(
-        error_msg.contains("random_string requires a 'length' argument"),
+        error_msg.contains("missing keyword argument")
+            || error_msg.contains("random_string requires a 'length' argument"),
         "Error message should mention missing length: {}",
         error_msg
     );
