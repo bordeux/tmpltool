@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/bordeux/tmpltool/compare/v1.0.0...v1.0.1) (2025-12-31)
+
+
+### Documentation
+
+* add comprehensive TODO with function ideas ([1c3dbff](https://github.com/bordeux/tmpltool/commit/1c3dbffb8a22db178d90057b0bf46d5f5d75211d))
+* remove template caching from TODO ([4d0a533](https://github.com/bordeux/tmpltool/commit/4d0a5330504b3640524c9ddd4d240f0138863820))
+
 ## 1.0.0 (2025-12-31)
 
 
