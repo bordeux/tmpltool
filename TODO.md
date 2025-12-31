@@ -71,7 +71,7 @@ This document contains ideas for new functions and features to make tmpltool mor
 
 ## 📋 Proposed New Features
 
-### 🌐 Network & System Functions
+### ✅ Network & System Functions
 *Useful for nginx, apache, docker, kubernetes configs*
 
 - [x] `get_hostname()` - Get system hostname
@@ -95,7 +95,7 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [ ] `bytes_to_mb(bytes)` - Convert bytes to megabytes
 - [ ] `mb_to_bytes(mb)` - Convert megabytes to bytes
 
-### 📝 String Manipulation Functions (Filters)
+### ✅ String Manipulation Functions (Filters)
 *Extended string operations for config generation*
 
 - [x] `indent(spaces)` - Indent text by N spaces
