@@ -216,13 +216,13 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [ ] `in_range(value, min, max)` - Check if value in range
 
 **Array Predicates:**
-- [ ] `array_any(array, predicate)` - Check if any item matches
-- [ ] `array_all(array, predicate)` - Check if all items match
-- [ ] `array_contains(array, value)` - Check if array contains value
+- [x] `array_any(array, predicate)` - Check if any item matches
+- [x] `array_all(array, predicate)` - Check if all items match
+- [x] `array_contains(array, value)` - Check if array contains value
 
 **String Predicates:**
-- [ ] `starts_with(string, prefix)` - Check string starts with prefix
-- [ ] `ends_with(string, suffix)` - Check string ends with suffix
+- [x] `starts_with(string, prefix)` - Check string starts with prefix
+- [x] `ends_with(string, suffix)` - Check string ends with suffix
 
 ### 🐳 Container & Orchestration Helpers
 *Specific for Docker, Kubernetes, docker-compose*

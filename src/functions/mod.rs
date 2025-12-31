@@ -78,6 +78,7 @@ pub mod filesystem;
 pub mod hash;
 pub mod network;
 pub mod object;
+pub mod predicates;
 pub mod random;
 pub mod serialization;
 pub mod system;
@@ -255,6 +256,13 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("object_keys", object::object_keys_fn);
     env.add_function("object_values", object::object_values_fn);
     env.add_function("object_has_key", object::object_has_key_fn);
+
+    // Predicate functions
+    env.add_function("array_any", predicates::array_any_fn);
+    env.add_function("array_all", predicates::array_all_fn);
+    env.add_function("array_contains", predicates::array_contains_fn);
+    env.add_function("starts_with", predicates::starts_with_fn);
+    env.add_function("ends_with", predicates::ends_with_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
