@@ -29,7 +29,8 @@ use minijinja::{Error, ErrorKind, Value};
 /// ```
 pub fn base64_encode_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let input: String = kwargs.get("string")?;
-    let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, input.as_bytes());
+    let encoded =
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, input.as_bytes());
     Ok(Value::from(encoded))
 }
 
@@ -51,13 +52,14 @@ pub fn base64_encode_fn(kwargs: Kwargs) -> Result<Value, Error> {
 pub fn base64_decode_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let input: String = kwargs.get("string")?;
 
-    let decoded_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, input.as_bytes())
-        .map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidOperation,
-                format!("Failed to decode base64: {}", e),
-            )
-        })?;
+    let decoded_bytes =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, input.as_bytes())
+            .map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to decode base64: {}", e),
+                )
+            })?;
 
     let decoded_string = String::from_utf8(decoded_bytes).map_err(|e| {
         Error::new(
@@ -196,7 +198,9 @@ pub fn generate_secret_fn(kwargs: Kwargs) -> Result<Value, Error> {
         }
     })?;
 
-    let charset: String = kwargs.get("charset").unwrap_or_else(|_| "alphanumeric".to_string());
+    let charset: String = kwargs
+        .get("charset")
+        .unwrap_or_else(|_| "alphanumeric".to_string());
 
     use rand::Rng;
     let mut rng = rand::rng();
@@ -204,21 +208,23 @@ pub fn generate_secret_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let result = match charset.as_str() {
         "hex" => {
             // Generate random bytes and convert to hex
-            let byte_count = (length + 1) / 2;
+            let byte_count = length.div_ceil(2);
             let bytes: Vec<u8> = (0..byte_count).map(|_| rng.random()).collect();
             let hex_string = hex::encode(bytes);
             hex_string[..length].to_string()
         }
         "base64" => {
             // Generate random bytes and convert to base64
-            let byte_count = (length * 3 + 3) / 4;
+            let byte_count = (length * 3).div_ceil(4);
             let bytes: Vec<u8> = (0..byte_count).map(|_| rng.random()).collect();
-            let b64_string = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
+            let b64_string =
+                base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
             b64_string[..length].to_string()
         }
         "alphanumeric" => {
             // Generate alphanumeric string
-            const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            const CHARSET: &[u8] =
+                b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             (0..length)
                 .map(|_| {
                     let idx = rng.random_range(0..CHARSET.len());
@@ -229,7 +235,10 @@ pub fn generate_secret_fn(kwargs: Kwargs) -> Result<Value, Error> {
         _ => {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
-                format!("Invalid charset: '{}'. Must be 'alphanumeric', 'hex', or 'base64'", charset),
+                format!(
+                    "Invalid charset: '{}'. Must be 'alphanumeric', 'hex', or 'base64'",
+                    charset
+                ),
             ));
         }
     };

@@ -1,5 +1,5 @@
-use minijinja::value::Kwargs;
 use minijinja::Value;
+use minijinja::value::Kwargs;
 use tmpltool::functions::encoding;
 
 // Base64 tests
@@ -16,8 +16,7 @@ fn test_base64_encode_basic() {
 #[test]
 fn test_base64_encode_empty() {
     let result =
-        encoding::base64_encode_fn(Kwargs::from_iter(vec![("string", Value::from(""))]))
-            .unwrap();
+        encoding::base64_encode_fn(Kwargs::from_iter(vec![("string", Value::from(""))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 }
 
@@ -44,8 +43,7 @@ fn test_base64_decode_basic() {
 #[test]
 fn test_base64_decode_empty() {
     let result =
-        encoding::base64_decode_fn(Kwargs::from_iter(vec![("string", Value::from(""))]))
-            .unwrap();
+        encoding::base64_decode_fn(Kwargs::from_iter(vec![("string", Value::from(""))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 }
 
@@ -62,11 +60,9 @@ fn test_base64_decode_invalid() {
 #[test]
 fn test_base64_roundtrip() {
     let original = "Test string with special chars: !@#$%^&*()";
-    let encoded = encoding::base64_encode_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from(original),
-    )]))
-    .unwrap();
+    let encoded =
+        encoding::base64_encode_fn(Kwargs::from_iter(vec![("string", Value::from(original))]))
+            .unwrap();
     let decoded = encoding::base64_decode_fn(Kwargs::from_iter(vec![(
         "string",
         Value::from(encoded.as_str().unwrap()),
@@ -79,24 +75,21 @@ fn test_base64_roundtrip() {
 #[test]
 fn test_hex_encode_basic() {
     let result =
-        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from("Hello"))]))
-            .unwrap();
+        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from("Hello"))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "48656c6c6f");
 }
 
 #[test]
 fn test_hex_encode_empty() {
     let result =
-        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from(""))]))
-            .unwrap();
+        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from(""))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 }
 
 #[test]
 fn test_hex_encode_numbers() {
     let result =
-        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from("123"))]))
-            .unwrap();
+        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from("123"))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "313233");
 }
 
@@ -122,16 +115,14 @@ fn test_hex_decode_uppercase() {
 
 #[test]
 fn test_hex_decode_invalid() {
-    let result =
-        encoding::hex_decode_fn(Kwargs::from_iter(vec![("string", Value::from("xyz"))]));
+    let result = encoding::hex_decode_fn(Kwargs::from_iter(vec![("string", Value::from("xyz"))]));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Failed to decode"));
 }
 
 #[test]
 fn test_hex_decode_odd_length() {
-    let result =
-        encoding::hex_decode_fn(Kwargs::from_iter(vec![("string", Value::from("123"))]));
+    let result = encoding::hex_decode_fn(Kwargs::from_iter(vec![("string", Value::from("123"))]));
     assert!(result.is_err());
 }
 
@@ -199,16 +190,10 @@ fn test_bcrypt_invalid_rounds_high() {
 #[test]
 fn test_bcrypt_uniqueness() {
     // Same password should generate different hashes (due to random salt)
-    let hash1 = encoding::bcrypt_fn(Kwargs::from_iter(vec![(
-        "password",
-        Value::from("test"),
-    )]))
-    .unwrap();
-    let hash2 = encoding::bcrypt_fn(Kwargs::from_iter(vec![(
-        "password",
-        Value::from("test"),
-    )]))
-    .unwrap();
+    let hash1 =
+        encoding::bcrypt_fn(Kwargs::from_iter(vec![("password", Value::from("test"))])).unwrap();
+    let hash2 =
+        encoding::bcrypt_fn(Kwargs::from_iter(vec![("password", Value::from("test"))])).unwrap();
 
     assert_ne!(hash1.as_str().unwrap(), hash2.as_str().unwrap());
 }
@@ -216,11 +201,8 @@ fn test_bcrypt_uniqueness() {
 // Generate secret tests
 #[test]
 fn test_generate_secret_alphanumeric() {
-    let result = encoding::generate_secret_fn(Kwargs::from_iter(vec![(
-        "length",
-        Value::from(32),
-    )]))
-    .unwrap();
+    let result =
+        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
     let secret = result.as_str().unwrap();
 
     assert_eq!(secret.len(), 32);
@@ -256,10 +238,14 @@ fn test_generate_secret_base64() {
 
 #[test]
 fn test_generate_secret_invalid_length_zero() {
-    let result =
-        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(0))]));
+    let result = encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(0))]));
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("between 1 and 1024"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("between 1 and 1024")
+    );
 }
 
 #[test]
@@ -267,7 +253,12 @@ fn test_generate_secret_invalid_length_large() {
     let result =
         encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(2000))]));
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("between 1 and 1024"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("between 1 and 1024")
+    );
 }
 
 #[test]
@@ -282,16 +273,10 @@ fn test_generate_secret_invalid_charset() {
 
 #[test]
 fn test_generate_secret_uniqueness() {
-    let secret1 = encoding::generate_secret_fn(Kwargs::from_iter(vec![(
-        "length",
-        Value::from(32),
-    )]))
-    .unwrap();
-    let secret2 = encoding::generate_secret_fn(Kwargs::from_iter(vec![(
-        "length",
-        Value::from(32),
-    )]))
-    .unwrap();
+    let secret1 =
+        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
+    let secret2 =
+        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
 
     assert_ne!(secret1.as_str().unwrap(), secret2.as_str().unwrap());
 }
@@ -379,11 +364,9 @@ fn test_escape_html_basic() {
 
 #[test]
 fn test_escape_html_ampersand() {
-    let result = encoding::escape_html_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("A & B"),
-    )]))
-    .unwrap();
+    let result =
+        encoding::escape_html_fn(Kwargs::from_iter(vec![("string", Value::from("A & B"))]))
+            .unwrap();
     assert_eq!(result.as_str().unwrap(), "A &amp; B");
 }
 
@@ -413,8 +396,7 @@ fn test_escape_html_all_entities() {
 #[test]
 fn test_escape_html_empty() {
     let result =
-        encoding::escape_html_fn(Kwargs::from_iter(vec![("string", Value::from(""))]))
-            .unwrap();
+        encoding::escape_html_fn(Kwargs::from_iter(vec![("string", Value::from(""))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 }
 
@@ -426,10 +408,7 @@ fn test_escape_xml_basic() {
         Value::from("<tag>content</tag>"),
     )]))
     .unwrap();
-    assert_eq!(
-        result.as_str().unwrap(),
-        "&lt;tag&gt;content&lt;/tag&gt;"
-    );
+    assert_eq!(result.as_str().unwrap(), "&lt;tag&gt;content&lt;/tag&gt;");
 }
 
 #[test]
@@ -458,11 +437,9 @@ fn test_escape_xml_all_entities() {
 // Escape shell tests
 #[test]
 fn test_escape_shell_simple() {
-    let result = encoding::escape_shell_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("hello"),
-    )]))
-    .unwrap();
+    let result =
+        encoding::escape_shell_fn(Kwargs::from_iter(vec![("string", Value::from("hello"))]))
+            .unwrap();
     assert_eq!(result.as_str().unwrap(), "'hello'");
 }
 
@@ -499,7 +476,6 @@ fn test_escape_shell_special_chars() {
 #[test]
 fn test_escape_shell_empty() {
     let result =
-        encoding::escape_shell_fn(Kwargs::from_iter(vec![("string", Value::from(""))]))
-            .unwrap();
+        encoding::escape_shell_fn(Kwargs::from_iter(vec![("string", Value::from(""))])).unwrap();
     assert_eq!(result.as_str().unwrap(), "''");
 }
