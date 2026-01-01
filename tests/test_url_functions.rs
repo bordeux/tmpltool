@@ -346,13 +346,14 @@ fn test_build_url_http_scheme() {
 }
 
 #[test]
-fn test_build_url_missing_scheme() {
+fn test_build_url_default_scheme() {
     let result = url::build_url_fn(Kwargs::from_iter(vec![(
         "host",
         Value::from("example.com"),
-    )]));
+    )]))
+    .unwrap();
 
-    assert!(result.is_err());
+    assert_eq!(result.to_string(), "https://example.com/");
 }
 
 #[test]
@@ -360,6 +361,44 @@ fn test_build_url_missing_host() {
     let result = url::build_url_fn(Kwargs::from_iter(vec![("scheme", Value::from("https"))]));
 
     assert!(result.is_err());
+}
+
+#[test]
+fn test_build_url_with_query_object() {
+    let mut params = BTreeMap::new();
+    params.insert("page".to_string(), Value::from(1));
+    params.insert("limit".to_string(), Value::from(20));
+
+    let result = url::build_url_fn(Kwargs::from_iter(vec![
+        ("host", Value::from("api.example.com")),
+        ("path", Value::from("/users")),
+        ("query", Value::from_object(params)),
+    ]))
+    .unwrap();
+
+    let output = result.to_string();
+    assert!(output.starts_with("https://api.example.com/users?"));
+    assert!(output.contains("page=1"));
+    assert!(output.contains("limit=20"));
+}
+
+#[test]
+fn test_build_url_with_query_object_complex() {
+    let mut params = BTreeMap::new();
+    params.insert("search".to_string(), Value::from("hello world"));
+    params.insert("active".to_string(), Value::from(true));
+    params.insert("count".to_string(), Value::from(42));
+
+    let result = url::build_url_fn(Kwargs::from_iter(vec![
+        ("host", Value::from("example.com")),
+        ("query", Value::from_object(params)),
+    ]))
+    .unwrap();
+
+    let output = result.to_string();
+    assert!(output.contains("active=true"));
+    assert!(output.contains("count=42"));
+    assert!(output.contains("search=hello") || output.contains("search=hello%20world"));
 }
 
 // ============================================================================

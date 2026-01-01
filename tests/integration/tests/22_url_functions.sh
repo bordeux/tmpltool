@@ -75,10 +75,15 @@ assert_equals "$OUTPUT" "pass" "parse_url extracts password"
 # build_url Tests
 # ============================================================================
 
-# Test 13: Build simple URL
+# Test 13: Build simple URL with explicit scheme
 create_template "build_url_simple.tmpl" '{{ build_url(scheme="https", host="example.com") }}'
 OUTPUT=$(run_binary "build_url_simple.tmpl")
 assert_equals "$OUTPUT" "https://example.com/" "build_url creates simple URL"
+
+# Test 13b: Build simple URL with default scheme (https)
+create_template "build_url_default_scheme.tmpl" '{{ build_url(host="example.com") }}'
+OUTPUT=$(run_binary "build_url_default_scheme.tmpl")
+assert_equals "$OUTPUT" "https://example.com/" "build_url uses https as default scheme"
 
 # Test 14: Build URL with port
 create_template "build_url_port.tmpl" '{{ build_url(scheme="https", host="example.com", port=8080) }}'
@@ -154,10 +159,17 @@ assert_equals "$OUTPUT" "" "query_string returns empty string for empty object"
 # Combined use cases
 # ============================================================================
 
-# Test 26: Build URL with query_string
+# Test 26: Build URL with query_string function
 create_template "combined_build_query.tmpl" '{% set params = {"page": 1, "limit": 10} %}{{ build_url(scheme="https", host="api.example.com", path="/users", query=query_string(params=params)) }}'
 OUTPUT=$(run_binary "combined_build_query.tmpl")
 assert_contains "$OUTPUT" "https://api.example.com/users?" "combined build_url with query_string"
+
+# Test 26b: Build URL with query object directly
+create_template "build_url_query_object.tmpl" '{% set params = {"page": 1, "limit": 10} %}{{ build_url(host="api.example.com", path="/users", query=params) }}'
+OUTPUT=$(run_binary "build_url_query_object.tmpl")
+assert_contains "$OUTPUT" "https://api.example.com/users?" "build_url accepts query as object"
+assert_contains "$OUTPUT" "page=1" "build_url query object includes page"
+assert_contains "$OUTPUT" "limit=10" "build_url query object includes limit"
 
 # Test 27: Parse and rebuild URL
 create_template "combined_parse_build.tmpl" '{% set original = parse_url(url="https://example.com:8080/api") %}{{ build_url(scheme=original.scheme, host=original.host, port=original.port, path=original.path) }}'

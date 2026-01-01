@@ -105,11 +105,11 @@ pub fn parse_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
 ///
 /// # Arguments
 ///
-/// * `scheme` - The URL scheme (http, https, etc.)
-/// * `host` - The hostname
+/// * `scheme` - Optional URL scheme (default: "https")
+/// * `host` - The hostname (required)
 /// * `port` - Optional port number
 /// * `path` - Optional path component (default: "/")
-/// * `query` - Optional query string (without ?)
+/// * `query` - Optional query string (string) or object (will be serialized)
 ///
 /// # Returns
 ///
@@ -118,14 +118,15 @@ pub fn parse_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
 /// # Example
 ///
 /// ```jinja
-/// {{ build_url(scheme="https", host="api.example.com", port=8080, path="/v1/users", query="limit=10") }}
+/// {{ build_url(host="api.example.com", port=8080, path="/v1/users", query="limit=10") }}
+/// {{ build_url(host="api.example.com", query={"page": 1, "limit": 20}) }}
 /// ```
 pub fn build_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let scheme: String = kwargs.get("scheme")?;
+    let scheme: String = kwargs.get("scheme").unwrap_or_else(|_| "https".to_string());
     let host: String = kwargs.get("host")?;
     let port: Option<u16> = kwargs.get("port").ok();
     let path: Option<String> = kwargs.get("path").ok();
-    let query: Option<String> = kwargs.get("query").ok();
+    let query: Option<Value> = kwargs.get("query").ok();
 
     // Start with scheme and host
     let mut url = format!("{}://{}", scheme, host);
@@ -143,11 +144,48 @@ pub fn build_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
     url.push_str(&path_str);
 
     // Add query string if specified
-    if let Some(q) = query
-        && !q.is_empty()
-    {
-        url.push('?');
-        url.push_str(&q);
+    if let Some(q) = query {
+        let query_str = if let Some(s) = q.as_str() {
+            // Query is a string, use it directly
+            s.to_string()
+        } else {
+            // Query is an object, serialize it using query_string logic
+            let json_value: serde_json::Value = serde_json::to_value(&q).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert query parameter: {}", e),
+                )
+            })?;
+
+            if !json_value.is_object() {
+                return Err(Error::new(
+                    ErrorKind::InvalidOperation,
+                    "query parameter must be a string or object",
+                ));
+            }
+
+            let mut parts = Vec::new();
+            if let Some(obj) = json_value.as_object() {
+                for (key, value) in obj {
+                    let encoded_key = urlencoding::encode(key);
+                    let value_str = match value {
+                        serde_json::Value::String(s) => s.clone(),
+                        serde_json::Value::Number(n) => n.to_string(),
+                        serde_json::Value::Bool(b) => b.to_string(),
+                        serde_json::Value::Null => String::from("null"),
+                        _ => value.to_string(),
+                    };
+                    let encoded_value = urlencoding::encode(&value_str);
+                    parts.push(format!("{}={}", encoded_key, encoded_value));
+                }
+            }
+            parts.join("&")
+        };
+
+        if !query_str.is_empty() {
+            url.push('?');
+            url.push_str(&query_str);
+        }
     }
 
     Ok(Value::from(url))
