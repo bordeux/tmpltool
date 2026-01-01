@@ -68,8 +68,13 @@ fn test_run_missing_template_file() {
     let result = run(["tmpltool", "/nonexistent/path/template.tmpl"]);
     assert!(result.is_err());
 
-    let err = result.unwrap_err();
-    assert!(err.to_string().contains("No such file"));
+    let err = result.unwrap_err().to_string();
+    // Error message differs by OS: Unix uses "No such file", Windows uses "cannot find"
+    assert!(
+        err.contains("No such file") || err.contains("cannot find"),
+        "Unexpected error message: {}",
+        err
+    );
 }
 
 #[test]
