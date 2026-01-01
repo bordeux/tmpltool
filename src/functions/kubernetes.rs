@@ -151,8 +151,8 @@ pub fn k8s_resource_request_fn(kwargs: Kwargs) -> Result<Value, Error> {
 ///
 /// ```jinja
 /// {# Sanitize label value #}
-/// {{ k8s_label_safe(value="My App Name (v2.0)") }}
-/// {# Output: my-app-name-v2.0 #}
+/// {{ k8s_label_safe(value="My App (v2.0)") }}
+/// {# Output: my-app-v2.0 #}
 ///
 /// {# Long string gets truncated #}
 /// {{ k8s_label_safe(value="this-is-a-very-long-label-name-that-exceeds-the-kubernetes-maximum-label-length-limit") }}
@@ -181,6 +181,11 @@ pub fn k8s_label_safe_fn(kwargs: Kwargs) -> Result<Value, Error> {
             }
         })
         .collect();
+
+    // Replace multiple consecutive dashes with single dash
+    while result.contains("--") {
+        result = result.replace("--", "-");
+    }
 
     // Remove leading/trailing non-alphanumeric characters
     result = result

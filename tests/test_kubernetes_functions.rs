@@ -178,7 +178,7 @@ fn test_k8s_label_safe_special_chars() {
     )]))
     .unwrap();
 
-    assert_eq!(result.to_string(), "my-app--v2.0");
+    assert_eq!(result.to_string(), "my-app-v2.0");
 }
 
 #[test]
@@ -199,6 +199,15 @@ fn test_k8s_label_safe_underscores_dots() {
             .unwrap();
 
     assert_eq!(result.to_string(), "my_app.v1");
+}
+
+#[test]
+fn test_k8s_label_safe_multiple_dashes() {
+    let result =
+        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("my---app"))]))
+            .unwrap();
+
+    assert_eq!(result.to_string(), "my-app");
 }
 
 #[test]

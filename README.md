@@ -2637,8 +2637,8 @@ Sanitize string to be Kubernetes label-safe.
 **Example:**
 ```jinja
 {# Sanitize label value #}
-{{ k8s_label_safe(value="My App Name (v2.0)") }}
-{# Output: my-app-name-v2.0 #}
+{{ k8s_label_safe(value="My App (v2.0)") }}
+{# Output: my-app-v2.0 #}
 
 {# Use in labels #}
 metadata:
