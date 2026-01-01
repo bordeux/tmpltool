@@ -1,3 +1,20 @@
+## [1.2.0](https://github.com/bordeux/tmpltool/compare/v1.1.2...v1.2.0) (2026-01-01)
+
+
+### Features
+
+* add 20 new template functions for string, array, and set operations ([49b2b9e](https://github.com/bordeux/tmpltool/commit/49b2b9e02fd095e052ac6967ba77abfe0dfa2c52))
+* add 6 JSON/Object operation functions ([a6c282a](https://github.com/bordeux/tmpltool/commit/a6c282a107b3e54bc12b19f8301a1f120e4701a6))
+* add 8 Kubernetes extended functions ([6d18b54](https://github.com/bordeux/tmpltool/commit/6d18b5413b8e1d3b8381d061484b700a9bc279a0))
+* add 8 new string manipulation functions ([9a3ace3](https://github.com/bordeux/tmpltool/commit/9a3ace33dffd4b5d446af9aa79ca304e235414a2))
+* add 9 network and system functions ([7af3f9a](https://github.com/bordeux/tmpltool/commit/7af3f9a8fb21f52b397f91aa65b53cceed63a60e))
+* add UUID version support (v4, v7) to uuid() function ([792fc89](https://github.com/bordeux/tmpltool/commit/792fc895a56f3b2e827983f747738e1b35ef17fe))
+
+
+### Bug Fixes
+
+* support Windows paths in get_cwd() integration test ([9c06d74](https://github.com/bordeux/tmpltool/commit/9c06d7427d0f8dbef34359d0b8911d85de21350a))
+
 ## [1.1.2](https://github.com/bordeux/tmpltool/compare/v1.1.1...v1.1.2) (2026-01-01)
 
 
