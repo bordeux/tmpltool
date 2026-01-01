@@ -287,133 +287,14 @@ jobs:
           cache-to: type=gha,mode=max
 
   update-homebrew:
-    name: Update Homebrew Formula
+    name: Trigger Homebrew Formula Update
     needs: [semantic-release, upload-release-assets]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout homebrew-tap
-        uses: actions/checkout@v4
-        with:
-          repository: bordeux/homebrew-tap
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          path: homebrew-tap
-
-      - name: Download release assets and calculate checksums
-        id: checksums
-        env:
-          VERSION: ${{ needs.semantic-release.outputs.new_release_version }}
+      - name: Trigger homebrew-tap workflow
         run: |
-          # Wait a bit for assets to be fully available
-          sleep 10
-
-          # Download all tarballs
-          curl -sL "https://github.com/bordeux/tmpltool/releases/download/v${VERSION}/tmpltool-macos-aarch64.tar.gz" -o macos-aarch64.tar.gz
-          curl -sL "https://github.com/bordeux/tmpltool/releases/download/v${VERSION}/tmpltool-macos-x86_64.tar.gz" -o macos-x86_64.tar.gz
-          curl -sL "https://github.com/bordeux/tmpltool/releases/download/v${VERSION}/tmpltool-linux-aarch64.tar.gz" -o linux-aarch64.tar.gz
-          curl -sL "https://github.com/bordeux/tmpltool/releases/download/v${VERSION}/tmpltool-linux-x86_64.tar.gz" -o linux-x86_64.tar.gz
-
-          # Calculate SHA256 checksums
-          echo "macos_aarch64=$(sha256sum macos-aarch64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "macos_x86_64=$(sha256sum macos-x86_64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "linux_aarch64=$(sha256sum linux-aarch64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "linux_x86_64=$(sha256sum linux-x86_64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
-      - name: Update formulas
-        env:
-          VERSION: ${{ needs.semantic-release.outputs.new_release_version }}
-          MACOS_AARCH64_SHA: ${{ steps.checksums.outputs.macos_aarch64 }}
-          MACOS_X86_64_SHA: ${{ steps.checksums.outputs.macos_x86_64 }}
-          LINUX_AARCH64_SHA: ${{ steps.checksums.outputs.linux_aarch64 }}
-          LINUX_X86_64_SHA: ${{ steps.checksums.outputs.linux_x86_64 }}
-        run: |
-          # Extract major.minor version (e.g., 1.2.3 -> 1.2)
-          MAJOR_MINOR=$(echo "${VERSION}" | cut -d. -f1,2)
-          # Create class name suffix (e.g., 1.2 -> 12)
-          CLASS_SUFFIX=$(echo "${MAJOR_MINOR}" | tr -d '.')
-
-          # Create main formula (latest version)
-          cat > homebrew-tap/Formula/tmpltool.rb << EOF
-          class Tmpltool < Formula
-            desc "Fast CLI template rendering tool using MiniJinja templates"
-            homepage "https://github.com/bordeux/tmpltool"
-            license "MIT"
-            version "${VERSION}"
-
-            on_macos do
-              if Hardware::CPU.arm?
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-macos-aarch64.tar.gz"
-                sha256 "${MACOS_AARCH64_SHA}"
-              else
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-macos-x86_64.tar.gz"
-                sha256 "${MACOS_X86_64_SHA}"
-              end
-            end
-
-            on_linux do
-              if Hardware::CPU.arm?
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-linux-aarch64.tar.gz"
-                sha256 "${LINUX_AARCH64_SHA}"
-              else
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-linux-x86_64.tar.gz"
-                sha256 "${LINUX_X86_64_SHA}"
-              end
-            end
-
-            def install
-              bin.install "tmpltool"
-            end
-
-            test do
-              assert_match version.to_s, shell_output("#{bin}/tmpltool --version")
-            end
-          end
-          EOF
-
-          # Create versioned formula (e.g., tmpltool@1.2.rb)
-          cat > "homebrew-tap/Formula/tmpltool@${MAJOR_MINOR}.rb" << EOF
-          class TmpltoolAT${CLASS_SUFFIX} < Formula
-            desc "Fast CLI template rendering tool using MiniJinja templates"
-            homepage "https://github.com/bordeux/tmpltool"
-            license "MIT"
-            version "${VERSION}"
-
-            on_macos do
-              if Hardware::CPU.arm?
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-macos-aarch64.tar.gz"
-                sha256 "${MACOS_AARCH64_SHA}"
-              else
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-macos-x86_64.tar.gz"
-                sha256 "${MACOS_X86_64_SHA}"
-              end
-            end
-
-            on_linux do
-              if Hardware::CPU.arm?
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-linux-aarch64.tar.gz"
-                sha256 "${LINUX_AARCH64_SHA}"
-              else
-                url "https://github.com/bordeux/tmpltool/releases/download/v#{version}/tmpltool-linux-x86_64.tar.gz"
-                sha256 "${LINUX_X86_64_SHA}"
-              end
-            end
-
-            keg_only :versioned_formula
-
-            def install
-              bin.install "tmpltool"
-            end
-
-            test do
-              assert_match version.to_s, shell_output("#{bin}/tmpltool --version")
-            end
-          end
-          EOF
-
-      - name: Commit and push
-        run: |
-          cd homebrew-tap
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/
-          git diff --staged --quiet || git commit -m "Update tmpltool to ${{ needs.semantic-release.outputs.new_release_version }}"
-          git push
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.HOMEBREW_TAP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/bordeux/homebrew-tap/actions/workflows/update-formulas.yml/dispatches \
+            -d '{"ref":"main","inputs":{"project":"tmpltool"}}'
