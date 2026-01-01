@@ -231,9 +231,9 @@ This document contains ideas for new functions and features to make tmpltool mor
 - [x] `k8s_label_safe(string)` - Convert to Kubernetes-safe label
 - [x] `k8s_dns_label_safe(string)` - Convert to DNS-safe label (max 63 chars)
 - [x] `k8s_resource_request(cpu, memory)` - Format k8s resource request
-- [ ] `env_var_ref(var_name)` - Format environment variable reference
-- [ ] `secret_ref(secret_name, key)` - Format secret reference
-- [ ] `configmap_ref(cm_name, key)` - Format ConfigMap reference
+- [x] `k8s_env_var_ref(var_name, source, name)` - Format environment variable reference
+- [x] `k8s_secret_ref(secret_name, key, optional)` - Format secret reference
+- [x] `k8s_configmap_ref(configmap_name, key, optional)` - Format ConfigMap reference
 
 ### 🌐 Web & API Helpers
 *For nginx, apache, API configs*

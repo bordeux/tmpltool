@@ -305,6 +305,9 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("k8s_resource_request", kubernetes::k8s_resource_request_fn);
     env.add_function("k8s_label_safe", kubernetes::k8s_label_safe_fn);
     env.add_function("k8s_dns_label_safe", kubernetes::k8s_dns_label_safe_fn);
+    env.add_function("k8s_env_var_ref", kubernetes::k8s_env_var_ref_fn);
+    env.add_function("k8s_secret_ref", kubernetes::k8s_secret_ref_fn);
+    env.add_function("k8s_configmap_ref", kubernetes::k8s_configmap_ref_fn);
 
     // URL and HTTP utility functions
     env.add_function("basic_auth", url::basic_auth_fn);

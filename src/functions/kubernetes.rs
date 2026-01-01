@@ -3,7 +3,7 @@
 //! This module provides Kubernetes-specific formatting and validation functions:
 //! - Resource request/limit formatting
 //! - Label sanitization
-//! - Reference formatting
+//! - ConfigMap and Secret references
 
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
@@ -271,4 +271,139 @@ pub fn k8s_dns_label_safe_fn(kwargs: Kwargs) -> Result<Value, Error> {
     }
 
     Ok(Value::from(result))
+}
+
+/// Generate Kubernetes environment variable reference
+///
+/// # Arguments
+///
+/// * `var_name` (required) - The environment variable name/key
+/// * `source` (optional) - Source type: "configmap" or "secret" (default: "configmap")
+/// * `name` (optional) - Name of the ConfigMap/Secret (default: uses var_name in lowercase)
+///
+/// # Returns
+///
+/// Returns a YAML-formatted valueFrom reference
+///
+/// # Example
+///
+/// ```jinja
+/// {# ConfigMap reference #}
+/// - name: DATABASE_HOST
+///   {{ k8s_env_var_ref(var_name="DATABASE_HOST", source="configmap", name="app-config") | indent(2) }}
+///
+/// {# Secret reference #}
+/// - name: API_KEY
+///   {{ k8s_env_var_ref(var_name="API_KEY", source="secret", name="api-secrets") | indent(2) }}
+/// ```
+pub fn k8s_env_var_ref_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let var_name: String = kwargs.get("var_name")?;
+    let source: String = kwargs
+        .get("source")
+        .unwrap_or_else(|_| "configmap".to_string());
+    let name: String = kwargs
+        .get("name")
+        .unwrap_or_else(|_| var_name.to_lowercase().replace('_', "-"));
+
+    let output = match source.as_str() {
+        "secret" => format!(
+            "valueFrom:\n  secretKeyRef:\n    name: {}\n    key: {}",
+            name, var_name
+        ),
+        "configmap" => format!(
+            "valueFrom:\n  configMapKeyRef:\n    name: {}\n    key: {}",
+            name, var_name
+        ),
+        _ => {
+            return Err(Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "Invalid source '{}', must be 'configmap' or 'secret'",
+                    source
+                ),
+            ));
+        }
+    };
+
+    Ok(Value::from(output))
+}
+
+/// Generate Kubernetes Secret reference
+///
+/// # Arguments
+///
+/// * `secret_name` (required) - Name of the Secret
+/// * `key` (required) - Key within the Secret
+/// * `optional` (optional) - Whether the Secret is optional (default: false)
+///
+/// # Returns
+///
+/// Returns a YAML-formatted valueFrom secretKeyRef
+///
+/// # Example
+///
+/// ```jinja
+/// {# Basic secret reference #}
+/// - name: DB_PASSWORD
+///   {{ k8s_secret_ref(secret_name="db-credentials", key="password") | indent(2) }}
+///
+/// {# Optional secret #}
+/// - name: OPTIONAL_TOKEN
+///   {{ k8s_secret_ref(secret_name="tokens", key="api_token", optional=true) | indent(2) }}
+/// ```
+pub fn k8s_secret_ref_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let secret_name: String = kwargs.get("secret_name")?;
+    let key: String = kwargs.get("key")?;
+    let optional: bool = kwargs.get("optional").unwrap_or(false);
+
+    let mut output = format!(
+        "valueFrom:\n  secretKeyRef:\n    name: {}\n    key: {}",
+        secret_name, key
+    );
+
+    if optional {
+        output.push_str("\n    optional: true");
+    }
+
+    Ok(Value::from(output))
+}
+
+/// Generate Kubernetes ConfigMap reference
+///
+/// # Arguments
+///
+/// * `configmap_name` (required) - Name of the ConfigMap
+/// * `key` (required) - Key within the ConfigMap
+/// * `optional` (optional) - Whether the ConfigMap is optional (default: false)
+///
+/// # Returns
+///
+/// Returns a YAML-formatted valueFrom configMapKeyRef
+///
+/// # Example
+///
+/// ```jinja
+/// {# Basic ConfigMap reference #}
+/// - name: DATABASE_HOST
+///   {{ k8s_configmap_ref(configmap_name="app-config", key="database_host") | indent(2) }}
+///
+/// {# Optional ConfigMap #}
+/// - name: FEATURE_FLAG
+///   {{ k8s_configmap_ref(configmap_name="features", key="new_ui", optional=true) | indent(2) }}
+/// ```
+pub fn k8s_configmap_ref_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let configmap_name: String = kwargs.get("configmap_name")?;
+    let key: String = kwargs.get("key")?;
+    let optional: bool = kwargs.get("optional").unwrap_or(false);
+
+    let mut output = format!(
+        "valueFrom:\n  configMapKeyRef:\n    name: {}\n    key: {}",
+        configmap_name, key
+    );
+
+    if optional {
+        output.push_str("\n    optional: true");
+    }
+
+    Ok(Value::from(output))
 }

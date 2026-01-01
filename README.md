@@ -29,6 +29,14 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
   - [Data Serialization Functions](#data-serialization-functions)
   - [Object Manipulation Functions](#object-manipulation-functions)
   - [Validation Functions](#validation-functions)
+  - [System & Network Functions](#system--network-functions)
+  - [Math Functions](#math-functions)
+  - [Array Functions](#array-functions)
+  - [Statistical Functions](#statistical-functions)
+  - [Predicate Functions](#predicate-functions)
+  - [Kubernetes Functions](#kubernetes-functions)
+  - [Web & URL Functions](#web--url-functions)
+  - [Logic Functions](#logic-functions)
   - [Debugging & Development Functions](#debugging--development-functions)
 - [Advanced Examples](#advanced-examples)
 - [Error Handling](#error-handling)
@@ -72,6 +80,10 @@ tmpltool greeting.tmpl
 - **Object Manipulation**: Deep merge, get/set nested values by path, extract keys/values, check key existence
 - **Validation**: Validate emails, URLs, IPs, UUIDs, regex matching
 - **System & Network**: Get hostname, username, directories, IP addresses, DNS resolution, port availability
+- **Web & URL**: Parse and build URLs, generate query strings, HTTP Basic Auth headers
+- **Kubernetes**: Resource requests, label sanitization, ConfigMap/Secret references for manifests
+- **Math & Logic**: Min/max, rounding, percentages, default values, ternary operations, range checks
+- **Array & Statistics**: Sorting, grouping, chunking, sum/avg/median, unique values, flattening
 - **Debugging & Development**: Debug output, type checking, assertions, warnings, error handling
 - **String Filters**: 12+ filters for case conversion, indentation, padding, quoting, and more
 - **Security**: Built-in protections with optional `--trust` mode
@@ -2667,6 +2679,264 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ k8s_dns_label_safe(value=service_name) }}
+```
+
+#### `k8s_env_var_ref(var_name, source, name)`
+
+Generate Kubernetes environment variable reference (ConfigMap or Secret).
+
+**Arguments:**
+- `var_name` (required): The environment variable name/key
+- `source` (optional): Source type - `"configmap"` or `"secret"` (default: `"configmap"`)
+- `name` (optional): Name of the ConfigMap/Secret (default: auto-generated from var_name)
+
+**Returns:** YAML-formatted `valueFrom` reference
+
+**Example:**
+```jinja
+{# ConfigMap reference #}
+- name: DATABASE_HOST
+  {{ k8s_env_var_ref(var_name="DATABASE_HOST", source="configmap", name="app-config") | indent(2) }}
+{# Output:
+  valueFrom:
+    configMapKeyRef:
+      name: app-config
+      key: DATABASE_HOST
+#}
+
+{# Secret reference with auto-generated name #}
+- name: DB_PASSWORD
+  {{ k8s_env_var_ref(var_name="DB_PASSWORD", source="secret") | indent(2) }}
+{# Output:
+  valueFrom:
+    secretKeyRef:
+      name: db-password
+      key: DB_PASSWORD
+#}
+```
+
+#### `k8s_secret_ref(secret_name, key, optional)`
+
+Generate Kubernetes Secret reference for environment variables.
+
+**Arguments:**
+- `secret_name` (required): Name of the Secret
+- `key` (required): Key within the Secret
+- `optional` (optional): Whether the Secret is optional (default: `false`)
+
+**Returns:** YAML-formatted `valueFrom` secretKeyRef
+
+**Example:**
+```jinja
+{# Basic secret reference #}
+- name: DB_PASSWORD
+  {{ k8s_secret_ref(secret_name="db-credentials", key="password") | indent(2) }}
+{# Output:
+  valueFrom:
+    secretKeyRef:
+      name: db-credentials
+      key: password
+#}
+
+{# Optional secret #}
+- name: OPTIONAL_TOKEN
+  {{ k8s_secret_ref(secret_name="tokens", key="api_token", optional=true) | indent(2) }}
+{# Output:
+  valueFrom:
+    secretKeyRef:
+      name: tokens
+      key: api_token
+      optional: true
+#}
+```
+
+#### `k8s_configmap_ref(configmap_name, key, optional)`
+
+Generate Kubernetes ConfigMap reference for environment variables.
+
+**Arguments:**
+- `configmap_name` (required): Name of the ConfigMap
+- `key` (required): Key within the ConfigMap
+- `optional` (optional): Whether the ConfigMap is optional (default: `false`)
+
+**Returns:** YAML-formatted `valueFrom` configMapKeyRef
+
+**Example:**
+```jinja
+{# Basic ConfigMap reference #}
+- name: DATABASE_HOST
+  {{ k8s_configmap_ref(configmap_name="app-config", key="database_host") | indent(2) }}
+{# Output:
+  valueFrom:
+    configMapKeyRef:
+      name: app-config
+      key: database_host
+#}
+
+{# Optional ConfigMap #}
+- name: FEATURE_FLAG
+  {{ k8s_configmap_ref(configmap_name="features", key="new_ui", optional=true) | indent(2) }}
+{# Output:
+  valueFrom:
+    configMapKeyRef:
+      name: features
+      key: new_ui
+      optional: true
+#}
+
+{# Complete deployment example #}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ k8s_dns_label_safe(value=app_name) }}
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: myapp:latest
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: DATABASE_HOST
+              {{ k8s_configmap_ref(configmap_name="app-config", key="db_host") | indent(14) }}
+            - name: DATABASE_PASSWORD
+              {{ k8s_secret_ref(secret_name="db-credentials", key="password") | indent(14) }}
+          resources:
+            {{ k8s_resource_request(cpu="500m", memory="512Mi") | indent(12) }}
+```
+
+### Web & URL Functions
+
+URL manipulation and HTTP authentication helpers.
+
+#### `basic_auth(username, password)`
+
+Generate HTTP Basic Authentication header value.
+
+**Arguments:**
+- `username` (required): The username for authentication
+- `password` (required): The password for authentication
+
+**Returns:** Base64-encoded Basic authentication header value
+
+**Example:**
+```jinja
+{# Generate Basic Auth header #}
+Authorization: {{ basic_auth(username="admin", password="secret123") }}
+{# Output: Authorization: Basic YWRtaW46c2VjcmV0MTIz #}
+
+{# Use with environment variables #}
+Authorization: {{ basic_auth(username=get_env(name="API_USER"), password=get_env(name="API_PASS")) }}
+
+{# In nginx config #}
+proxy_set_header Authorization "{{ basic_auth(username="api_user", password="api_key") }}";
+```
+
+#### `parse_url(url)`
+
+Parse a URL into its component parts.
+
+**Arguments:**
+- `url` (required): The URL string to parse
+
+**Returns:** Object with the following fields:
+- `scheme`: URL scheme (http, https, etc.)
+- `host`: Hostname
+- `port`: Port number (or default for scheme)
+- `path`: Path component
+- `query`: Query string (without ?)
+- `fragment`: Fragment/hash (without #)
+- `username`: Username from URL (if present)
+- `password`: Password from URL (if present)
+
+**Example:**
+```jinja
+{# Parse URL #}
+{% set url = parse_url(url="https://user:pass@api.example.com:8080/v1/users?limit=10#section") %}
+Scheme: {{ url.scheme }}
+Host: {{ url.host }}
+Port: {{ url.port }}
+Path: {{ url.path }}
+Query: {{ url.query }}
+{# Output:
+Scheme: https
+Host: api.example.com
+Port: 8080
+Path: /v1/users
+Query: limit=10
+#}
+
+{# Extract host from environment variable #}
+{% set db_url = parse_url(url=get_env(name="DATABASE_URL")) %}
+DB_HOST={{ db_url.host }}
+DB_PORT={{ db_url.port }}
+DB_NAME={{ url.path | trim_start_matches(pat="/") }}
+```
+
+#### `build_url(scheme, host, port, path, query)`
+
+Construct a URL from components.
+
+**Arguments:**
+- `scheme` (optional): URL scheme (default: `"https"`)
+- `host` (required): Hostname
+- `port` (optional): Port number
+- `path` (optional): Path component (default: `"/"`)
+- `query` (optional): Query string (string) or query parameters (object)
+
+**Returns:** Constructed URL string
+
+**Example:**
+```jinja
+{# Basic URL with defaults #}
+{{ build_url(host="api.example.com") }}
+{# Output: https://api.example.com/ #}
+
+{# Full URL with all components #}
+{{ build_url(scheme="http", host="localhost", port=8080, path="/api/v1", query="debug=true") }}
+{# Output: http://localhost:8080/api/v1?debug=true #}
+
+{# Query as object (auto-serialized) #}
+{{ build_url(host="api.example.com", path="/search", query={"q": "jinja templates", "limit": 20}) }}
+{# Output: https://api.example.com/search?q=jinja+templates&limit=20 #}
+
+{# Build API endpoint from config #}
+{% set api_url = build_url(
+    scheme="https",
+    host=get_env(name="API_HOST", default="api.example.com"),
+    port=get_env(name="API_PORT") | default(value=443),
+    path="/v2/data"
+) %}
+API_ENDPOINT={{ api_url }}
+```
+
+#### `query_string(params)`
+
+Build a URL query string from an object.
+
+**Arguments:**
+- `params` (required): Object containing key-value pairs for the query string
+
+**Returns:** URL-encoded query string (without leading `?`)
+
+**Example:**
+```jinja
+{# Basic query string #}
+{% set params = {"name": "John Doe", "age": 30, "city": "New York"} %}
+{{ query_string(params=params) }}
+{# Output: name=John+Doe&age=30&city=New+York #}
+
+{# URL encoding for special characters #}
+{% set search = {"q": "hello world", "filter": "type=user&active=true"} %}
+?{{ query_string(params=search) }}
+{# Output: ?q=hello+world&filter=type%3Duser%26active%3Dtrue #}
+
+{# Build complete URL with query #}
+{% set endpoint = "https://api.example.com/search" %}
+{% set params = {"page": 1, "limit": 50, "sort": "created_at"} %}
+{{ endpoint }}?{{ query_string(params=params) }}
+{# Output: https://api.example.com/search?page=1&limit=50&sort=created_at #}
 ```
 
 ### Logic Functions
