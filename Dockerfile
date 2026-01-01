@@ -1,7 +1,7 @@
 # ================================
 # Build Stage
 # ================================
-FROM rust:1.90-slim as builder
+FROM rust:1.90-slim AS builder
 
 WORKDIR /usr/src/tmpltool
 
