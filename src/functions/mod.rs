@@ -86,6 +86,7 @@ pub mod predicates;
 pub mod random;
 pub mod serialization;
 pub mod statistics;
+pub mod string;
 pub mod system;
 pub mod url;
 pub mod uuid_gen;
@@ -285,6 +286,33 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("array_group_by", array::array_group_by_fn);
     env.add_function("array_unique", array::array_unique_fn);
     env.add_function("array_flatten", array::array_flatten_fn);
+    env.add_function("array_take", array::array_take_fn);
+    env.add_function("array_drop", array::array_drop_fn);
+    env.add_function("array_index_of", array::array_index_of_fn);
+    env.add_function("array_find", array::array_find_fn);
+    env.add_function("array_filter_by", array::array_filter_by_fn);
+    env.add_function("array_pluck", array::array_pluck_fn);
+
+    // Set operations
+    env.add_function("array_intersection", array::array_intersection_fn);
+    env.add_function("array_difference", array::array_difference_fn);
+    env.add_function("array_union", array::array_union_fn);
+    env.add_function(
+        "array_symmetric_difference",
+        array::array_symmetric_difference_fn,
+    );
+
+    // String manipulation functions
+    env.add_function("regex_replace", string::regex_replace_fn);
+    env.add_function("regex_match", string::regex_match_fn);
+    env.add_function("regex_find_all", string::regex_find_all_fn);
+    env.add_function("substring", string::substring_fn);
+    env.add_function("contains", string::contains_fn);
+    env.add_function("index_of", string::index_of_fn);
+    env.add_function("count_occurrences", string::count_occurrences_fn);
+    env.add_function("truncate", string::truncate_fn);
+    env.add_function("word_count", string::word_count_fn);
+    env.add_function("split_lines", string::split_lines_fn);
 
     // Math functions
     env.add_function("min", math::min_fn);

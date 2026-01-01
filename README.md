@@ -3704,6 +3704,431 @@ Task Status Dashboard:
 Unique assignees: {{ array_unique(array=all_assignees) | join(", ") }}
 ```
 
+#### `array_take(array, n)`
+
+Take the first N elements from an array.
+
+**Arguments:**
+- `array` (required): Source array
+- `n` (required): Number of elements to take
+
+**Returns:** Array with the first N elements
+
+**Example:**
+```jinja
+{{ array_take(array=[1, 2, 3, 4, 5], n=3) }}
+{# Output: [1, 2, 3] #}
+
+{# Taking more than available returns all elements #}
+{{ array_take(array=[1, 2], n=5) }}
+{# Output: [1, 2] #}
+```
+
+#### `array_drop(array, n)`
+
+Skip the first N elements from an array.
+
+**Arguments:**
+- `array` (required): Source array
+- `n` (required): Number of elements to skip
+
+**Returns:** Array with elements after the first N
+
+**Example:**
+```jinja
+{{ array_drop(array=[1, 2, 3, 4, 5], n=2) }}
+{# Output: [3, 4, 5] #}
+
+{# Dropping more than available returns empty array #}
+{{ array_drop(array=[1, 2], n=5) }}
+{# Output: [] #}
+```
+
+#### `array_index_of(array, value)`
+
+Find the index of an element in an array.
+
+**Arguments:**
+- `array` (required): Array to search
+- `value` (required): Value to find
+
+**Returns:** Index (0-based) or -1 if not found
+
+**Example:**
+```jinja
+{{ array_index_of(array=["a", "b", "c"], value="b") }}
+{# Output: 1 #}
+
+{{ array_index_of(array=[1, 2, 3], value=5) }}
+{# Output: -1 #}
+```
+
+#### `array_find(array, key, value)`
+
+Find the first matching object in an array of objects.
+
+**Arguments:**
+- `array` (required): Array of objects to search
+- `key` (required): Key to match
+- `value` (required): Value to match
+
+**Returns:** The first matching object or null if not found
+
+**Example:**
+```jinja
+{% set users = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}] %}
+{{ array_find(array=users, key="id", value=2) | tojson }}
+{# Output: {"id": 2, "name": "Bob"} #}
+
+{{ array_find(array=users, key="id", value=99) }}
+{# Output: null #}
+```
+
+#### `array_filter_by(array, key, op, value)`
+
+Filter an array of objects by a key with comparison operators.
+
+**Arguments:**
+- `array` (required): Array of objects to filter
+- `key` (required): Key to compare
+- `op` (required): Operator: `"eq"`, `"ne"`, `"gt"`, `"lt"`, `"gte"`, `"lte"`, `"contains"`
+- `value` (required): Value to compare against
+
+**Returns:** Filtered array of matching objects
+
+**Example:**
+```jinja
+{% set items = [{"price": 10}, {"price": 20}, {"price": 30}] %}
+{{ array_filter_by(array=items, key="price", op="gt", value=15) | tojson }}
+{# Output: [{"price": 20}, {"price": 30}] #}
+
+{% set users = [{"name": "Alice"}, {"name": "Bob"}, {"name": "Charlie"}] %}
+{{ array_filter_by(array=users, key="name", op="contains", value="li") | tojson }}
+{# Output: [{"name": "Alice"}, {"name": "Charlie"}] #}
+```
+
+#### `array_pluck(array, key)`
+
+Extract values from an array of objects by key (supports dot notation for nested keys).
+
+**Arguments:**
+- `array` (required): Array of objects
+- `key` (required): Key path to extract (e.g., `"user.name"`)
+
+**Returns:** Array of extracted values
+
+**Example:**
+```jinja
+{% set users = [{"name": "Alice"}, {"name": "Bob"}] %}
+{{ array_pluck(array=users, key="name") | tojson }}
+{# Output: ["Alice", "Bob"] #}
+
+{# Nested keys with dot notation #}
+{% set data = [{"user": {"name": "Alice"}}, {"user": {"name": "Bob"}}] %}
+{{ array_pluck(array=data, key="user.name") | tojson }}
+{# Output: ["Alice", "Bob"] #}
+```
+
+#### `array_intersection(array1, array2)`
+
+Get elements that exist in both arrays.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of common elements
+
+**Example:**
+```jinja
+{{ array_intersection(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) | tojson }}
+{# Output: [3, 4] #}
+
+{{ array_intersection(array1=["a", "b", "c"], array2=["b", "c", "d"]) | tojson }}
+{# Output: ["b", "c"] #}
+```
+
+#### `array_difference(array1, array2)`
+
+Get elements in the first array that are not in the second.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of elements in array1 but not in array2
+
+**Example:**
+```jinja
+{{ array_difference(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) | tojson }}
+{# Output: [1, 2] #}
+
+{{ array_difference(array1=["a", "b", "c"], array2=["b"]) | tojson }}
+{# Output: ["a", "c"] #}
+```
+
+#### `array_union(array1, array2)`
+
+Get all unique elements from both arrays.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of all unique elements from both arrays
+
+**Example:**
+```jinja
+{{ array_union(array1=[1, 2, 3], array2=[3, 4, 5]) | tojson }}
+{# Output: [1, 2, 3, 4, 5] #}
+
+{{ array_union(array1=["a", "b"], array2=["b", "c"]) | tojson }}
+{# Output: ["a", "b", "c"] #}
+```
+
+#### `array_symmetric_difference(array1, array2)`
+
+Get elements that are in either array but not in both.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of elements in either array but not in both
+
+**Example:**
+```jinja
+{{ array_symmetric_difference(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) | tojson }}
+{# Output: [1, 2, 5, 6] #}
+
+{{ array_symmetric_difference(array1=["a", "b", "c"], array2=["b", "c", "d"]) | tojson }}
+{# Output: ["a", "d"] #}
+```
+
+### String Manipulation Functions
+
+Advanced string operations including regex support.
+
+#### `regex_replace(string, pattern, replacement)`
+
+Replace substrings using a regex pattern.
+
+**Arguments:**
+- `string` (required): The input string
+- `pattern` (required): Regex pattern to match
+- `replacement` (required): Replacement string (supports `$1`, `$2` for capture groups)
+
+**Returns:** String with all matches replaced
+
+**Example:**
+```jinja
+{{ regex_replace(string="hello123world", pattern="[0-9]+", replacement="-") }}
+{# Output: hello-world #}
+
+{{ regex_replace(string="foo bar baz", pattern="\\s+", replacement="_") }}
+{# Output: foo_bar_baz #}
+
+{# Using capture groups #}
+{{ regex_replace(string="hello world", pattern="(\\w+) (\\w+)", replacement="$2 $1") }}
+{# Output: world hello #}
+```
+
+#### `regex_match(string, pattern)`
+
+Check if a string matches a regex pattern.
+
+**Arguments:**
+- `string` (required): The input string
+- `pattern` (required): Regex pattern to match
+
+**Returns:** Boolean - true if the pattern matches anywhere in the string
+
+**Example:**
+```jinja
+{{ regex_match(string="hello123", pattern="[0-9]+") }}
+{# Output: true #}
+
+{{ regex_match(string="hello", pattern="[0-9]+") }}
+{# Output: false #}
+
+{# Validate email format #}
+{% if regex_match(string=email, pattern="^[\\w.-]+@[\\w.-]+\\.\\w+$") %}
+  Valid email
+{% endif %}
+```
+
+#### `regex_find_all(string, pattern)`
+
+Find all matches of a regex pattern in a string.
+
+**Arguments:**
+- `string` (required): The input string
+- `pattern` (required): Regex pattern to match
+
+**Returns:** Array of all matches
+
+**Example:**
+```jinja
+{{ regex_find_all(string="a1b2c3", pattern="[0-9]+") | tojson }}
+{# Output: ["1", "2", "3"] #}
+
+{{ regex_find_all(string="hello world", pattern="\\w+") | tojson }}
+{# Output: ["hello", "world"] #}
+
+{# Extract all URLs #}
+{% set urls = regex_find_all(string=text, pattern="https?://[\\w./]+") %}
+Found {{ urls | length }} URLs
+```
+
+#### `substring(string, start, length)`
+
+Extract a substring by position.
+
+**Arguments:**
+- `string` (required): The input string
+- `start` (required): Start position (0-based, negative counts from end)
+- `length` (optional): Number of characters to extract (default: rest of string)
+
+**Returns:** The extracted substring
+
+**Example:**
+```jinja
+{{ substring(string="hello world", start=0, length=5) }}
+{# Output: hello #}
+
+{{ substring(string="hello world", start=6) }}
+{# Output: world #}
+
+{# Negative start counts from end #}
+{{ substring(string="hello world", start=-5) }}
+{# Output: world #}
+```
+
+#### `contains(string, substring)`
+
+Check if a string contains a substring.
+
+**Arguments:**
+- `string` (required): The input string
+- `substring` (required): Substring to search for
+
+**Returns:** Boolean - true if substring is found
+
+**Example:**
+```jinja
+{{ contains(string="hello world", substring="world") }}
+{# Output: true #}
+
+{{ contains(string="hello world", substring="foo") }}
+{# Output: false #}
+
+{% if contains(string=filename, substring=".txt") %}
+  Text file detected
+{% endif %}
+```
+
+#### `index_of(string, substring)`
+
+Find the position of a substring.
+
+**Arguments:**
+- `string` (required): The input string
+- `substring` (required): Substring to search for
+
+**Returns:** Position (0-based) or -1 if not found
+
+**Example:**
+```jinja
+{{ index_of(string="hello world", substring="world") }}
+{# Output: 6 #}
+
+{{ index_of(string="hello world", substring="foo") }}
+{# Output: -1 #}
+```
+
+#### `count_occurrences(string, substring)`
+
+Count occurrences of a substring.
+
+**Arguments:**
+- `string` (required): The input string
+- `substring` (required): Substring to count
+
+**Returns:** Number of non-overlapping occurrences
+
+**Example:**
+```jinja
+{{ count_occurrences(string="hello hello hello", substring="hello") }}
+{# Output: 3 #}
+
+{{ count_occurrences(string="abcabc", substring="abc") }}
+{# Output: 2 #}
+```
+
+#### `truncate(string, length, suffix)`
+
+Truncate a string with a suffix.
+
+**Arguments:**
+- `string` (required): The input string
+- `length` (required): Maximum length (including suffix)
+- `suffix` (optional): Suffix to add when truncated (default: `"..."`)
+
+**Returns:** Truncated string with suffix if it was truncated
+
+**Example:**
+```jinja
+{{ truncate(string="Hello World", length=8) }}
+{# Output: Hello... #}
+
+{{ truncate(string="Hello World", length=8, suffix=">>") }}
+{# Output: Hello >> #}
+
+{# Not truncated if already short enough #}
+{{ truncate(string="Hi", length=10) }}
+{# Output: Hi #}
+```
+
+#### `word_count(string)`
+
+Count words in a string.
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** Number of words (whitespace-separated)
+
+**Example:**
+```jinja
+{{ word_count(string="Hello World") }}
+{# Output: 2 #}
+
+{{ word_count(string="  one   two   three  ") }}
+{# Output: 3 #}
+```
+
+#### `split_lines(string)`
+
+Split a string into an array of lines.
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** Array of lines
+
+**Example:**
+```jinja
+{% set text = "line1
+line2
+line3" %}
+{{ split_lines(string=text) | tojson }}
+{# Output: ["line1", "line2", "line3"] #}
+
+{% for line in split_lines(string=content) %}
+  Line: {{ line }}
+{% endfor %}
+```
+
 ### System & Network Functions
 
 Access system information and perform network operations.
