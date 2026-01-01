@@ -2400,6 +2400,171 @@ ERROR: Missing required configuration: {{ key_path }}
 {{ to_json(object=config, pretty=true) }}
 ```
 
+#### `json_path(object, path)`
+
+Query objects using JSONPath-like syntax.
+
+**Supported Syntax:**
+- `$.key` or `key` - Access object property
+- `$.key1.key2` - Nested property access
+- `$.array[0]` - Array index access
+- `$.array[*]` - Wildcard (returns all elements)
+- `$.users[*].name` - Extract property from all array elements
+
+**Arguments:**
+- `object` (required): Object or array to query
+- `path` (required): JSONPath expression
+
+**Returns:** The matched value(s). For wildcard queries, returns an array.
+
+```jinja
+{% set data = {"users": [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]} %}
+
+{# Access nested property #}
+{{ json_path(object=data, path="$.users[0].name") }}
+{# Output: Alice #}
+
+{# Wildcard - extract all names #}
+{{ json_path(object=data, path="$.users[*].name") | tojson }}
+{# Output: ["Alice", "Bob"] #}
+
+{# Access by index #}
+{{ json_path(object=data, path="$.users[1].age") }}
+{# Output: 25 #}
+
+{# Simple nested access #}
+{% set config = {"server": {"host": "localhost", "port": 8080}} %}
+{{ json_path(object=config, path="server.port") }}
+{# Output: 8080 #}
+```
+
+#### `object_pick(object, keys)`
+
+Create a new object containing only the specified keys.
+
+**Arguments:**
+- `object` (required): Source object
+- `keys` (required): Array of keys to keep
+
+**Returns:** A new object containing only the specified keys
+
+```jinja
+{% set user = {"name": "Alice", "email": "alice@example.com", "password": "secret", "age": 30} %}
+
+{# Pick only public fields #}
+{% set public = object_pick(object=user, keys=["name", "email", "age"]) %}
+{{ public | tojson }}
+{# Output: {"name":"Alice","email":"alice@example.com","age":30} #}
+
+{# Useful for API responses #}
+{% set response = object_pick(object=data, keys=["id", "title", "created_at"]) %}
+```
+
+#### `object_omit(object, keys)`
+
+Create a new object excluding the specified keys.
+
+**Arguments:**
+- `object` (required): Source object
+- `keys` (required): Array of keys to exclude
+
+**Returns:** A new object with the specified keys removed
+
+```jinja
+{% set user = {"name": "Alice", "email": "alice@example.com", "password": "secret", "internal_id": 123} %}
+
+{# Remove sensitive fields #}
+{% set safe = object_omit(object=user, keys=["password", "internal_id"]) %}
+{{ safe | tojson }}
+{# Output: {"name":"Alice","email":"alice@example.com"} #}
+
+{# Clean up debug fields before output #}
+{% set output = object_omit(object=config, keys=["debug", "verbose", "_internal"]) %}
+```
+
+#### `object_rename_keys(object, mapping)`
+
+Rename object keys using a mapping.
+
+**Arguments:**
+- `object` (required): Source object
+- `mapping` (required): Object mapping old keys to new keys
+
+**Returns:** A new object with renamed keys
+
+```jinja
+{% set data = {"firstName": "Alice", "lastName": "Smith", "emailAddress": "alice@example.com"} %}
+
+{# Convert camelCase to snake_case #}
+{% set renamed = object_rename_keys(object=data, mapping={
+  "firstName": "first_name",
+  "lastName": "last_name",
+  "emailAddress": "email"
+}) %}
+{{ renamed | tojson }}
+{# Output: {"first_name":"Alice","last_name":"Smith","email":"alice@example.com"} #}
+
+{# API response transformation #}
+{% set api_data = object_rename_keys(object=response, mapping={"userId": "user_id", "createdAt": "created_at"}) %}
+```
+
+#### `object_flatten(object, delimiter)`
+
+Flatten a nested object to dot-notation keys.
+
+**Arguments:**
+- `object` (required): Nested object to flatten
+- `delimiter` (optional): Delimiter for keys (default: ".")
+
+**Returns:** A flat object with delimited keys
+
+```jinja
+{% set nested = {"server": {"host": "localhost", "port": 8080}, "database": {"name": "mydb"}} %}
+
+{# Default dot delimiter #}
+{% set flat = object_flatten(object=nested) %}
+{{ flat | tojson }}
+{# Output: {"server.host":"localhost","server.port":8080,"database.name":"mydb"} #}
+
+{# Custom delimiter #}
+{% set flat_underscore = object_flatten(object=nested, delimiter="_") %}
+{{ flat_underscore | tojson }}
+{# Output: {"server_host":"localhost","server_port":8080,"database_name":"mydb"} #}
+
+{# Useful for environment variable generation #}
+{% for key, value in object_flatten(object=config, delimiter="_") %}
+export {{ key | upper }}="{{ value }}"
+{% endfor %}
+```
+
+#### `object_unflatten(object, delimiter)`
+
+Unflatten a flat object with delimited keys to a nested structure.
+
+**Arguments:**
+- `object` (required): Flat object with delimited keys
+- `delimiter` (optional): Delimiter used in keys (default: ".")
+
+**Returns:** A nested object structure
+
+```jinja
+{% set flat = {"server.host": "localhost", "server.port": 8080, "database.name": "mydb"} %}
+
+{# Unflatten to nested structure #}
+{% set nested = object_unflatten(object=flat) %}
+{{ nested | tojson }}
+{# Output: {"server":{"host":"localhost","port":8080},"database":{"name":"mydb"}} #}
+
+{# With custom delimiter #}
+{% set flat_underscore = {"server_host": "localhost", "server_port": 8080} %}
+{% set nested = object_unflatten(object=flat_underscore, delimiter="_") %}
+{{ nested | tojson }}
+{# Output: {"server":{"host":"localhost","port":8080}} #}
+
+{# Useful for parsing environment variables into config #}
+{% set env_config = object_unflatten(object=env_vars, delimiter="_") %}
+```
+
 ### Predicate Functions
 
 Check conditions on arrays and strings with predicate functions. Useful for filtering, validation, and conditional logic.

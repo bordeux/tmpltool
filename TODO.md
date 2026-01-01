@@ -115,12 +115,12 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 ### Data Processing
 
 #### JSON/Object Operations
-- [ ] `json_path(object, path)` - JSONPath query support (e.g., `$.users[*].name`)
-- [ ] `object_pick(object, keys)` - Create new object with only specified keys
-- [ ] `object_omit(object, keys)` - Create new object without specified keys
-- [ ] `object_rename_keys(object, mapping)` - Rename object keys
-- [ ] `object_flatten(object, delimiter)` - Flatten nested object to dot notation
-- [ ] `object_unflatten(object, delimiter)` - Unflatten dot notation to nested object
+- [x] `json_path(object, path)` - JSONPath query support (e.g., `$.users[*].name`)
+- [x] `object_pick(object, keys)` - Create new object with only specified keys
+- [x] `object_omit(object, keys)` - Create new object without specified keys
+- [x] `object_rename_keys(object, mapping)` - Rename object keys
+- [x] `object_flatten(object, delimiter)` - Flatten nested object to dot notation
+- [x] `object_unflatten(object, delimiter)` - Unflatten dot notation to nested object
 
 #### Type Checking & Conversion
 - [ ] `to_array(value)` - Wrap value in array if not already
@@ -167,28 +167,9 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 - [ ] `cidr_netmask(cidr)` - Get netmask from CIDR
 - [ ] `ip_to_int(ip)` - Convert IP to integer
 - [ ] `int_to_ip(int)` - Convert integer to IP
-- [ ] `get_env_or_fail(name)` - Get env var or abort with error
-- [ ] `env_is_set(name)` - Check if env var is set (not empty)
 - [ ] `get_os()` - Get operating system name
 - [ ] `get_arch()` - Get CPU architecture
-- [ ] `get_pid()` - Get current process ID
 - [ ] `get_cwd()` - Get current working directory
-
-### Cryptographic Functions
-
-- [ ] `sha384(string)` - SHA-384 hash
-- [ ] `sha3_256(string)` - SHA3-256 hash
-- [ ] `sha3_512(string)` - SHA3-512 hash
-- [ ] `blake2b(string)` - BLAKE2b hash
-- [ ] `blake3(string)` - BLAKE3 hash (fast)
-- [ ] `argon2(password, salt)` - Argon2 password hashing
-- [ ] `scrypt(password, salt)` - Scrypt password hashing
-- [ ] `pbkdf2(password, salt, iterations)` - PBKDF2 key derivation
-- [ ] `aes_encrypt(plaintext, key)` - AES encryption
-- [ ] `aes_decrypt(ciphertext, key)` - AES decryption
-- [ ] `generate_password(length, options)` - Generate secure password with rules
-
----
 
 ## Low Priority / Future Ideas
 
@@ -202,17 +183,6 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 - [ ] `amqp_connection_string(host, port, user, password, vhost)` - RabbitMQ/AMQP
 - [ ] `elasticsearch_url(hosts, user, password, options)` - Elasticsearch
 - [ ] `kafka_bootstrap_servers(hosts)` - Kafka bootstrap servers
-
-#### AWS Helpers
-- [ ] `aws_arn(service, region, account, resource)` - Build AWS ARN
-- [ ] `aws_s3_url(bucket, key, region)` - Build S3 URL
-- [ ] `aws_region_from_az(az)` - Extract region from availability zone
-
-#### Terraform/CloudFormation
-- [ ] `tf_resource_name(prefix, name, suffix)` - Terraform resource naming
-- [ ] `cf_ref(logical_id)` - CloudFormation Ref
-- [ ] `cf_get_att(logical_id, attribute)` - CloudFormation GetAtt
-- [ ] `cf_sub(string)` - CloudFormation Sub
 
 #### Helm/Kubernetes Extended
 - [ ] `helm_tpl(template, values)` - Helm-style templating

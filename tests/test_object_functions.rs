@@ -453,3 +453,372 @@ fn test_object_set_string_value() {
     let json: serde_json::Value = serde_json::to_value(&result).unwrap();
     assert_eq!(json["name"], "new");
 }
+
+// ==================== json_path Tests ====================
+
+#[test]
+fn test_json_path_simple() {
+    let obj = serde_json::json!({"name": "John", "age": 30});
+
+    let result = object::json_path_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("path", Value::from("$.name")),
+    ]))
+    .unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "John");
+}
+
+#[test]
+fn test_json_path_nested() {
+    let obj = serde_json::json!({"user": {"name": "John", "email": "john@example.com"}});
+
+    let result = object::json_path_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("path", Value::from("$.user.email")),
+    ]))
+    .unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "john@example.com");
+}
+
+#[test]
+fn test_json_path_array_index() {
+    let obj = serde_json::json!({"users": ["Alice", "Bob", "Charlie"]});
+
+    let result = object::json_path_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("path", Value::from("$.users[1]")),
+    ]))
+    .unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "Bob");
+}
+
+#[test]
+fn test_json_path_wildcard() {
+    let obj = serde_json::json!({"users": [{"name": "Alice"}, {"name": "Bob"}]});
+
+    let result = object::json_path_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("path", Value::from("$.users[*].name")),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert!(json.is_array());
+    let arr = json.as_array().unwrap();
+    assert_eq!(arr.len(), 2);
+    assert_eq!(arr[0], "Alice");
+    assert_eq!(arr[1], "Bob");
+}
+
+#[test]
+fn test_json_path_without_dollar() {
+    let obj = serde_json::json!({"name": "John"});
+
+    let result = object::json_path_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("path", Value::from("name")),
+    ]))
+    .unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "John");
+}
+
+#[test]
+fn test_json_path_not_found() {
+    let obj = serde_json::json!({"name": "John"});
+
+    let result = object::json_path_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("path", Value::from("$.nonexistent")),
+    ]))
+    .unwrap();
+
+    assert!(result.is_none());
+}
+
+// ==================== object_pick Tests ====================
+
+#[test]
+fn test_object_pick_basic() {
+    let obj = serde_json::json!({"a": 1, "b": 2, "c": 3, "d": 4});
+    let keys = serde_json::json!(["a", "c"]);
+
+    let result = object::object_pick_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("keys", Value::from_serialize(&keys)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert_eq!(json["c"], 3);
+    assert!(json.get("b").is_none());
+    assert!(json.get("d").is_none());
+}
+
+#[test]
+fn test_object_pick_missing_keys() {
+    let obj = serde_json::json!({"a": 1, "b": 2});
+    let keys = serde_json::json!(["a", "x", "y"]);
+
+    let result = object::object_pick_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("keys", Value::from_serialize(&keys)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert!(json.get("x").is_none());
+}
+
+#[test]
+fn test_object_pick_empty_keys() {
+    let obj = serde_json::json!({"a": 1, "b": 2});
+    let keys = serde_json::json!([]);
+
+    let result = object::object_pick_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("keys", Value::from_serialize(&keys)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert!(json.as_object().unwrap().is_empty());
+}
+
+// ==================== object_omit Tests ====================
+
+#[test]
+fn test_object_omit_basic() {
+    let obj = serde_json::json!({"a": 1, "b": 2, "c": 3, "d": 4});
+    let keys = serde_json::json!(["b", "d"]);
+
+    let result = object::object_omit_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("keys", Value::from_serialize(&keys)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert_eq!(json["c"], 3);
+    assert!(json.get("b").is_none());
+    assert!(json.get("d").is_none());
+}
+
+#[test]
+fn test_object_omit_missing_keys() {
+    let obj = serde_json::json!({"a": 1, "b": 2});
+    let keys = serde_json::json!(["x", "y"]);
+
+    let result = object::object_omit_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("keys", Value::from_serialize(&keys)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert_eq!(json["b"], 2);
+}
+
+#[test]
+fn test_object_omit_empty_keys() {
+    let obj = serde_json::json!({"a": 1, "b": 2});
+    let keys = serde_json::json!([]);
+
+    let result = object::object_omit_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("keys", Value::from_serialize(&keys)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert_eq!(json["b"], 2);
+}
+
+// ==================== object_rename_keys Tests ====================
+
+#[test]
+fn test_object_rename_keys_basic() {
+    let obj = serde_json::json!({"old_name": "value", "keep": 123});
+    let mapping = serde_json::json!({"old_name": "new_name"});
+
+    let result = object::object_rename_keys_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("mapping", Value::from_serialize(&mapping)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["new_name"], "value");
+    assert_eq!(json["keep"], 123);
+    assert!(json.get("old_name").is_none());
+}
+
+#[test]
+fn test_object_rename_keys_multiple() {
+    let obj = serde_json::json!({"a": 1, "b": 2, "c": 3});
+    let mapping = serde_json::json!({"a": "x", "b": "y"});
+
+    let result = object::object_rename_keys_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("mapping", Value::from_serialize(&mapping)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["x"], 1);
+    assert_eq!(json["y"], 2);
+    assert_eq!(json["c"], 3);
+}
+
+#[test]
+fn test_object_rename_keys_no_match() {
+    let obj = serde_json::json!({"a": 1, "b": 2});
+    let mapping = serde_json::json!({"x": "y"});
+
+    let result = object::object_rename_keys_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("mapping", Value::from_serialize(&mapping)),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert_eq!(json["b"], 2);
+}
+
+// ==================== object_flatten Tests ====================
+
+#[test]
+fn test_object_flatten_basic() {
+    let obj = serde_json::json!({"a": {"b": {"c": "value"}}});
+
+    let result = object::object_flatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a.b.c"], "value");
+}
+
+#[test]
+fn test_object_flatten_custom_delimiter() {
+    let obj = serde_json::json!({"a": {"b": 1}});
+
+    let result = object::object_flatten_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("delimiter", Value::from("_")),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a_b"], 1);
+}
+
+#[test]
+fn test_object_flatten_mixed() {
+    let obj = serde_json::json!({"user": {"name": "John", "address": {"city": "NYC"}}});
+
+    let result = object::object_flatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["user.name"], "John");
+    assert_eq!(json["user.address.city"], "NYC");
+}
+
+#[test]
+fn test_object_flatten_already_flat() {
+    let obj = serde_json::json!({"a": 1, "b": 2});
+
+    let result = object::object_flatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"], 1);
+    assert_eq!(json["b"], 2);
+}
+
+// ==================== object_unflatten Tests ====================
+
+#[test]
+fn test_object_unflatten_basic() {
+    let obj = serde_json::json!({"a.b.c": "value"});
+
+    let result = object::object_unflatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"]["b"]["c"], "value");
+}
+
+#[test]
+fn test_object_unflatten_custom_delimiter() {
+    let obj = serde_json::json!({"a_b_c": "value"});
+
+    let result = object::object_unflatten_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("delimiter", Value::from("_")),
+    ]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"]["b"]["c"], "value");
+}
+
+#[test]
+fn test_object_unflatten_multiple_keys() {
+    let obj = serde_json::json!({"a.b": 1, "a.c": 2, "d": 3});
+
+    let result = object::object_unflatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["a"]["b"], 1);
+    assert_eq!(json["a"]["c"], 2);
+    assert_eq!(json["d"], 3);
+}
+
+#[test]
+fn test_object_flatten_unflatten_roundtrip() {
+    let obj = serde_json::json!({"user": {"name": "John", "age": 30}});
+
+    // Flatten
+    let flattened = object::object_flatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    // Unflatten
+    let result = object::object_unflatten_fn(Kwargs::from_iter(vec![(
+        "object",
+        flattened,
+    )]))
+    .unwrap();
+
+    let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json["user"]["name"], "John");
+    assert_eq!(json["user"]["age"], 30);
+}

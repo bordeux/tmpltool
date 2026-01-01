@@ -263,6 +263,12 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("object_keys", object::object_keys_fn);
     env.add_function("object_values", object::object_values_fn);
     env.add_function("object_has_key", object::object_has_key_fn);
+    env.add_function("json_path", object::json_path_fn);
+    env.add_function("object_pick", object::object_pick_fn);
+    env.add_function("object_omit", object::object_omit_fn);
+    env.add_function("object_rename_keys", object::object_rename_keys_fn);
+    env.add_function("object_flatten", object::object_flatten_fn);
+    env.add_function("object_unflatten", object::object_unflatten_fn);
 
     // Predicate functions
     env.add_function("array_any", predicates::array_any_fn);
