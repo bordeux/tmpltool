@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/bordeux/tmpltool/compare/v1.1.0...v1.1.1) (2026-01-01)
+
+
+### Bug Fixes
+
+* Append missing files ([7fa3e69](https://github.com/bordeux/tmpltool/commit/7fa3e696fa32eb639dcd1c9985ad4bc27adf7430))
+
 ## [1.1.0](https://github.com/bordeux/tmpltool/compare/v1.0.1...v1.1.0) (2026-01-01)
 
 
