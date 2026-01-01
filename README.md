@@ -2570,6 +2570,105 @@ Python files:
 {% endif %}
 ```
 
+### Kubernetes Functions
+
+Kubernetes-specific helpers for manifest generation and label sanitization.
+
+#### `k8s_resource_request(cpu, memory)`
+
+Format Kubernetes resource requests in YAML format.
+
+**Arguments:**
+- `cpu` (required): CPU request - string like `"500m"` or number (converted to millicores)
+- `memory` (required): Memory request - string like `"512Mi"` or number in MiB (auto-converted to Mi/Gi)
+
+**Returns:** YAML-formatted resource request block
+
+**Numeric conversions:**
+- CPU: `0.5` → `"500m"`, `2` → `"2000m"`
+- Memory: `512` → `"512Mi"`, `1024` → `"1Gi"`, `2048` → `"2Gi"`
+
+**Example:**
+```jinja
+{# Basic usage with strings #}
+{{ k8s_resource_request(cpu="500m", memory="512Mi") }}
+{# Output:
+requests:
+  cpu: "500m"
+  memory: "512Mi"
+#}
+
+{# With numeric values (auto-formatted) #}
+{{ k8s_resource_request(cpu=0.5, memory=512) }}
+{# Output:
+requests:
+  cpu: "500m"
+  memory: "512Mi"
+#}
+
+{# In a Kubernetes deployment #}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: myapp:latest
+        resources:
+          {{ k8s_resource_request(cpu="1000m", memory="1Gi") | indent(10) }}
+```
+
+#### `k8s_label_safe(value)`
+
+Sanitize string to be Kubernetes label-safe.
+
+**Arguments:**
+- `value` (required): String to sanitize
+
+**Returns:** Sanitized string following Kubernetes label requirements:
+- Max 63 characters
+- Only alphanumeric, dashes, underscores, dots
+- Must start and end with alphanumeric
+- Lowercase
+
+**Example:**
+```jinja
+{# Sanitize label value #}
+{{ k8s_label_safe(value="My App Name (v2.0)") }}
+{# Output: my-app-name-v2.0 #}
+
+{# Use in labels #}
+metadata:
+  labels:
+    app: {{ k8s_label_safe(value=app_name) }}
+    version: {{ k8s_label_safe(value=version) }}
+```
+
+#### `k8s_dns_label_safe(value)`
+
+Format DNS-safe label (max 63 chars, lowercase, alphanumeric and dashes only).
+
+**Arguments:**
+- `value` (required): String to format
+
+**Returns:** DNS-safe string suitable for Kubernetes resource names
+
+**Example:**
+```jinja
+{# Format DNS label #}
+{{ k8s_dns_label_safe(value="My Service Name") }}
+{# Output: my-service-name #}
+
+{# Use in service names #}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ k8s_dns_label_safe(value=service_name) }}
+```
+
 ### Logic Functions
 
 Conditional logic and default value handling.

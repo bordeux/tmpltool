@@ -77,6 +77,7 @@ pub mod environment;
 pub mod exec;
 pub mod filesystem;
 pub mod hash;
+pub mod kubernetes;
 pub mod logic;
 pub mod math;
 pub mod network;
@@ -298,6 +299,11 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("coalesce", logic::coalesce_fn);
     env.add_function("ternary", logic::ternary_fn);
     env.add_function("in_range", logic::in_range_fn);
+
+    // Kubernetes functions
+    env.add_function("k8s_resource_request", kubernetes::k8s_resource_request_fn);
+    env.add_function("k8s_label_safe", kubernetes::k8s_label_safe_fn);
+    env.add_function("k8s_dns_label_safe", kubernetes::k8s_dns_label_safe_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
