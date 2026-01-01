@@ -327,6 +327,8 @@ pub fn array_group_by_fn(kwargs: Kwargs) -> Result<Value, Error> {
             })?;
 
             // Get the key value as string
+            // Note: Using nested if-let instead of let-chains for stable Rust compatibility
+            #[allow(clippy::collapsible_if)]
             if let Some(obj) = json_value.as_object() {
                 if let Some(key_val) = obj.get(&key) {
                     let group_key = match key_val {
