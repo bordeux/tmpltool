@@ -161,15 +161,15 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 
 ### Network & System
 
-- [ ] `cidr_contains(cidr, ip)` - Check if IP is in CIDR range
-- [ ] `cidr_network(cidr)` - Get network address from CIDR
-- [ ] `cidr_broadcast(cidr)` - Get broadcast address from CIDR
-- [ ] `cidr_netmask(cidr)` - Get netmask from CIDR
-- [ ] `ip_to_int(ip)` - Convert IP to integer
-- [ ] `int_to_ip(int)` - Convert integer to IP
-- [ ] `get_os()` - Get operating system name
-- [ ] `get_arch()` - Get CPU architecture
-- [ ] `get_cwd()` - Get current working directory
+- [x] `cidr_contains(cidr, ip)` - Check if IP is in CIDR range
+- [x] `cidr_network(cidr)` - Get network address from CIDR
+- [x] `cidr_broadcast(cidr)` - Get broadcast address from CIDR
+- [x] `cidr_netmask(cidr)` - Get netmask from CIDR
+- [x] `ip_to_int(ip)` - Convert IP to integer
+- [x] `int_to_ip(int)` - Convert integer to IP
+- [x] `get_os()` - Get operating system name
+- [x] `get_arch()` - Get CPU architecture
+- [x] `get_cwd()` - Get current working directory
 
 ## Low Priority / Future Ideas
 

@@ -158,11 +158,20 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("get_username", system::get_username_fn);
     env.add_function("get_home_dir", system::get_home_dir_fn);
     env.add_function("get_temp_dir", system::get_temp_dir_fn);
+    env.add_function("get_os", system::get_os_fn);
+    env.add_function("get_arch", system::get_arch_fn);
+    env.add_function("get_cwd", system::get_cwd_fn);
 
     // Network functions
     env.add_function("get_ip_address", network::get_ip_address_fn);
     env.add_function("resolve_dns", network::resolve_dns_fn);
     env.add_function("is_port_available", network::is_port_available_fn);
+    env.add_function("cidr_contains", network::cidr_contains_fn);
+    env.add_function("cidr_network", network::cidr_network_fn);
+    env.add_function("cidr_broadcast", network::cidr_broadcast_fn);
+    env.add_function("cidr_netmask", network::cidr_netmask_fn);
+    env.add_function("ip_to_int", network::ip_to_int_fn);
+    env.add_function("int_to_ip", network::int_to_ip_fn);
 
     // Data parsing functions (simple, no context)
     env.add_function("parse_json", data_parsing::parse_json_fn);

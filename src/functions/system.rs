@@ -100,3 +100,74 @@ pub fn get_temp_dir_fn(_kwargs: Kwargs) -> Result<Value, Error> {
     let temp_dir = env::temp_dir();
     Ok(Value::from(temp_dir.to_string_lossy().to_string()))
 }
+
+/// Get the operating system name
+///
+/// # Arguments
+///
+/// This function takes no arguments (but MiniJinja requires Kwargs parameter)
+///
+/// # Returns
+///
+/// Returns the OS name as a string (e.g., "linux", "macos", "windows")
+///
+/// # Example
+///
+/// ```jinja
+/// OS: {{ get_os() }}
+/// {% if get_os() == "linux" %}
+///   Running on Linux
+/// {% endif %}
+/// ```
+pub fn get_os_fn(_kwargs: Kwargs) -> Result<Value, Error> {
+    let os = env::consts::OS;
+    Ok(Value::from(os))
+}
+
+/// Get the CPU architecture
+///
+/// # Arguments
+///
+/// This function takes no arguments (but MiniJinja requires Kwargs parameter)
+///
+/// # Returns
+///
+/// Returns the architecture as a string (e.g., "x86_64", "aarch64", "arm")
+///
+/// # Example
+///
+/// ```jinja
+/// Arch: {{ get_arch() }}
+/// {% if get_arch() == "aarch64" %}
+///   Running on ARM64
+/// {% endif %}
+/// ```
+pub fn get_arch_fn(_kwargs: Kwargs) -> Result<Value, Error> {
+    let arch = env::consts::ARCH;
+    Ok(Value::from(arch))
+}
+
+/// Get the current working directory
+///
+/// # Arguments
+///
+/// This function takes no arguments (but MiniJinja requires Kwargs parameter)
+///
+/// # Returns
+///
+/// Returns the current working directory path as a string
+///
+/// # Example
+///
+/// ```jinja
+/// CWD: {{ get_cwd() }}
+/// ```
+pub fn get_cwd_fn(_kwargs: Kwargs) -> Result<Value, Error> {
+    let cwd = env::current_dir().map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to get current working directory: {}", e),
+        )
+    })?;
+    Ok(Value::from(cwd.to_string_lossy().to_string()))
+}
