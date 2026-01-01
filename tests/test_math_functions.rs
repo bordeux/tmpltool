@@ -398,7 +398,7 @@ fn test_percentage_basic() {
     ]))
     .unwrap();
 
-    assert_eq!(result.to_string(), "25.0");
+    assert_eq!(result.to_string(), "25");
 }
 
 #[test]
@@ -409,7 +409,7 @@ fn test_percentage_decimal() {
     ]))
     .unwrap();
 
-    assert_eq!(result.to_string(), "70.0");
+    assert_eq!(result.to_string(), "70");
 }
 
 #[test]
@@ -433,7 +433,7 @@ fn test_percentage_floats() {
     ]))
     .unwrap();
 
-    assert_eq!(result.to_string(), "90.0");
+    assert_eq!(result.to_string(), "90");
 }
 
 #[test]
@@ -444,7 +444,7 @@ fn test_percentage_over_100() {
     ]))
     .unwrap();
 
-    assert_eq!(result.to_string(), "150.0");
+    assert_eq!(result.to_string(), "150");
 }
 
 #[test]

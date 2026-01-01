@@ -248,7 +248,7 @@ pub fn round_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let result = (num * multiplier).round() / multiplier;
 
     // Return as integer if no decimal part, otherwise as float
-    if result.fract() == 0.0 && decimals == 0 {
+    if result.fract() == 0.0 {
         Ok(Value::from(result as i64))
     } else {
         Ok(Value::from(result))
@@ -411,5 +411,10 @@ pub fn percentage_fn(kwargs: Kwargs) -> Result<Value, Error> {
 
     let result = (num_value / num_total) * 100.0;
 
-    Ok(Value::from(result))
+    // Return as integer if no decimal part, otherwise as float
+    if result.fract() == 0.0 {
+        Ok(Value::from(result as i64))
+    } else {
+        Ok(Value::from(result))
+    }
 }

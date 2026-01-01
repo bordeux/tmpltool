@@ -22,14 +22,14 @@ assert_contains "$OUTPUT" "Alice: 30" "array_sort_by sorts by numeric key"
 assert_contains "$OUTPUT" "Charlie: 35" "array_sort_by sorts by numeric key"
 
 # Test 2: array_sort_by - string sorting
-create_template "array_sort_by_string.tmpl" '{% set items = [
+create_template "array_sort_by_string.tmpl" '{%- set items = [
   {"name": "Zebra"},
   {"name": "Apple"},
   {"name": "Mango"}
-] %}
-{% for item in array_sort_by(array=items, key="name") %}
+] -%}
+{%- for item in array_sort_by(array=items, key="name") %}
 {{ item.name }}
-{% endfor %}'
+{%- endfor %}'
 OUTPUT=$(run_binary "array_sort_by_string.tmpl")
 # Check order by extracting lines
 FIRST=$(echo "$OUTPUT" | sed -n '1p' | xargs)
@@ -44,15 +44,15 @@ assert_equals "Zebra" "$THIRD" "array_sort_by sorts strings alphabetically"
 # ============================================================================
 
 # Test 3: array_group_by - basic grouping
-create_template "array_group_by_basic.tmpl" '{% set users = [
+create_template "array_group_by_basic.tmpl" '{%- set users = [
   {"name": "Alice", "dept": "Engineering"},
   {"name": "Bob", "dept": "Sales"},
   {"name": "Charlie", "dept": "Engineering"}
-] %}
-{% set grouped = array_group_by(array=users, key="dept") %}
-{% for dept, members in grouped %}
+] -%}
+{%- set grouped = array_group_by(array=users, key="dept") -%}
+{%- for dept, members in grouped %}
 {{ dept }}: {{ members | length }}
-{% endfor %}'
+{%- endfor %}'
 OUTPUT=$(run_binary "array_group_by_basic.tmpl")
 assert_contains "$OUTPUT" "Engineering: 2" "array_group_by groups by key"
 assert_contains "$OUTPUT" "Sales: 1" "array_group_by groups by key"
@@ -89,8 +89,8 @@ assert_contains "$OUTPUT" "Task3" "array_group_by allows iteration over groups"
 # ============================================================================
 
 # Test 6: array_unique - numbers
-create_template "array_unique_numbers.tmpl" '{% set nums = [1, 2, 2, 3, 1, 4, 3, 5] %}
-{{ array_unique(array=nums) | length }}'
+create_template "array_unique_numbers.tmpl" '{%- set nums = [1, 2, 2, 3, 1, 4, 3, 5] -%}
+{{- array_unique(array=nums) | length -}}'
 OUTPUT=$(run_binary "array_unique_numbers.tmpl")
 assert_equals "5" "$OUTPUT" "array_unique removes duplicate numbers"
 
@@ -108,14 +108,14 @@ DOCKER_COUNT=$(echo "$OUTPUT" | grep -c "docker" || true)
 assert_equals "1" "$DOCKER_COUNT" "array_unique removes duplicates"
 
 # Test 8: array_unique - all unique
-create_template "array_unique_all_unique.tmpl" '{% set nums = [1, 2, 3, 4, 5] %}
-{{ array_unique(array=nums) | length }}'
+create_template "array_unique_all_unique.tmpl" '{%- set nums = [1, 2, 3, 4, 5] -%}
+{{- array_unique(array=nums) | length -}}'
 OUTPUT=$(run_binary "array_unique_all_unique.tmpl")
 assert_equals "5" "$OUTPUT" "array_unique preserves already unique array"
 
 # Test 9: array_unique - all duplicates
-create_template "array_unique_all_dup.tmpl" '{% set nums = [5, 5, 5, 5] %}
-{{ array_unique(array=nums) | length }}'
+create_template "array_unique_all_dup.tmpl" '{%- set nums = [5, 5, 5, 5] -%}
+{{- array_unique(array=nums) | length -}}'
 OUTPUT=$(run_binary "array_unique_all_dup.tmpl")
 assert_equals "1" "$OUTPUT" "array_unique handles all duplicates"
 
@@ -124,8 +124,8 @@ assert_equals "1" "$OUTPUT" "array_unique handles all duplicates"
 # ============================================================================
 
 # Test 10: array_flatten - basic
-create_template "array_flatten_basic.tmpl" '{% set nested = [[1, 2], [3, 4], [5]] %}
-{{ array_flatten(array=nested) | length }}'
+create_template "array_flatten_basic.tmpl" '{%- set nested = [[1, 2], [3, 4], [5]] -%}
+{{- array_flatten(array=nested) | length -}}'
 OUTPUT=$(run_binary "array_flatten_basic.tmpl")
 assert_equals "5" "$OUTPUT" "array_flatten flattens nested arrays"
 
@@ -142,14 +142,14 @@ assert_contains "$OUTPUT" "d" "array_flatten handles string arrays"
 assert_contains "$OUTPUT" "e" "array_flatten handles string arrays"
 
 # Test 12: array_flatten - mixed with non-arrays
-create_template "array_flatten_mixed.tmpl" '{% set mixed = [[1, 2], 3, [4, 5]] %}
-{{ array_flatten(array=mixed) | length }}'
+create_template "array_flatten_mixed.tmpl" '{%- set mixed = [[1, 2], 3, [4, 5]] -%}
+{{- array_flatten(array=mixed) | length -}}'
 OUTPUT=$(run_binary "array_flatten_mixed.tmpl")
 assert_equals "5" "$OUTPUT" "array_flatten handles mixed arrays and scalars"
 
 # Test 13: array_flatten - empty nested
-create_template "array_flatten_empty_nested.tmpl" '{% set nested = [[], [1, 2], []] %}
-{{ array_flatten(array=nested) | length }}'
+create_template "array_flatten_empty_nested.tmpl" '{%- set nested = [[], [1, 2], []] -%}
+{{- array_flatten(array=nested) | length -}}'
 OUTPUT=$(run_binary "array_flatten_empty_nested.tmpl")
 assert_equals "2" "$OUTPUT" "array_flatten handles empty nested arrays"
 
@@ -186,17 +186,17 @@ OUTPUT=$(run_binary "flatten_and_unique.tmpl")
 assert_contains "$OUTPUT" "Total unique: 4" "Flatten and unique combine well"
 
 # Test 17: Real-world - Group tasks by status and count
-create_template "realworld_tasks.tmpl" '{% set tasks = [
+create_template "realworld_tasks.tmpl" '{%- set tasks = [
   {"name": "T1", "status": "done", "priority": 1},
   {"name": "T2", "status": "pending", "priority": 2},
   {"name": "T3", "status": "done", "priority": 1},
   {"name": "T4", "status": "in_progress", "priority": 3}
-] %}
-{% set by_status = array_group_by(array=tasks, key="status") %}
+] -%}
+{%- set by_status = array_group_by(array=tasks, key="status") %}
 Status Report:
-{% for status, items in by_status %}
+{% for status, items in by_status -%}
   {{ status }}: {{ items | length }} tasks
-{% endfor %}'
+{% endfor -%}'
 OUTPUT=$(run_binary "realworld_tasks.tmpl")
 assert_contains "$OUTPUT" "done: 2 tasks" "Real-world grouping works"
 assert_contains "$OUTPUT" "pending: 1 tasks" "Real-world grouping works"

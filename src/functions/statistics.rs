@@ -131,7 +131,12 @@ pub fn array_avg_fn(kwargs: Kwargs) -> Result<Value, Error> {
     }
 
     let avg = sum / count as f64;
-    Ok(Value::from(avg))
+    // Return as integer if no decimal part, otherwise as float
+    if avg.fract() == 0.0 {
+        Ok(Value::from(avg as i64))
+    } else {
+        Ok(Value::from(avg))
+    }
 }
 
 /// Calculate median of array values

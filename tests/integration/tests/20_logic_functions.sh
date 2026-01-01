@@ -46,10 +46,10 @@ assert_contains "$OUTPUT" "Count: 42" "default returns number value"
 # ============================================================================
 
 # Test 7: coalesce - first non-null
-create_template "coalesce_first.tmpl" '{% set a = none %}
-{% set b = "found" %}
-{% set c = "other" %}
-{{ coalesce(values=[a, b, c]) }}'
+create_template "coalesce_first.tmpl" '{%- set a = none -%}
+{%- set b = "found" -%}
+{%- set c = "other" -%}
+{{- coalesce(values=[a, b, c]) -}}'
 OUTPUT=$(run_binary "coalesce_first.tmpl")
 assert_equals "found" "$OUTPUT" "coalesce returns first non-null value"
 
@@ -67,18 +67,18 @@ OUTPUT=$(run_binary "coalesce_all_present.tmpl")
 assert_equals "first" "$OUTPUT" "coalesce returns first when all present"
 
 # Test 10: coalesce - with zero
-create_template "coalesce_zero.tmpl" '{% set a = none %}
-{% set b = 0 %}
-{% set c = 42 %}
-{{ coalesce(values=[a, b, c]) }}'
+create_template "coalesce_zero.tmpl" '{%- set a = none -%}
+{%- set b = 0 -%}
+{%- set c = 42 -%}
+{{- coalesce(values=[a, b, c]) -}}'
 OUTPUT=$(run_binary "coalesce_zero.tmpl")
 assert_equals "0" "$OUTPUT" "coalesce treats zero as valid value"
 
 # Test 11: coalesce - with false
-create_template "coalesce_false.tmpl" '{% set a = none %}
-{% set b = false %}
-{% set c = true %}
-{{ coalesce(values=[a, b, c]) }}'
+create_template "coalesce_false.tmpl" '{%- set a = none -%}
+{%- set b = false -%}
+{%- set c = true -%}
+{{- coalesce(values=[a, b, c]) -}}'
 OUTPUT=$(run_binary "coalesce_false.tmpl")
 assert_equals "false" "$OUTPUT" "coalesce treats false as valid value"
 

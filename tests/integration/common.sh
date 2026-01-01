@@ -149,6 +149,15 @@ run_binary_exit_code() {
     echo "$exit_code"
 }
 
+# Run binary expecting an error (captures stderr)
+run_binary_expect_error() {
+    local template="$1"
+    shift
+    set +e
+    "$BINARY" "$TEST_DIR/$template" "$@" 2>&1
+    set -e
+}
+
 # Verify binary is set
 check_binary() {
     if [ -z "$BINARY" ]; then

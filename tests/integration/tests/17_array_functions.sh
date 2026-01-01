@@ -47,14 +47,14 @@ assert_contains "$OUTPUT" "[3, 4]" "array_chunk handles remainder"
 assert_contains "$OUTPUT" "[5]" "array_chunk handles remainder"
 
 # Test 6: array_chunk - size 1
-create_template "array_chunk_size_one.tmpl" '{% set nums = [1, 2, 3] %}
-{{ array_chunk(array=nums, size=1) | length }}'
+create_template "array_chunk_size_one.tmpl" '{% set nums = [1, 2, 3] -%}
+{{- array_chunk(array=nums, size=1) | length -}}'
 OUTPUT=$(run_binary "array_chunk_size_one.tmpl")
 assert_equals "3" "$OUTPUT" "array_chunk with size 1 creates individual chunks"
 
 # Test 7: array_chunk - larger than array
-create_template "array_chunk_large.tmpl" '{% set nums = [1, 2, 3] %}
-{{ array_chunk(array=nums, size=10) | length }}'
+create_template "array_chunk_large.tmpl" '{% set nums = [1, 2, 3] -%}
+{{- array_chunk(array=nums, size=10) | length -}}'
 OUTPUT=$(run_binary "array_chunk_large.tmpl")
 assert_equals "1" "$OUTPUT" "array_chunk with large size creates single chunk"
 
@@ -74,23 +74,23 @@ assert_contains "$OUTPUT" "age: 30" "array_zip combines arrays"
 assert_contains "$OUTPUT" "city: NYC" "array_zip combines arrays"
 
 # Test 9: array_zip - different lengths
-create_template "array_zip_different.tmpl" '{% set a = [1, 2, 3, 4] %}
-{% set b = ["a", "b"] %}
-{{ array_zip(array1=a, array2=b) | length }}'
+create_template "array_zip_different.tmpl" '{% set a = [1, 2, 3, 4] -%}
+{%- set b = ["a", "b"] -%}
+{{- array_zip(array1=a, array2=b) | length -}}'
 OUTPUT=$(run_binary "array_zip_different.tmpl")
 assert_equals "2" "$OUTPUT" "array_zip stops at shorter array length"
 
 # Test 10: array_zip - empty arrays
-create_template "array_zip_empty.tmpl" '{% set a = [] %}
-{% set b = [] %}
-{{ array_zip(array1=a, array2=b) | length }}'
+create_template "array_zip_empty.tmpl" '{% set a = [] -%}
+{%- set b = [] -%}
+{{- array_zip(array1=a, array2=b) | length -}}'
 OUTPUT=$(run_binary "array_zip_empty.tmpl")
 assert_equals "0" "$OUTPUT" "array_zip handles empty arrays"
 
 # Test 11: array_zip - first empty
-create_template "array_zip_first_empty.tmpl" '{% set a = [] %}
-{% set b = [1, 2, 3] %}
-{{ array_zip(array1=a, array2=b) | length }}'
+create_template "array_zip_first_empty.tmpl" '{% set a = [] -%}
+{%- set b = [1, 2, 3] -%}
+{{- array_zip(array1=a, array2=b) | length -}}'
 OUTPUT=$(run_binary "array_zip_first_empty.tmpl")
 assert_equals "0" "$OUTPUT" "array_zip handles first array empty"
 
