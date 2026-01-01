@@ -120,9 +120,10 @@ create_template "k8s_label_long.tmpl" '{{ k8s_label_safe(value="this-is-a-very-l
 OUTPUT=$(run_binary "k8s_label_long.tmpl")
 LENGTH=${#OUTPUT}
 if [ $LENGTH -gt 63 ]; then
-  fail "Label too long: $LENGTH characters"
+  fail "Label too long: $LENGTH characters" "$LENGTH chars (expected <= 63)"
+else
+  pass "Label truncated to <= 63 chars"
 fi
-assert_true "Label truncated to <= 63 chars"
 
 # ============================================================================
 # k8s_dns_label_safe Tests
@@ -175,13 +176,12 @@ create_template "k8s_dns_long.tmpl" '{{ k8s_dns_label_safe(value="this-is-a-very
 OUTPUT=$(run_binary "k8s_dns_long.tmpl")
 LENGTH=${#OUTPUT}
 if [ $LENGTH -gt 63 ]; then
-  fail "DNS label too long: $LENGTH characters"
+  fail "DNS label too long: $LENGTH characters" "$LENGTH chars (expected <= 63)"
+elif [[ $OUTPUT == *- ]]; then
+  fail "DNS label ends with dash: $OUTPUT" "Should not end with dash"
+else
+  pass "DNS label truncated correctly"
 fi
-# Should not end with dash
-if [[ $OUTPUT == *- ]]; then
-  fail "DNS label ends with dash: $OUTPUT"
-fi
-assert_true "DNS label truncated correctly"
 
 # ============================================================================
 # Combined Use Cases
