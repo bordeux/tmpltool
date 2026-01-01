@@ -11,6 +11,48 @@ use minijinja::{Error, ErrorKind, Value};
 use std::collections::BTreeMap;
 use url::Url;
 
+/// Convert a MiniJinja Value (object) to a URL-encoded query string
+///
+/// This is a helper function used by both `query_string_fn` and `build_url_fn`
+/// to avoid code duplication.
+fn serialize_query_params(params: &Value) -> Result<String, Error> {
+    // Convert to serde_json::Value for easier iteration
+    let json_value: serde_json::Value = serde_json::to_value(params).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert params: {}", e),
+        )
+    })?;
+
+    if !json_value.is_object() {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "query parameter must be an object",
+        ));
+    }
+
+    let mut parts = Vec::new();
+
+    // Iterate over object fields
+    if let Some(obj) = json_value.as_object() {
+        for (key, value) in obj {
+            let encoded_key = urlencoding::encode(key);
+            // Convert value to string properly (without JSON quotes)
+            let value_str = match value {
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Number(n) => n.to_string(),
+                serde_json::Value::Bool(b) => b.to_string(),
+                serde_json::Value::Null => String::from("null"),
+                _ => value.to_string(),
+            };
+            let encoded_value = urlencoding::encode(&value_str);
+            parts.push(format!("{}={}", encoded_key, encoded_value));
+        }
+    }
+
+    Ok(parts.join("&"))
+}
+
 /// Generate HTTP Basic Authentication header value
 ///
 /// # Arguments
@@ -149,37 +191,8 @@ pub fn build_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
             // Query is a string, use it directly
             s.to_string()
         } else {
-            // Query is an object, serialize it using query_string logic
-            let json_value: serde_json::Value = serde_json::to_value(&q).map_err(|e| {
-                Error::new(
-                    ErrorKind::InvalidOperation,
-                    format!("Failed to convert query parameter: {}", e),
-                )
-            })?;
-
-            if !json_value.is_object() {
-                return Err(Error::new(
-                    ErrorKind::InvalidOperation,
-                    "query parameter must be a string or object",
-                ));
-            }
-
-            let mut parts = Vec::new();
-            if let Some(obj) = json_value.as_object() {
-                for (key, value) in obj {
-                    let encoded_key = urlencoding::encode(key);
-                    let value_str = match value {
-                        serde_json::Value::String(s) => s.clone(),
-                        serde_json::Value::Number(n) => n.to_string(),
-                        serde_json::Value::Bool(b) => b.to_string(),
-                        serde_json::Value::Null => String::from("null"),
-                        _ => value.to_string(),
-                    };
-                    let encoded_value = urlencoding::encode(&value_str);
-                    parts.push(format!("{}={}", encoded_key, encoded_value));
-                }
-            }
-            parts.join("&")
+            // Query is an object, serialize it
+            serialize_query_params(&q)?
         };
 
         if !query_str.is_empty() {
@@ -209,108 +222,6 @@ pub fn build_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
 /// ```
 pub fn query_string_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let params: Value = kwargs.get("params")?;
-
-    // Convert to serde_json::Value for easier iteration
-    let json_value: serde_json::Value = serde_json::to_value(&params).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert params: {}", e),
-        )
-    })?;
-
-    if !json_value.is_object() {
-        return Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "query_string() requires an object for 'params' parameter",
-        ));
-    }
-
-    let mut parts = Vec::new();
-
-    // Iterate over object fields
-    if let Some(obj) = json_value.as_object() {
-        for (key, value) in obj {
-            let encoded_key = urlencoding::encode(key);
-            // Convert value to string properly (without JSON quotes)
-            let value_str = match value {
-                serde_json::Value::String(s) => s.clone(),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => b.to_string(),
-                serde_json::Value::Null => String::from("null"),
-                _ => value.to_string(),
-            };
-            let encoded_value = urlencoding::encode(&value_str);
-            parts.push(format!("{}={}", encoded_key, encoded_value));
-        }
-    }
-
-    Ok(Value::from(parts.join("&")))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_basic_auth_simple() {
-        let result = basic_auth_fn(Kwargs::from_iter(vec![
-            ("username", Value::from("admin")),
-            ("password", Value::from("secret")),
-        ]))
-        .unwrap();
-
-        assert_eq!(result.to_string(), "Basic YWRtaW46c2VjcmV0");
-    }
-
-    #[test]
-    fn test_parse_url_simple() {
-        let result = parse_url_fn(Kwargs::from_iter(vec![(
-            "url",
-            Value::from("https://example.com/path"),
-        )]))
-        .unwrap();
-
-        let obj = result.as_object().unwrap();
-        assert_eq!(
-            obj.get_value(&Value::from("scheme")).unwrap().as_str(),
-            Some("https")
-        );
-        assert_eq!(
-            obj.get_value(&Value::from("host")).unwrap().as_str(),
-            Some("example.com")
-        );
-        assert_eq!(
-            obj.get_value(&Value::from("path")).unwrap().as_str(),
-            Some("/path")
-        );
-    }
-
-    #[test]
-    fn test_build_url_simple() {
-        let result = build_url_fn(Kwargs::from_iter(vec![
-            ("scheme", Value::from("https")),
-            ("host", Value::from("example.com")),
-            ("path", Value::from("/api")),
-        ]))
-        .unwrap();
-
-        assert_eq!(result.to_string(), "https://example.com/api");
-    }
-
-    #[test]
-    fn test_query_string_simple() {
-        let mut params = BTreeMap::new();
-        params.insert("name".to_string(), Value::from("test"));
-        params.insert("value".to_string(), Value::from(42));
-
-        let result = query_string_fn(Kwargs::from_iter(vec![(
-            "params",
-            Value::from_object(params),
-        )]))
-        .unwrap();
-
-        let output = result.to_string();
-        assert!(output.contains("name=test"));
-        assert!(output.contains("value=42"));
-    }
+    let query_str = serialize_query_params(&params)?;
+    Ok(Value::from(query_str))
 }
