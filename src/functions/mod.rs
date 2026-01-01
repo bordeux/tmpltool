@@ -18,7 +18,7 @@
 //! - `sha1(string)` - Calculate SHA1 hash of a string
 //! - `sha256(string)` - Calculate SHA256 hash of a string
 //! - `sha512(string)` - Calculate SHA512 hash of a string
-//! - `uuid()` - Generate a random UUID v4
+//! - `uuid(version)` - Generate a UUID (v4 default, or v7 for time-ordered)
 //! - `random_string(length, charset)` - Generate a random string with custom length and character set
 //! - `read_file(path)` - Read content from a file
 //! - `file_exists(path)` - Check if a file exists

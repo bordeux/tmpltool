@@ -542,15 +542,32 @@ Secure hash: {{ sha512(string="secure-data") }}
 
 **Important:** These hash functions are for checksums and general-purpose hashing. For production password storage, use dedicated password hashing libraries with salt and proper key derivation functions (bcrypt, argon2, etc.).
 
-#### `uuid()`
+#### `uuid(version)`
 
-Generate a random UUID v4 (Universally Unique Identifier).
+Generate a UUID (Universally Unique Identifier) with configurable version.
 
+**Arguments:**
+- `version` (optional) - UUID version to generate: `"v4"` (default) or `"v7"`
+
+**UUID Versions:**
+- `v4` - Random UUID (default) - suitable for most use cases
+- `v7` - Time-ordered UUID - sortable by creation time, ideal for database primary keys
+
+**Examples:**
 ```
+{# Default v4 (random) #}
 Request ID: {{ uuid() }}
-Session ID: {{ uuid() }}
-{# Each call generates a unique identifier #}
+Session ID: {{ uuid(version="v4") }}
+
+{# v7 (time-ordered, sortable) #}
+Database ID: {{ uuid(version="v7") }}
+Event ID: {{ uuid(version="v7") }}
+{# v7 UUIDs are lexicographically sortable by creation time #}
 ```
+
+**When to use which version:**
+- Use **v4** for general-purpose unique identifiers where ordering doesn't matter
+- Use **v7** for database primary keys, event logs, or anywhere you need time-based sorting
 
 #### `random_string(length, charset)`
 
