@@ -18,7 +18,7 @@
 //! - `sha1(string)` - Calculate SHA1 hash of a string
 //! - `sha256(string)` - Calculate SHA256 hash of a string
 //! - `sha512(string)` - Calculate SHA512 hash of a string
-//! - `uuid()` - Generate a random UUID v4
+//! - `uuid(version)` - Generate a UUID (v4 default, or v7 for time-ordered)
 //! - `random_string(length, charset)` - Generate a random string with custom length and character set
 //! - `read_file(path)` - Read content from a file
 //! - `file_exists(path)` - Check if a file exists
@@ -86,6 +86,7 @@ pub mod predicates;
 pub mod random;
 pub mod serialization;
 pub mod statistics;
+pub mod string;
 pub mod system;
 pub mod url;
 pub mod uuid_gen;
@@ -157,11 +158,20 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("get_username", system::get_username_fn);
     env.add_function("get_home_dir", system::get_home_dir_fn);
     env.add_function("get_temp_dir", system::get_temp_dir_fn);
+    env.add_function("get_os", system::get_os_fn);
+    env.add_function("get_arch", system::get_arch_fn);
+    env.add_function("get_cwd", system::get_cwd_fn);
 
     // Network functions
     env.add_function("get_ip_address", network::get_ip_address_fn);
     env.add_function("resolve_dns", network::resolve_dns_fn);
     env.add_function("is_port_available", network::is_port_available_fn);
+    env.add_function("cidr_contains", network::cidr_contains_fn);
+    env.add_function("cidr_network", network::cidr_network_fn);
+    env.add_function("cidr_broadcast", network::cidr_broadcast_fn);
+    env.add_function("cidr_netmask", network::cidr_netmask_fn);
+    env.add_function("ip_to_int", network::ip_to_int_fn);
+    env.add_function("int_to_ip", network::int_to_ip_fn);
 
     // Data parsing functions (simple, no context)
     env.add_function("parse_json", data_parsing::parse_json_fn);
@@ -262,6 +272,12 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("object_keys", object::object_keys_fn);
     env.add_function("object_values", object::object_values_fn);
     env.add_function("object_has_key", object::object_has_key_fn);
+    env.add_function("json_path", object::json_path_fn);
+    env.add_function("object_pick", object::object_pick_fn);
+    env.add_function("object_omit", object::object_omit_fn);
+    env.add_function("object_rename_keys", object::object_rename_keys_fn);
+    env.add_function("object_flatten", object::object_flatten_fn);
+    env.add_function("object_unflatten", object::object_unflatten_fn);
 
     // Predicate functions
     env.add_function("array_any", predicates::array_any_fn);
@@ -285,6 +301,41 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("array_group_by", array::array_group_by_fn);
     env.add_function("array_unique", array::array_unique_fn);
     env.add_function("array_flatten", array::array_flatten_fn);
+    env.add_function("array_take", array::array_take_fn);
+    env.add_function("array_drop", array::array_drop_fn);
+    env.add_function("array_index_of", array::array_index_of_fn);
+    env.add_function("array_find", array::array_find_fn);
+    env.add_function("array_filter_by", array::array_filter_by_fn);
+    env.add_function("array_pluck", array::array_pluck_fn);
+
+    // Set operations
+    env.add_function("array_intersection", array::array_intersection_fn);
+    env.add_function("array_difference", array::array_difference_fn);
+    env.add_function("array_union", array::array_union_fn);
+    env.add_function(
+        "array_symmetric_difference",
+        array::array_symmetric_difference_fn,
+    );
+
+    // String manipulation functions
+    env.add_function("regex_replace", string::regex_replace_fn);
+    env.add_function("regex_match", string::regex_match_fn);
+    env.add_function("regex_find_all", string::regex_find_all_fn);
+    env.add_function("substring", string::substring_fn);
+    env.add_function("contains", string::contains_fn);
+    env.add_function("index_of", string::index_of_fn);
+    env.add_function("count_occurrences", string::count_occurrences_fn);
+    env.add_function("truncate", string::truncate_fn);
+    env.add_function("word_count", string::word_count_fn);
+    env.add_function("split_lines", string::split_lines_fn);
+    env.add_function("wrap", string::wrap_fn);
+    env.add_function("center", string::center_fn);
+    env.add_function("sentence_case", string::sentence_case_fn);
+    env.add_function("strip_html", string::strip_html_fn);
+    env.add_function("strip_ansi", string::strip_ansi_fn);
+    env.add_function("normalize_whitespace", string::normalize_whitespace_fn);
+    env.add_function("to_constant_case", string::to_constant_case_fn);
+    env.add_function("pluralize", string::pluralize_fn);
 
     // Math functions
     env.add_function("min", math::min_fn);
@@ -308,6 +359,20 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("k8s_env_var_ref", kubernetes::k8s_env_var_ref_fn);
     env.add_function("k8s_secret_ref", kubernetes::k8s_secret_ref_fn);
     env.add_function("k8s_configmap_ref", kubernetes::k8s_configmap_ref_fn);
+    env.add_function("helm_tpl", kubernetes::helm_tpl_fn);
+    env.add_function("k8s_annotation_safe", kubernetes::k8s_annotation_safe_fn);
+    env.add_function(
+        "k8s_quantity_to_bytes",
+        kubernetes::k8s_quantity_to_bytes_fn,
+    );
+    env.add_function(
+        "k8s_bytes_to_quantity",
+        kubernetes::k8s_bytes_to_quantity_fn,
+    );
+    env.add_function("k8s_selector", kubernetes::k8s_selector_fn);
+    env.add_function("k8s_pod_affinity", kubernetes::k8s_pod_affinity_fn);
+    env.add_function("k8s_toleration", kubernetes::k8s_toleration_fn);
+    env.add_function("k8s_probe", kubernetes::k8s_probe_fn);
 
     // URL and HTTP utility functions
     env.add_function("basic_auth", url::basic_auth_fn);

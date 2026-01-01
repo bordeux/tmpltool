@@ -623,3 +623,614 @@ fn test_to_toml_with_null_value() {
     }
     // If it errors, that's also valid behavior
 }
+
+// ============================================================================
+// Additional Edge Case Tests for Coverage Improvement
+// ============================================================================
+
+// --- Float and numeric edge cases ---
+
+#[test]
+fn test_to_json_float() {
+    let result =
+        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(1.23456))]))
+            .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("1.23"));
+}
+
+#[test]
+fn test_to_json_negative_number() {
+    let result =
+        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(-42))])).unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "-42");
+}
+
+#[test]
+fn test_to_json_large_number() {
+    let large_num: i64 = 9223372036854775807; // i64::MAX
+    let result =
+        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(large_num))]))
+            .unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "9223372036854775807");
+}
+
+#[test]
+fn test_to_json_zero() {
+    let result =
+        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(0))])).unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "0");
+}
+
+#[test]
+fn test_to_yaml_float() {
+    let result =
+        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(1.23456))]))
+            .unwrap();
+
+    let yaml_str = result.as_str().unwrap().trim();
+    assert!(yaml_str.contains("1.23"));
+}
+
+#[test]
+fn test_to_yaml_negative_number() {
+    let result =
+        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(-100))])).unwrap();
+
+    let yaml_str = result.as_str().unwrap().trim();
+    assert!(yaml_str.contains("-100"));
+}
+
+#[test]
+fn test_to_yaml_boolean_false() {
+    let result =
+        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(false))])).unwrap();
+
+    let yaml_str = result.as_str().unwrap().trim();
+    assert_eq!(yaml_str, "false");
+}
+
+#[test]
+fn test_to_toml_float() {
+    let obj = serde_json::json!({
+        "value": 1.23456
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("1.23"));
+}
+
+#[test]
+fn test_to_toml_negative_number() {
+    let obj = serde_json::json!({
+        "value": -42
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("-42"));
+}
+
+// --- String edge cases ---
+
+#[test]
+fn test_to_json_empty_string() {
+    let result =
+        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(""))])).unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "\"\"");
+}
+
+#[test]
+fn test_to_json_unicode_string() {
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from("Hello 世界 🌍"),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("Hello"));
+    // Unicode should be preserved or escaped
+}
+
+#[test]
+fn test_to_json_special_chars() {
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from("line1\nline2\ttab\"quote"),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    // Should properly escape special characters
+    assert!(json_str.contains("\\n") || json_str.contains("\\t") || json_str.contains("\\\""));
+}
+
+#[test]
+fn test_to_json_backslash() {
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from("path\\to\\file"),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("\\\\"));
+}
+
+#[test]
+fn test_to_yaml_empty_string() {
+    let obj = serde_json::json!({
+        "key": ""
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("key:"));
+}
+
+#[test]
+fn test_to_yaml_multiline_string() {
+    let obj = serde_json::json!({
+        "text": "line1\nline2\nline3"
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("text:"));
+}
+
+#[test]
+fn test_to_yaml_unicode_string() {
+    let obj = serde_json::json!({
+        "greeting": "你好世界"
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("greeting:"));
+}
+
+#[test]
+fn test_to_toml_empty_string() {
+    let obj = serde_json::json!({
+        "key": ""
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("key = \"\""));
+}
+
+#[test]
+fn test_to_toml_string_with_quotes() {
+    let obj = serde_json::json!({
+        "text": "He said \"hello\""
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("text = "));
+}
+
+// --- Nested structure edge cases ---
+
+#[test]
+fn test_to_json_deeply_nested() {
+    let obj = serde_json::json!({
+        "a": {"b": {"c": {"d": {"e": "deep"}}}}
+    });
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("deep"));
+}
+
+#[test]
+fn test_to_json_deeply_nested_pretty() {
+    let obj = serde_json::json!({
+        "a": {"b": {"c": "value"}}
+    });
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("pretty", Value::from(true)),
+    ]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    // Should have multiple levels of indentation
+    assert!(json_str.contains("    ")); // At least 4 spaces for 2 levels
+}
+
+#[test]
+fn test_to_yaml_deeply_nested() {
+    let obj = serde_json::json!({
+        "level1": {
+            "level2": {
+                "level3": {
+                    "value": "deep"
+                }
+            }
+        }
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("level1:"));
+    assert!(yaml_str.contains("value: deep"));
+}
+
+#[test]
+fn test_to_toml_deeply_nested() {
+    let obj = serde_json::json!({
+        "section": {
+            "subsection": {
+                "key": "value"
+            }
+        }
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("[section.subsection]") || toml_str.contains("section.subsection"));
+}
+
+// --- Array edge cases ---
+
+#[test]
+fn test_to_json_nested_arrays() {
+    let obj = serde_json::json!([[1, 2], [3, 4], [5, 6]]);
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert_eq!(json_str, "[[1,2],[3,4],[5,6]]");
+}
+
+#[test]
+fn test_to_json_array_of_objects() {
+    let arr = serde_json::json!([
+        {"name": "Alice", "age": 30},
+        {"name": "Bob", "age": 25}
+    ]);
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&arr),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("Alice"));
+    assert!(json_str.contains("Bob"));
+}
+
+#[test]
+fn test_to_yaml_nested_arrays() {
+    let obj = serde_json::json!({
+        "matrix": [[1, 2], [3, 4]]
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("matrix:"));
+}
+
+#[test]
+fn test_to_yaml_mixed_array() {
+    let arr = serde_json::json!(["string", 42, true, null]);
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&arr),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("- string") || yaml_str.contains("string"));
+    assert!(yaml_str.contains("42"));
+}
+
+#[test]
+fn test_to_yaml_empty_array() {
+    let arr: Vec<i32> = vec![];
+
+    let result =
+        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
+
+    let yaml_str = result.as_str().unwrap().trim();
+    assert_eq!(yaml_str, "[]");
+}
+
+#[test]
+fn test_to_toml_string_array() {
+    let obj = serde_json::json!({
+        "names": ["Alice", "Bob", "Charlie"]
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("names = ["));
+    assert!(toml_str.contains("Alice"));
+}
+
+// --- Pretty printing edge cases ---
+
+#[test]
+fn test_to_json_pretty_false_explicit() {
+    let obj = serde_json::json!({"key": "value"});
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("pretty", Value::from(false)),
+    ]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    // Compact JSON should not have newlines
+    assert!(!json_str.contains('\n'));
+}
+
+#[test]
+fn test_to_json_pretty_with_array() {
+    let arr = serde_json::json!([1, 2, 3, 4, 5]);
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&arr)),
+        ("pretty", Value::from(true)),
+    ]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    // Pretty array should have newlines
+    assert!(json_str.contains('\n'));
+}
+
+#[test]
+fn test_to_json_pretty_empty_object() {
+    let obj = serde_json::json!({});
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+        ("object", Value::from_serialize(&obj)),
+        ("pretty", Value::from(true)),
+    ]))
+    .unwrap();
+
+    assert_eq!(result.as_str().unwrap(), "{}");
+}
+
+// --- Complex real-world structures ---
+
+#[test]
+fn test_to_json_complex_config() {
+    let config = serde_json::json!({
+        "server": {
+            "host": "0.0.0.0",
+            "port": 8080,
+            "ssl": {
+                "enabled": true,
+                "cert": "/path/to/cert.pem",
+                "key": "/path/to/key.pem"
+            }
+        },
+        "database": {
+            "connections": [
+                {"name": "primary", "url": "postgres://localhost/db"},
+                {"name": "replica", "url": "postgres://replica/db"}
+            ]
+        },
+        "features": ["auth", "cache", "logging"]
+    });
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&config),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    assert!(json_str.contains("server"));
+    assert!(json_str.contains("database"));
+    assert!(json_str.contains("features"));
+}
+
+#[test]
+fn test_to_yaml_complex_config() {
+    let config = serde_json::json!({
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": "my-config",
+            "namespace": "default"
+        },
+        "data": {
+            "key1": "value1",
+            "key2": "value2"
+        }
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&config),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("apiVersion:"));
+    assert!(yaml_str.contains("kind:"));
+    assert!(yaml_str.contains("metadata:"));
+}
+
+#[test]
+fn test_to_toml_cargo_like() {
+    let config = serde_json::json!({
+        "package": {
+            "name": "myapp",
+            "version": "0.1.0",
+            "edition": "2021"
+        },
+        "dependencies": {
+            "serde": "1.0",
+            "tokio": "1.0"
+        },
+        "dev-dependencies": {
+            "criterion": "0.5"
+        }
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&config),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("[package]"));
+    assert!(toml_str.contains("[dependencies]"));
+}
+
+// --- Primitive value handling in objects ---
+
+#[test]
+fn test_to_json_all_primitive_types() {
+    let obj = serde_json::json!({
+        "string": "hello",
+        "integer": 42,
+        "float": 1.238,
+        "boolean_true": true,
+        "boolean_false": false,
+        "null_value": null,
+        "array": [1, 2, 3],
+        "object": {"nested": "value"}
+    });
+
+    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let json_str = result.as_str().unwrap();
+    // Parse back to verify structure
+    let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap();
+    assert_eq!(parsed["string"], "hello");
+    assert_eq!(parsed["integer"], 42);
+    assert_eq!(parsed["boolean_true"], true);
+    assert_eq!(parsed["boolean_false"], false);
+    assert!(parsed["null_value"].is_null());
+}
+
+#[test]
+fn test_to_yaml_all_primitive_types() {
+    let obj = serde_json::json!({
+        "string": "hello",
+        "integer": 42,
+        "float": 1.238,
+        "boolean": true,
+        "array": [1, 2, 3]
+    });
+
+    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let yaml_str = result.as_str().unwrap();
+    assert!(yaml_str.contains("string: hello"));
+    assert!(yaml_str.contains("integer: 42"));
+    assert!(yaml_str.contains("boolean: true"));
+}
+
+#[test]
+fn test_to_toml_all_primitive_types() {
+    let obj = serde_json::json!({
+        "string": "hello",
+        "integer": 42,
+        "float": 1.238,
+        "boolean": true,
+        "array": [1, 2, 3]
+    });
+
+    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+        "object",
+        Value::from_serialize(&obj),
+    )]))
+    .unwrap();
+
+    let toml_str = result.as_str().unwrap();
+    assert!(toml_str.contains("string = \"hello\""));
+    assert!(toml_str.contains("integer = 42"));
+    assert!(toml_str.contains("boolean = true"));
+}

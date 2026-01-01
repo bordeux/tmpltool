@@ -465,3 +465,301 @@ fn test_array_flatten_missing_array() {
 
     assert!(result.is_err());
 }
+
+// ============================================================================
+// Additional Array Sort By Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_sort_by_all_missing_key() {
+    let users = serde_json::json!([
+        {"name": "Alice"},
+        {"name": "Bob"},
+        {"name": "Charlie"}
+    ]);
+
+    let result = array::array_sort_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&users)),
+        ("key", Value::from("age")),
+    ]))
+    .unwrap();
+
+    // All have missing key, should maintain relative order
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn test_array_sort_by_some_missing_key() {
+    let items = serde_json::json!([
+        {"name": "First"},
+        {"name": "Second", "order": 1},
+        {"name": "Third"},
+        {"name": "Fourth", "order": 2}
+    ]);
+
+    let result = array::array_sort_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("order")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    // Items with key should come first (sorted), items without key should come at end
+    assert_eq!(json_result[0]["order"], 1);
+    assert_eq!(json_result[1]["order"], 2);
+}
+
+#[test]
+fn test_array_sort_by_null_values() {
+    let items = serde_json::json!([
+        {"name": "First", "order": null},
+        {"name": "Second", "order": 1},
+        {"name": "Third", "order": 2}
+    ]);
+
+    let result = array::array_sort_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("order")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn test_array_sort_by_boolean_values() {
+    let items = serde_json::json!([
+        {"name": "First", "active": true},
+        {"name": "Second", "active": false},
+        {"name": "Third", "active": true}
+    ]);
+
+    let result = array::array_sort_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("active")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn test_array_sort_by_single_item() {
+    let items = serde_json::json!([{"name": "Only", "age": 25}]);
+
+    let result = array::array_sort_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("age")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 1);
+    assert_eq!(json_result[0]["age"], 25);
+}
+
+#[test]
+fn test_array_sort_by_missing_array_param() {
+    let result = array::array_sort_by_fn(Kwargs::from_iter(vec![("key", Value::from("name"))]));
+
+    assert!(result.is_err());
+}
+
+// ============================================================================
+// Additional Array Group By Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_group_by_null_key_value() {
+    let items = serde_json::json!([
+        {"name": "First", "category": null},
+        {"name": "Second", "category": "A"},
+        {"name": "Third", "category": null}
+    ]);
+
+    let result = array::array_group_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("category")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    // Nulls should be grouped under "null" key
+    assert!(json_result.get("null").is_some() || json_result.get("A").is_some());
+}
+
+#[test]
+fn test_array_group_by_missing_key_in_some_items() {
+    let items = serde_json::json!([
+        {"name": "First", "dept": "Engineering"},
+        {"name": "Second"},
+        {"name": "Third", "dept": "Sales"}
+    ]);
+
+    let result = array::array_group_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("dept")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    // Only items with the key should be included in groups
+    let total_items: usize = json_result
+        .as_object()
+        .unwrap()
+        .values()
+        .map(|v| v.as_array().unwrap().len())
+        .sum();
+    assert_eq!(total_items, 2);
+}
+
+#[test]
+fn test_array_group_by_single_group() {
+    let items = serde_json::json!([
+        {"name": "First", "type": "A"},
+        {"name": "Second", "type": "A"},
+        {"name": "Third", "type": "A"}
+    ]);
+
+    let result = array::array_group_by_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&items)),
+        ("key", Value::from("type")),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_object().unwrap().len(), 1);
+    assert_eq!(json_result["A"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn test_array_group_by_missing_array_param() {
+    let result = array::array_group_by_fn(Kwargs::from_iter(vec![("key", Value::from("dept"))]));
+
+    assert!(result.is_err());
+}
+
+// ============================================================================
+// Additional Array Unique Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_unique_objects() {
+    let items = serde_json::json!([
+        {"id": 1, "name": "A"},
+        {"id": 1, "name": "A"},
+        {"id": 2, "name": "B"}
+    ]);
+
+    let result = array::array_unique_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&items),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn test_array_unique_with_nulls() {
+    let items = serde_json::json!([1, null, 2, null, 3]);
+
+    let result = array::array_unique_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&items),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 4); // 1, null, 2, 3
+}
+
+#[test]
+fn test_array_unique_booleans() {
+    let items = serde_json::json!([true, false, true, false, true]);
+
+    let result = array::array_unique_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&items),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn test_array_unique_single_element() {
+    let result =
+        array::array_unique_fn(Kwargs::from_iter(vec![("array", Value::from(vec![42]))])).unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 1);
+}
+
+// ============================================================================
+// Additional Array Flatten Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_flatten_all_empty_nested() {
+    let nested = serde_json::json!([[], [], []]);
+
+    let result = array::array_flatten_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&nested),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 0);
+}
+
+#[test]
+fn test_array_flatten_with_nulls() {
+    let nested = serde_json::json!([[1, null], [null, 2]]);
+
+    let result = array::array_flatten_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&nested),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 4);
+}
+
+#[test]
+fn test_array_flatten_with_objects() {
+    let nested = serde_json::json!([[{"a": 1}], [{"b": 2}]]);
+
+    let result = array::array_flatten_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&nested),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn test_array_flatten_deeply_nested_preserves_inner() {
+    let nested = serde_json::json!([[[1, 2]], [[3, 4]]]);
+
+    let result = array::array_flatten_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&nested),
+    )]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    // Should flatten one level only, so inner arrays remain
+    assert_eq!(json_result.as_array().unwrap().len(), 2);
+    assert!(json_result[0].is_array());
+    assert!(json_result[1].is_array());
+}

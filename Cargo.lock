@@ -652,6 +652,7 @@ dependencies = [
  "memo-map",
  "self_cell",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

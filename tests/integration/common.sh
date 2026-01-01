@@ -61,6 +61,18 @@ assert_contains() {
     fi
 }
 
+assert_not_contains() {
+    local haystack="$1"
+    local needle="$2"
+    local test_name="$3"
+
+    if echo "$haystack" | grep -q "$needle"; then
+        fail "$test_name" "Output unexpectedly contains '$needle'"
+    else
+        pass "$test_name"
+    fi
+}
+
 assert_matches() {
     local text="$1"
     local pattern="$2"

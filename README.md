@@ -542,15 +542,32 @@ Secure hash: {{ sha512(string="secure-data") }}
 
 **Important:** These hash functions are for checksums and general-purpose hashing. For production password storage, use dedicated password hashing libraries with salt and proper key derivation functions (bcrypt, argon2, etc.).
 
-#### `uuid()`
+#### `uuid(version)`
 
-Generate a random UUID v4 (Universally Unique Identifier).
+Generate a UUID (Universally Unique Identifier) with configurable version.
 
+**Arguments:**
+- `version` (optional) - UUID version to generate: `"v4"` (default) or `"v7"`
+
+**UUID Versions:**
+- `v4` - Random UUID (default) - suitable for most use cases
+- `v7` - Time-ordered UUID - sortable by creation time, ideal for database primary keys
+
+**Examples:**
 ```
+{# Default v4 (random) #}
 Request ID: {{ uuid() }}
-Session ID: {{ uuid() }}
-{# Each call generates a unique identifier #}
+Session ID: {{ uuid(version="v4") }}
+
+{# v7 (time-ordered, sortable) #}
+Database ID: {{ uuid(version="v7") }}
+Event ID: {{ uuid(version="v7") }}
+{# v7 UUIDs are lexicographically sortable by creation time #}
 ```
+
+**When to use which version:**
+- Use **v4** for general-purpose unique identifiers where ordering doesn't matter
+- Use **v7** for database primary keys, event logs, or anywhere you need time-based sorting
 
 #### `random_string(length, charset)`
 
@@ -2383,6 +2400,171 @@ ERROR: Missing required configuration: {{ key_path }}
 {{ to_json(object=config, pretty=true) }}
 ```
 
+#### `json_path(object, path)`
+
+Query objects using JSONPath-like syntax.
+
+**Supported Syntax:**
+- `$.key` or `key` - Access object property
+- `$.key1.key2` - Nested property access
+- `$.array[0]` - Array index access
+- `$.array[*]` - Wildcard (returns all elements)
+- `$.users[*].name` - Extract property from all array elements
+
+**Arguments:**
+- `object` (required): Object or array to query
+- `path` (required): JSONPath expression
+
+**Returns:** The matched value(s). For wildcard queries, returns an array.
+
+```jinja
+{% set data = {"users": [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]} %}
+
+{# Access nested property #}
+{{ json_path(object=data, path="$.users[0].name") }}
+{# Output: Alice #}
+
+{# Wildcard - extract all names #}
+{{ json_path(object=data, path="$.users[*].name") | tojson }}
+{# Output: ["Alice", "Bob"] #}
+
+{# Access by index #}
+{{ json_path(object=data, path="$.users[1].age") }}
+{# Output: 25 #}
+
+{# Simple nested access #}
+{% set config = {"server": {"host": "localhost", "port": 8080}} %}
+{{ json_path(object=config, path="server.port") }}
+{# Output: 8080 #}
+```
+
+#### `object_pick(object, keys)`
+
+Create a new object containing only the specified keys.
+
+**Arguments:**
+- `object` (required): Source object
+- `keys` (required): Array of keys to keep
+
+**Returns:** A new object containing only the specified keys
+
+```jinja
+{% set user = {"name": "Alice", "email": "alice@example.com", "password": "secret", "age": 30} %}
+
+{# Pick only public fields #}
+{% set public = object_pick(object=user, keys=["name", "email", "age"]) %}
+{{ public | tojson }}
+{# Output: {"name":"Alice","email":"alice@example.com","age":30} #}
+
+{# Useful for API responses #}
+{% set response = object_pick(object=data, keys=["id", "title", "created_at"]) %}
+```
+
+#### `object_omit(object, keys)`
+
+Create a new object excluding the specified keys.
+
+**Arguments:**
+- `object` (required): Source object
+- `keys` (required): Array of keys to exclude
+
+**Returns:** A new object with the specified keys removed
+
+```jinja
+{% set user = {"name": "Alice", "email": "alice@example.com", "password": "secret", "internal_id": 123} %}
+
+{# Remove sensitive fields #}
+{% set safe = object_omit(object=user, keys=["password", "internal_id"]) %}
+{{ safe | tojson }}
+{# Output: {"name":"Alice","email":"alice@example.com"} #}
+
+{# Clean up debug fields before output #}
+{% set output = object_omit(object=config, keys=["debug", "verbose", "_internal"]) %}
+```
+
+#### `object_rename_keys(object, mapping)`
+
+Rename object keys using a mapping.
+
+**Arguments:**
+- `object` (required): Source object
+- `mapping` (required): Object mapping old keys to new keys
+
+**Returns:** A new object with renamed keys
+
+```jinja
+{% set data = {"firstName": "Alice", "lastName": "Smith", "emailAddress": "alice@example.com"} %}
+
+{# Convert camelCase to snake_case #}
+{% set renamed = object_rename_keys(object=data, mapping={
+  "firstName": "first_name",
+  "lastName": "last_name",
+  "emailAddress": "email"
+}) %}
+{{ renamed | tojson }}
+{# Output: {"first_name":"Alice","last_name":"Smith","email":"alice@example.com"} #}
+
+{# API response transformation #}
+{% set api_data = object_rename_keys(object=response, mapping={"userId": "user_id", "createdAt": "created_at"}) %}
+```
+
+#### `object_flatten(object, delimiter)`
+
+Flatten a nested object to dot-notation keys.
+
+**Arguments:**
+- `object` (required): Nested object to flatten
+- `delimiter` (optional): Delimiter for keys (default: ".")
+
+**Returns:** A flat object with delimited keys
+
+```jinja
+{% set nested = {"server": {"host": "localhost", "port": 8080}, "database": {"name": "mydb"}} %}
+
+{# Default dot delimiter #}
+{% set flat = object_flatten(object=nested) %}
+{{ flat | tojson }}
+{# Output: {"server.host":"localhost","server.port":8080,"database.name":"mydb"} #}
+
+{# Custom delimiter #}
+{% set flat_underscore = object_flatten(object=nested, delimiter="_") %}
+{{ flat_underscore | tojson }}
+{# Output: {"server_host":"localhost","server_port":8080,"database_name":"mydb"} #}
+
+{# Useful for environment variable generation #}
+{% for key, value in object_flatten(object=config, delimiter="_") %}
+export {{ key | upper }}="{{ value }}"
+{% endfor %}
+```
+
+#### `object_unflatten(object, delimiter)`
+
+Unflatten a flat object with delimited keys to a nested structure.
+
+**Arguments:**
+- `object` (required): Flat object with delimited keys
+- `delimiter` (optional): Delimiter used in keys (default: ".")
+
+**Returns:** A nested object structure
+
+```jinja
+{% set flat = {"server.host": "localhost", "server.port": 8080, "database.name": "mydb"} %}
+
+{# Unflatten to nested structure #}
+{% set nested = object_unflatten(object=flat) %}
+{{ nested | tojson }}
+{# Output: {"server":{"host":"localhost","port":8080},"database":{"name":"mydb"}} #}
+
+{# With custom delimiter #}
+{% set flat_underscore = {"server_host": "localhost", "server_port": 8080} %}
+{% set nested = object_unflatten(object=flat_underscore, delimiter="_") %}
+{{ nested | tojson }}
+{# Output: {"server":{"host":"localhost","port":8080}} #}
+
+{# Useful for parsing environment variables into config #}
+{% set env_config = object_unflatten(object=env_vars, delimiter="_") %}
+```
+
 ### Predicate Functions
 
 Check conditions on arrays and strings with predicate functions. Useful for filtering, validation, and conditional logic.
@@ -2804,6 +2986,301 @@ spec:
               {{ k8s_secret_ref(secret_name="db-credentials", key="password") | indent(14) }}
           resources:
             {{ k8s_resource_request(cpu="500m", memory="512Mi") | indent(12) }}
+```
+
+#### `helm_tpl(template, values)`
+
+Perform Helm-style templating with `{{ .key }}` syntax.
+
+**Arguments:**
+- `template` (required): Template string with Helm-style placeholders
+- `values` (required): Object containing values to substitute
+
+**Returns:** Rendered template string
+
+**Example:**
+```jinja
+{# Basic Helm templating #}
+{{ helm_tpl(template="Hello {{ .name }}!", values={"name": "World"}) }}
+{# Output: Hello World! #}
+
+{# Complex template #}
+{% set tpl = "{{ .app.name }}-{{ .app.version }}" %}
+{% set vals = {"app": {"name": "myapp", "version": "1.0"}} %}
+{{ helm_tpl(template=tpl, values=vals) }}
+{# Output: myapp-1.0 #}
+
+{# In Kubernetes manifest #}
+metadata:
+  name: {{ helm_tpl(template="{{ .Release.Name }}-{{ .Chart.Name }}", values={"Release": {"Name": "prod"}, "Chart": {"Name": "webapp"}}) }}
+```
+
+#### `k8s_annotation_safe(string)`
+
+Sanitize a string for use as a Kubernetes annotation value.
+
+**Arguments:**
+- `string` (required): The string to sanitize
+
+**Returns:** Sanitized string safe for annotation values (max 256KB, control chars removed)
+
+**Example:**
+```jinja
+{# Sanitize annotation value #}
+{{ k8s_annotation_safe(string="Description with\nnewlines and\ttabs") }}
+{# Output: Description with newlines and tabs #}
+
+{# In Kubernetes manifest #}
+metadata:
+  annotations:
+    description: "{{ k8s_annotation_safe(string=description) }}"
+    config: "{{ k8s_annotation_safe(string=to_json(config_obj)) }}"
+```
+
+#### `k8s_quantity_to_bytes(quantity)`
+
+Convert a Kubernetes quantity string to bytes.
+
+**Arguments:**
+- `quantity` (required): Kubernetes quantity string (e.g., "1Gi", "500Mi", "100m")
+
+**Returns:** Integer number of bytes (or millicores for CPU)
+
+**Supported suffixes:**
+- Binary: Ki (1024), Mi (1024²), Gi (1024³), Ti (1024⁴), Pi (1024⁵), Ei (1024⁶)
+- Decimal: K (1000), M (1000²), G (1000³), T (1000⁴), P (1000⁵), E (1000⁶)
+- CPU: m (millicores)
+
+**Example:**
+```jinja
+{# Convert memory quantities #}
+{{ k8s_quantity_to_bytes(quantity="1Gi") }}
+{# Output: 1073741824 #}
+
+{{ k8s_quantity_to_bytes(quantity="500Mi") }}
+{# Output: 524288000 #}
+
+{# Convert CPU quantities #}
+{{ k8s_quantity_to_bytes(quantity="500m") }}
+{# Output: 500 (millicores) #}
+
+{# Calculate total memory from multiple pods #}
+{% set pod_memory = k8s_quantity_to_bytes(quantity="256Mi") %}
+{% set replicas = 3 %}
+Total bytes: {{ pod_memory * replicas }}
+```
+
+#### `k8s_bytes_to_quantity(bytes, unit)`
+
+Convert bytes to a Kubernetes quantity string.
+
+**Arguments:**
+- `bytes` (required): Number of bytes to convert
+- `unit` (optional): Target unit (default: auto-selects appropriate unit)
+  - Supported: "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "K", "M", "G", "T", "P", "E"
+
+**Returns:** Kubernetes quantity string
+
+**Example:**
+```jinja
+{# Auto-select appropriate unit #}
+{{ k8s_bytes_to_quantity(bytes=1073741824) }}
+{# Output: 1Gi #}
+
+{{ k8s_bytes_to_quantity(bytes=536870912) }}
+{# Output: 512Mi #}
+
+{# Force specific unit #}
+{{ k8s_bytes_to_quantity(bytes=1073741824, unit="Mi") }}
+{# Output: 1024Mi #}
+
+{# In resource calculations #}
+{% set total_bytes = 2147483648 %}
+resources:
+  requests:
+    memory: "{{ k8s_bytes_to_quantity(bytes=total_bytes / 2) }}"
+  limits:
+    memory: "{{ k8s_bytes_to_quantity(bytes=total_bytes) }}"
+```
+
+#### `k8s_selector(labels)`
+
+Generate a Kubernetes label selector string from a labels object.
+
+**Arguments:**
+- `labels` (required): Object containing key-value pairs for the selector
+
+**Returns:** Label selector string in the format "key1=value1,key2=value2"
+
+**Example:**
+```jinja
+{# Basic selector #}
+{{ k8s_selector(labels={"app": "nginx", "env": "prod"}) }}
+{# Output: app=nginx,env=prod #}
+
+{# In Kubernetes Service #}
+spec:
+  selector:
+    {{ k8s_selector(labels={"app": app_name, "version": version}) }}
+
+{# With kubectl #}
+kubectl get pods -l "{{ k8s_selector(labels=pod_labels) }}"
+```
+
+#### `k8s_pod_affinity(key, operator, values, topology_key, type)`
+
+Generate Kubernetes pod affinity/anti-affinity YAML.
+
+**Arguments:**
+- `key` (required): Label key to match
+- `operator` (required): Match operator ("In", "NotIn", "Exists", "DoesNotExist")
+- `values` (optional): Array of values to match (required for In/NotIn)
+- `topology_key` (optional): Topology key (default: "kubernetes.io/hostname")
+- `type` (optional): Affinity type - "required" or "preferred" (default: "required")
+
+**Returns:** YAML string for pod affinity configuration
+
+**Example:**
+```jinja
+{# Required pod affinity #}
+{{ k8s_pod_affinity(key="app", operator="In", values=["cache", "db"]) }}
+{# Output:
+requiredDuringSchedulingIgnoredDuringExecution:
+  - labelSelector:
+      matchExpressions:
+        - key: app
+          operator: In
+          values:
+            - cache
+            - db
+    topologyKey: kubernetes.io/hostname
+#}
+
+{# Preferred anti-affinity for spreading pods #}
+{{ k8s_pod_affinity(key="app", operator="In", values=["web"], type="preferred") }}
+{# Output:
+preferredDuringSchedulingIgnoredDuringExecution:
+  - weight: 100
+    podAffinityTerm:
+      labelSelector:
+        matchExpressions:
+          - key: app
+            operator: In
+            values:
+              - web
+      topologyKey: kubernetes.io/hostname
+#}
+
+{# In Deployment spec #}
+spec:
+  affinity:
+    podAntiAffinity:
+      {{ k8s_pod_affinity(key="app", operator="In", values=[app_name], topology_key="topology.kubernetes.io/zone") | indent(6) }}
+```
+
+#### `k8s_toleration(key, operator, value, effect)`
+
+Generate Kubernetes toleration YAML.
+
+**Arguments:**
+- `key` (required): Taint key to tolerate
+- `operator` (optional): Match operator - "Equal" or "Exists" (default: "Equal")
+- `value` (optional): Taint value to match (required when operator is "Equal")
+- `effect` (optional): Taint effect - "NoSchedule", "PreferNoSchedule", or "NoExecute"
+
+**Returns:** YAML string for toleration configuration
+
+**Example:**
+```jinja
+{# Basic toleration #}
+{{ k8s_toleration(key="dedicated", value="gpu", effect="NoSchedule") }}
+{# Output:
+- key: dedicated
+  operator: Equal
+  value: gpu
+  effect: NoSchedule
+#}
+
+{# Exists operator (matches any value) #}
+{{ k8s_toleration(key="node.kubernetes.io/not-ready", operator="Exists", effect="NoExecute") }}
+{# Output:
+- key: node.kubernetes.io/not-ready
+  operator: Exists
+  effect: NoExecute
+#}
+
+{# In Pod spec #}
+spec:
+  tolerations:
+    {{ k8s_toleration(key="dedicated", value="high-memory", effect="NoSchedule") | indent(4) }}
+    {{ k8s_toleration(key="node.kubernetes.io/unreachable", operator="Exists", effect="NoExecute") | indent(4) }}
+```
+
+#### `k8s_probe(type, path, port, initial_delay, period, timeout, success_threshold, failure_threshold, command)`
+
+Generate Kubernetes liveness/readiness probe YAML.
+
+**Arguments:**
+- `type` (required): Probe type - "http", "tcp", or "exec"
+- `path` (optional): HTTP path for http probes (default: "/healthz")
+- `port` (optional): Port number for http/tcp probes (default: 8080)
+- `initial_delay` (optional): Initial delay in seconds (default: 0)
+- `period` (optional): Period between probes in seconds (default: 10)
+- `timeout` (optional): Timeout in seconds (default: 1)
+- `success_threshold` (optional): Success threshold (default: 1)
+- `failure_threshold` (optional): Failure threshold (default: 3)
+- `command` (optional): Command array for exec probes
+
+**Returns:** YAML string for probe configuration
+
+**Example:**
+```jinja
+{# HTTP health check #}
+{{ k8s_probe(type="http", path="/health", port=8080) }}
+{# Output:
+httpGet:
+  path: /health
+  port: 8080
+initialDelaySeconds: 0
+periodSeconds: 10
+timeoutSeconds: 1
+successThreshold: 1
+failureThreshold: 3
+#}
+
+{# TCP socket check with custom timings #}
+{{ k8s_probe(type="tcp", port=5432, initial_delay=30, period=20) }}
+{# Output:
+tcpSocket:
+  port: 5432
+initialDelaySeconds: 30
+periodSeconds: 20
+timeoutSeconds: 1
+successThreshold: 1
+failureThreshold: 3
+#}
+
+{# Exec probe with command #}
+{{ k8s_probe(type="exec", command=["cat", "/tmp/healthy"]) }}
+{# Output:
+exec:
+  command:
+    - cat
+    - /tmp/healthy
+initialDelaySeconds: 0
+periodSeconds: 10
+timeoutSeconds: 1
+successThreshold: 1
+failureThreshold: 3
+#}
+
+{# In container spec #}
+containers:
+  - name: app
+    livenessProbe:
+      {{ k8s_probe(type="http", path="/healthz", port=8080, initial_delay=15, failure_threshold=5) | indent(6) }}
+    readinessProbe:
+      {{ k8s_probe(type="http", path="/ready", port=8080, period=5) | indent(6) }}
 ```
 
 ### Web & URL Functions
@@ -3687,6 +4164,606 @@ Task Status Dashboard:
 Unique assignees: {{ array_unique(array=all_assignees) | join(", ") }}
 ```
 
+#### `array_take(array, n)`
+
+Take the first N elements from an array.
+
+**Arguments:**
+- `array` (required): Source array
+- `n` (required): Number of elements to take
+
+**Returns:** Array with the first N elements
+
+**Example:**
+```jinja
+{{ array_take(array=[1, 2, 3, 4, 5], n=3) }}
+{# Output: [1, 2, 3] #}
+
+{# Taking more than available returns all elements #}
+{{ array_take(array=[1, 2], n=5) }}
+{# Output: [1, 2] #}
+```
+
+#### `array_drop(array, n)`
+
+Skip the first N elements from an array.
+
+**Arguments:**
+- `array` (required): Source array
+- `n` (required): Number of elements to skip
+
+**Returns:** Array with elements after the first N
+
+**Example:**
+```jinja
+{{ array_drop(array=[1, 2, 3, 4, 5], n=2) }}
+{# Output: [3, 4, 5] #}
+
+{# Dropping more than available returns empty array #}
+{{ array_drop(array=[1, 2], n=5) }}
+{# Output: [] #}
+```
+
+#### `array_index_of(array, value)`
+
+Find the index of an element in an array.
+
+**Arguments:**
+- `array` (required): Array to search
+- `value` (required): Value to find
+
+**Returns:** Index (0-based) or -1 if not found
+
+**Example:**
+```jinja
+{{ array_index_of(array=["a", "b", "c"], value="b") }}
+{# Output: 1 #}
+
+{{ array_index_of(array=[1, 2, 3], value=5) }}
+{# Output: -1 #}
+```
+
+#### `array_find(array, key, value)`
+
+Find the first matching object in an array of objects.
+
+**Arguments:**
+- `array` (required): Array of objects to search
+- `key` (required): Key to match
+- `value` (required): Value to match
+
+**Returns:** The first matching object or null if not found
+
+**Example:**
+```jinja
+{% set users = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}] %}
+{{ array_find(array=users, key="id", value=2) | tojson }}
+{# Output: {"id": 2, "name": "Bob"} #}
+
+{{ array_find(array=users, key="id", value=99) }}
+{# Output: null #}
+```
+
+#### `array_filter_by(array, key, op, value)`
+
+Filter an array of objects by a key with comparison operators.
+
+**Arguments:**
+- `array` (required): Array of objects to filter
+- `key` (required): Key to compare
+- `op` (required): Operator: `"eq"`, `"ne"`, `"gt"`, `"lt"`, `"gte"`, `"lte"`, `"contains"`
+- `value` (required): Value to compare against
+
+**Returns:** Filtered array of matching objects
+
+**Example:**
+```jinja
+{% set items = [{"price": 10}, {"price": 20}, {"price": 30}] %}
+{{ array_filter_by(array=items, key="price", op="gt", value=15) | tojson }}
+{# Output: [{"price": 20}, {"price": 30}] #}
+
+{% set users = [{"name": "Alice"}, {"name": "Bob"}, {"name": "Charlie"}] %}
+{{ array_filter_by(array=users, key="name", op="contains", value="li") | tojson }}
+{# Output: [{"name": "Alice"}, {"name": "Charlie"}] #}
+```
+
+#### `array_pluck(array, key)`
+
+Extract values from an array of objects by key (supports dot notation for nested keys).
+
+**Arguments:**
+- `array` (required): Array of objects
+- `key` (required): Key path to extract (e.g., `"user.name"`)
+
+**Returns:** Array of extracted values
+
+**Example:**
+```jinja
+{% set users = [{"name": "Alice"}, {"name": "Bob"}] %}
+{{ array_pluck(array=users, key="name") | tojson }}
+{# Output: ["Alice", "Bob"] #}
+
+{# Nested keys with dot notation #}
+{% set data = [{"user": {"name": "Alice"}}, {"user": {"name": "Bob"}}] %}
+{{ array_pluck(array=data, key="user.name") | tojson }}
+{# Output: ["Alice", "Bob"] #}
+```
+
+#### `array_intersection(array1, array2)`
+
+Get elements that exist in both arrays.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of common elements
+
+**Example:**
+```jinja
+{{ array_intersection(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) | tojson }}
+{# Output: [3, 4] #}
+
+{{ array_intersection(array1=["a", "b", "c"], array2=["b", "c", "d"]) | tojson }}
+{# Output: ["b", "c"] #}
+```
+
+#### `array_difference(array1, array2)`
+
+Get elements in the first array that are not in the second.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of elements in array1 but not in array2
+
+**Example:**
+```jinja
+{{ array_difference(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) | tojson }}
+{# Output: [1, 2] #}
+
+{{ array_difference(array1=["a", "b", "c"], array2=["b"]) | tojson }}
+{# Output: ["a", "c"] #}
+```
+
+#### `array_union(array1, array2)`
+
+Get all unique elements from both arrays.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of all unique elements from both arrays
+
+**Example:**
+```jinja
+{{ array_union(array1=[1, 2, 3], array2=[3, 4, 5]) | tojson }}
+{# Output: [1, 2, 3, 4, 5] #}
+
+{{ array_union(array1=["a", "b"], array2=["b", "c"]) | tojson }}
+{# Output: ["a", "b", "c"] #}
+```
+
+#### `array_symmetric_difference(array1, array2)`
+
+Get elements that are in either array but not in both.
+
+**Arguments:**
+- `array1` (required): First array
+- `array2` (required): Second array
+
+**Returns:** Array of elements in either array but not in both
+
+**Example:**
+```jinja
+{{ array_symmetric_difference(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) | tojson }}
+{# Output: [1, 2, 5, 6] #}
+
+{{ array_symmetric_difference(array1=["a", "b", "c"], array2=["b", "c", "d"]) | tojson }}
+{# Output: ["a", "d"] #}
+```
+
+### String Manipulation Functions
+
+Advanced string operations including regex support.
+
+#### `regex_replace(string, pattern, replacement)`
+
+Replace substrings using a regex pattern.
+
+**Arguments:**
+- `string` (required): The input string
+- `pattern` (required): Regex pattern to match
+- `replacement` (required): Replacement string (supports `$1`, `$2` for capture groups)
+
+**Returns:** String with all matches replaced
+
+**Example:**
+```jinja
+{{ regex_replace(string="hello123world", pattern="[0-9]+", replacement="-") }}
+{# Output: hello-world #}
+
+{{ regex_replace(string="foo bar baz", pattern="\\s+", replacement="_") }}
+{# Output: foo_bar_baz #}
+
+{# Using capture groups #}
+{{ regex_replace(string="hello world", pattern="(\\w+) (\\w+)", replacement="$2 $1") }}
+{# Output: world hello #}
+```
+
+#### `regex_match(string, pattern)`
+
+Check if a string matches a regex pattern.
+
+**Arguments:**
+- `string` (required): The input string
+- `pattern` (required): Regex pattern to match
+
+**Returns:** Boolean - true if the pattern matches anywhere in the string
+
+**Example:**
+```jinja
+{{ regex_match(string="hello123", pattern="[0-9]+") }}
+{# Output: true #}
+
+{{ regex_match(string="hello", pattern="[0-9]+") }}
+{# Output: false #}
+
+{# Validate email format #}
+{% if regex_match(string=email, pattern="^[\\w.-]+@[\\w.-]+\\.\\w+$") %}
+  Valid email
+{% endif %}
+```
+
+#### `regex_find_all(string, pattern)`
+
+Find all matches of a regex pattern in a string.
+
+**Arguments:**
+- `string` (required): The input string
+- `pattern` (required): Regex pattern to match
+
+**Returns:** Array of all matches
+
+**Example:**
+```jinja
+{{ regex_find_all(string="a1b2c3", pattern="[0-9]+") | tojson }}
+{# Output: ["1", "2", "3"] #}
+
+{{ regex_find_all(string="hello world", pattern="\\w+") | tojson }}
+{# Output: ["hello", "world"] #}
+
+{# Extract all URLs #}
+{% set urls = regex_find_all(string=text, pattern="https?://[\\w./]+") %}
+Found {{ urls | length }} URLs
+```
+
+#### `substring(string, start, length)`
+
+Extract a substring by position.
+
+**Arguments:**
+- `string` (required): The input string
+- `start` (required): Start position (0-based, negative counts from end)
+- `length` (optional): Number of characters to extract (default: rest of string)
+
+**Returns:** The extracted substring
+
+**Example:**
+```jinja
+{{ substring(string="hello world", start=0, length=5) }}
+{# Output: hello #}
+
+{{ substring(string="hello world", start=6) }}
+{# Output: world #}
+
+{# Negative start counts from end #}
+{{ substring(string="hello world", start=-5) }}
+{# Output: world #}
+```
+
+#### `contains(string, substring)`
+
+Check if a string contains a substring.
+
+**Arguments:**
+- `string` (required): The input string
+- `substring` (required): Substring to search for
+
+**Returns:** Boolean - true if substring is found
+
+**Example:**
+```jinja
+{{ contains(string="hello world", substring="world") }}
+{# Output: true #}
+
+{{ contains(string="hello world", substring="foo") }}
+{# Output: false #}
+
+{% if contains(string=filename, substring=".txt") %}
+  Text file detected
+{% endif %}
+```
+
+#### `index_of(string, substring)`
+
+Find the position of a substring.
+
+**Arguments:**
+- `string` (required): The input string
+- `substring` (required): Substring to search for
+
+**Returns:** Position (0-based) or -1 if not found
+
+**Example:**
+```jinja
+{{ index_of(string="hello world", substring="world") }}
+{# Output: 6 #}
+
+{{ index_of(string="hello world", substring="foo") }}
+{# Output: -1 #}
+```
+
+#### `count_occurrences(string, substring)`
+
+Count occurrences of a substring.
+
+**Arguments:**
+- `string` (required): The input string
+- `substring` (required): Substring to count
+
+**Returns:** Number of non-overlapping occurrences
+
+**Example:**
+```jinja
+{{ count_occurrences(string="hello hello hello", substring="hello") }}
+{# Output: 3 #}
+
+{{ count_occurrences(string="abcabc", substring="abc") }}
+{# Output: 2 #}
+```
+
+#### `truncate(string, length, suffix)`
+
+Truncate a string with a suffix.
+
+**Arguments:**
+- `string` (required): The input string
+- `length` (required): Maximum length (including suffix)
+- `suffix` (optional): Suffix to add when truncated (default: `"..."`)
+
+**Returns:** Truncated string with suffix if it was truncated
+
+**Example:**
+```jinja
+{{ truncate(string="Hello World", length=8) }}
+{# Output: Hello... #}
+
+{{ truncate(string="Hello World", length=8, suffix=">>") }}
+{# Output: Hello >> #}
+
+{# Not truncated if already short enough #}
+{{ truncate(string="Hi", length=10) }}
+{# Output: Hi #}
+```
+
+#### `word_count(string)`
+
+Count words in a string.
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** Number of words (whitespace-separated)
+
+**Example:**
+```jinja
+{{ word_count(string="Hello World") }}
+{# Output: 2 #}
+
+{{ word_count(string="  one   two   three  ") }}
+{# Output: 3 #}
+```
+
+#### `split_lines(string)`
+
+Split a string into an array of lines.
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** Array of lines
+
+**Example:**
+```jinja
+{% set text = "line1
+line2
+line3" %}
+{{ split_lines(string=text) | tojson }}
+{# Output: ["line1", "line2", "line3"] #}
+
+{% for line in split_lines(string=content) %}
+  Line: {{ line }}
+{% endfor %}
+```
+
+#### `wrap(string, width, indent)`
+
+Word wrap text at a specified width.
+
+**Arguments:**
+- `string` (required): The input string to wrap
+- `width` (required): Maximum line width
+- `indent` (optional): Indentation string for wrapped lines (default: "")
+
+**Returns:** The wrapped text with newlines inserted
+
+```jinja
+{{ wrap(string="The quick brown fox jumps over the lazy dog", width=20) }}
+{# Output:
+The quick brown fox
+jumps over the lazy
+dog
+#}
+
+{{ wrap(string="Hello World Example", width=10, indent="  ") }}
+{# Output:
+Hello
+  World
+  Example
+#}
+```
+
+#### `center(string, width, char)`
+
+Center text with padding.
+
+**Arguments:**
+- `string` (required): The input string
+- `width` (required): Total width of the result
+- `char` (optional): Padding character (default: space)
+
+**Returns:** The centered string with padding
+
+```jinja
+{{ center(string="hello", width=11) }}
+{# Output: "   hello   " #}
+
+{{ center(string="hi", width=10, char="-") }}
+{# Output: "----hi----" #}
+
+{{ center(string="test", width=8, char="*") }}
+{# Output: "**test**" #}
+```
+
+#### `sentence_case(string)`
+
+Convert to Sentence case (first letter capitalized, rest lowercase).
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** The string in sentence case
+
+```jinja
+{{ sentence_case(string="hello world") }}
+{# Output: Hello world #}
+
+{{ sentence_case(string="HELLO WORLD") }}
+{# Output: Hello world #}
+
+{{ sentence_case(string="hELLO wORLD") }}
+{# Output: Hello world #}
+```
+
+#### `strip_html(string)`
+
+Remove HTML tags from a string.
+
+**Arguments:**
+- `string` (required): The input string with HTML
+
+**Returns:** The string with all HTML tags removed
+
+```jinja
+{{ strip_html(string="<p>Hello <b>World</b></p>") }}
+{# Output: Hello World #}
+
+{{ strip_html(string="<div class='test'>Content</div>") }}
+{# Output: Content #}
+
+{{ strip_html(string="<a href='link'>Click here</a>") }}
+{# Output: Click here #}
+```
+
+#### `strip_ansi(string)`
+
+Remove ANSI escape codes from a string.
+
+**Arguments:**
+- `string` (required): The input string with ANSI codes
+
+**Returns:** The string with all ANSI escape codes removed
+
+```jinja
+{# Remove color codes from terminal output #}
+{{ strip_ansi(string="\x1b[31mRed Text\x1b[0m") }}
+{# Output: Red Text #}
+
+{{ strip_ansi(string="\x1b[1;32mBold Green\x1b[0m Normal") }}
+{# Output: Bold Green Normal #}
+```
+
+#### `normalize_whitespace(string)`
+
+Normalize whitespace by collapsing multiple spaces/tabs/newlines into a single space.
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** The string with normalized whitespace (trimmed and collapsed)
+
+```jinja
+{{ normalize_whitespace(string="  hello   world  ") }}
+{# Output: hello world #}
+
+{{ normalize_whitespace(string="line1\n\n\nline2\t\tline3") }}
+{# Output: line1 line2 line3 #}
+
+{{ normalize_whitespace(string="  multiple   spaces   here  ") }}
+{# Output: multiple spaces here #}
+```
+
+#### `to_constant_case(string)`
+
+Convert to CONSTANT_CASE (uppercase with underscores).
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** The string in CONSTANT_CASE format
+
+```jinja
+{{ to_constant_case(string="hello world") }}
+{# Output: HELLO_WORLD #}
+
+{{ to_constant_case(string="helloWorld") }}
+{# Output: HELLO_WORLD #}
+
+{{ to_constant_case(string="hello-world-test") }}
+{# Output: HELLO_WORLD_TEST #}
+
+{{ to_constant_case(string="HTTPResponse") }}
+{# Output: HTTPRESPONSE #}
+```
+
+#### `pluralize(count, singular, plural)`
+
+Pluralize a word based on count.
+
+**Arguments:**
+- `count` (required): The count to check
+- `singular` (required): The singular form of the word
+- `plural` (optional): The plural form (default: singular + "s")
+
+**Returns:** Singular if count is 1, otherwise plural
+
+```jinja
+{{ pluralize(count=1, singular="item") }}
+{# Output: item #}
+
+{{ pluralize(count=5, singular="item") }}
+{# Output: items #}
+
+{{ pluralize(count=0, singular="child", plural="children") }}
+{# Output: children #}
+
+{# Use with variables #}
+You have {{ count }} {{ pluralize(count=count, singular="message", plural="messages") }}
+```
+
 ### System & Network Functions
 
 Access system information and perform network operations.
@@ -3809,6 +4886,209 @@ APP_PORT=3001
 {% else %}
 APP_PORT=8080
 {% endif %}
+```
+
+#### `get_os()`
+
+Get the operating system name.
+
+**Arguments:** None
+
+**Returns:** String containing the OS name (e.g., "linux", "macos", "windows")
+
+**Example:**
+```
+OS: {{ get_os() }}
+{# Output: OS: macos #}
+
+{% if get_os() == "linux" %}
+  Running on Linux
+{% elif get_os() == "macos" %}
+  Running on macOS
+{% endif %}
+```
+
+#### `get_arch()`
+
+Get the CPU architecture.
+
+**Arguments:** None
+
+**Returns:** String containing the architecture (e.g., "x86_64", "aarch64", "arm")
+
+**Example:**
+```
+Arch: {{ get_arch() }}
+{# Output: Arch: aarch64 #}
+
+{% if get_arch() == "aarch64" %}
+  Running on ARM64
+{% elif get_arch() == "x86_64" %}
+  Running on x86-64
+{% endif %}
+```
+
+#### `get_cwd()`
+
+Get the current working directory.
+
+**Arguments:** None
+
+**Returns:** String containing the current working directory path
+
+**Example:**
+```
+CWD: {{ get_cwd() }}
+{# Output: CWD: /home/user/projects/myapp #}
+```
+
+#### `cidr_contains(cidr, ip)`
+
+Check if an IP address is within a CIDR range.
+
+**Arguments:**
+- `cidr` (required) - CIDR notation (e.g., "192.168.1.0/24")
+- `ip` (required) - IP address to check
+
+**Returns:** Boolean (`true` if IP is in range, `false` otherwise)
+
+**Example:**
+```
+{% if cidr_contains(cidr="192.168.1.0/24", ip="192.168.1.100") %}
+  IP is in the subnet
+{% else %}
+  IP is outside the subnet
+{% endif %}
+{# Output: IP is in the subnet #}
+
+{% if cidr_contains(cidr="10.0.0.0/8", ip="192.168.1.1") %}
+  In private range
+{% else %}
+  Not in 10.x.x.x range
+{% endif %}
+{# Output: Not in 10.x.x.x range #}
+```
+
+#### `cidr_network(cidr)`
+
+Get the network address from a CIDR notation.
+
+**Arguments:**
+- `cidr` (required) - CIDR notation (e.g., "192.168.1.100/24")
+
+**Returns:** String containing the network address
+
+**Example:**
+```
+Network: {{ cidr_network(cidr="192.168.1.100/24") }}
+{# Output: Network: 192.168.1.0 #}
+
+Network: {{ cidr_network(cidr="10.20.30.40/16") }}
+{# Output: Network: 10.20.0.0 #}
+```
+
+#### `cidr_broadcast(cidr)`
+
+Get the broadcast address from a CIDR notation.
+
+**Arguments:**
+- `cidr` (required) - CIDR notation (e.g., "192.168.1.0/24")
+
+**Returns:** String containing the broadcast address
+
+**Example:**
+```
+Broadcast: {{ cidr_broadcast(cidr="192.168.1.0/24") }}
+{# Output: Broadcast: 192.168.1.255 #}
+
+Broadcast: {{ cidr_broadcast(cidr="10.0.0.0/8") }}
+{# Output: Broadcast: 10.255.255.255 #}
+```
+
+#### `cidr_netmask(cidr)`
+
+Get the netmask from a CIDR notation.
+
+**Arguments:**
+- `cidr` (required) - CIDR notation (e.g., "192.168.1.0/24")
+
+**Returns:** String containing the netmask
+
+**Example:**
+```
+Netmask: {{ cidr_netmask(cidr="192.168.1.0/24") }}
+{# Output: Netmask: 255.255.255.0 #}
+
+Netmask: {{ cidr_netmask(cidr="10.0.0.0/8") }}
+{# Output: Netmask: 255.0.0.0 #}
+
+Netmask: {{ cidr_netmask(cidr="172.16.0.0/12") }}
+{# Output: Netmask: 255.240.0.0 #}
+```
+
+#### `ip_to_int(ip)`
+
+Convert an IPv4 address to its integer representation.
+
+**Arguments:**
+- `ip` (required) - IPv4 address (e.g., "192.168.1.1")
+
+**Returns:** Integer representation of the IP address
+
+**Example:**
+```
+Integer: {{ ip_to_int(ip="192.168.1.1") }}
+{# Output: Integer: 3232235777 #}
+
+Integer: {{ ip_to_int(ip="0.0.0.0") }}
+{# Output: Integer: 0 #}
+
+Integer: {{ ip_to_int(ip="255.255.255.255") }}
+{# Output: Integer: 4294967295 #}
+```
+
+#### `int_to_ip(int)`
+
+Convert an integer to its IPv4 address representation.
+
+**Arguments:**
+- `int` (required) - Integer value (0 to 4294967295)
+
+**Returns:** String containing the IPv4 address
+
+**Example:**
+```
+IP: {{ int_to_ip(int=3232235777) }}
+{# Output: IP: 192.168.1.1 #}
+
+IP: {{ int_to_ip(int=0) }}
+{# Output: IP: 0.0.0.0 #}
+
+IP: {{ int_to_ip(int=4294967295) }}
+{# Output: IP: 255.255.255.255 #}
+```
+
+**Practical Example - Network Configuration:**
+```yaml
+network:
+  # CIDR operations
+  cidr: 192.168.1.0/24
+  network_addr: {{ cidr_network(cidr="192.168.1.0/24") }}
+  broadcast: {{ cidr_broadcast(cidr="192.168.1.0/24") }}
+  netmask: {{ cidr_netmask(cidr="192.168.1.0/24") }}
+
+  # IP validation
+  {% set client_ip = "192.168.1.50" %}
+  {% if cidr_contains(cidr="192.168.1.0/24", ip=client_ip) %}
+  client_allowed: true
+  {% else %}
+  client_allowed: false
+  {% endif %}
+
+  # System info
+  os: {{ get_os() }}
+  arch: {{ get_arch() }}
+  cwd: {{ get_cwd() }}
 ```
 
 **Practical Example - Dynamic Application Config:**

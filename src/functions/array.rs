@@ -4,9 +4,14 @@
 //! - Counting elements
 //! - Chunking arrays into groups
 //! - Zipping arrays together
+//! - Taking/dropping elements
+//! - Finding elements
+//! - Filtering by conditions
+//! - Set operations (intersection, difference, union)
 
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
+use std::collections::HashSet;
 
 /// Count array items (alias for length)
 ///
@@ -465,4 +470,679 @@ pub fn array_flatten_fn(kwargs: Kwargs) -> Result<Value, Error> {
     }
 
     Ok(Value::from_serialize(&flattened))
+}
+
+/// Take first N elements from array
+///
+/// # Arguments
+///
+/// * `array` (required) - Source array
+/// * `n` (required) - Number of elements to take
+///
+/// # Returns
+///
+/// Returns a new array with the first N elements
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_take(array=[1, 2, 3, 4, 5], n=3) }}
+/// {# Output: [1, 2, 3] #}
+///
+/// {{ array_take(array=[1, 2], n=5) }}
+/// {# Output: [1, 2] #}
+/// ```
+pub fn array_take_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array: Value = kwargs.get("array")?;
+    let n: usize = kwargs.get("n")?;
+
+    if !matches!(array.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_take requires an array",
+        ));
+    }
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+
+    if let Ok(seq) = array.try_iter() {
+        for (i, item) in seq.enumerate() {
+            if i >= n {
+                break;
+            }
+            let json_value: serde_json::Value = serde_json::to_value(&item).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert item: {}", e),
+                )
+            })?;
+            result.push(json_value);
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+/// Skip first N elements from array
+///
+/// # Arguments
+///
+/// * `array` (required) - Source array
+/// * `n` (required) - Number of elements to skip
+///
+/// # Returns
+///
+/// Returns a new array with elements after the first N
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_drop(array=[1, 2, 3, 4, 5], n=2) }}
+/// {# Output: [3, 4, 5] #}
+///
+/// {{ array_drop(array=[1, 2], n=5) }}
+/// {# Output: [] #}
+/// ```
+pub fn array_drop_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array: Value = kwargs.get("array")?;
+    let n: usize = kwargs.get("n")?;
+
+    if !matches!(array.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_drop requires an array",
+        ));
+    }
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+
+    if let Ok(seq) = array.try_iter() {
+        for (i, item) in seq.enumerate() {
+            if i < n {
+                continue;
+            }
+            let json_value: serde_json::Value = serde_json::to_value(&item).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert item: {}", e),
+                )
+            })?;
+            result.push(json_value);
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+/// Find index of element in array
+///
+/// # Arguments
+///
+/// * `array` (required) - Array to search
+/// * `value` (required) - Value to find
+///
+/// # Returns
+///
+/// Returns the index (0-based) or -1 if not found
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_index_of(array=["a", "b", "c"], value="b") }}
+/// {# Output: 1 #}
+///
+/// {{ array_index_of(array=[1, 2, 3], value=5) }}
+/// {# Output: -1 #}
+/// ```
+pub fn array_index_of_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array: Value = kwargs.get("array")?;
+    let value: Value = kwargs.get("value")?;
+
+    if !matches!(array.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_index_of requires an array",
+        ));
+    }
+
+    let search_value: serde_json::Value = serde_json::to_value(&value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert value: {}", e),
+        )
+    })?;
+
+    if let Ok(seq) = array.try_iter() {
+        for (i, item) in seq.enumerate() {
+            let item_value: serde_json::Value = serde_json::to_value(&item).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert item: {}", e),
+                )
+            })?;
+
+            if item_value == search_value {
+                return Ok(Value::from(i as i64));
+            }
+        }
+    }
+
+    Ok(Value::from(-1_i64))
+}
+
+/// Find first matching object in array
+///
+/// # Arguments
+///
+/// * `array` (required) - Array of objects to search
+/// * `key` (required) - Key to match
+/// * `value` (required) - Value to match
+///
+/// # Returns
+///
+/// Returns the first matching object or null if not found
+///
+/// # Example
+///
+/// ```jinja
+/// {% set users = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}] %}
+/// {{ array_find(array=users, key="id", value=2) }}
+/// {# Output: {"id": 2, "name": "Bob"} #}
+///
+/// {{ array_find(array=users, key="id", value=99) }}
+/// {# Output: null #}
+/// ```
+pub fn array_find_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array: Value = kwargs.get("array")?;
+    let key: String = kwargs.get("key")?;
+    let value: Value = kwargs.get("value")?;
+
+    if !matches!(array.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_find requires an array",
+        ));
+    }
+
+    let search_value: serde_json::Value = serde_json::to_value(&value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert value: {}", e),
+        )
+    })?;
+
+    if let Ok(seq) = array.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert item: {}", e),
+                )
+            })?;
+
+            if let Some(obj) = json_value.as_object()
+                && let Some(item_val) = obj.get(&key)
+                && *item_val == search_value
+            {
+                return Ok(Value::from_serialize(&json_value));
+            }
+        }
+    }
+
+    Ok(Value::from(()))
+}
+
+/// Filter array by key with comparison operator
+///
+/// # Arguments
+///
+/// * `array` (required) - Array of objects to filter
+/// * `key` (required) - Key to compare
+/// * `op` (required) - Operator: "eq", "ne", "gt", "lt", "gte", "lte", "contains"
+/// * `value` (required) - Value to compare against
+///
+/// # Returns
+///
+/// Returns filtered array of matching objects
+///
+/// # Example
+///
+/// ```jinja
+/// {% set items = [{"price": 10}, {"price": 20}, {"price": 30}] %}
+/// {{ array_filter_by(array=items, key="price", op="gt", value=15) }}
+/// {# Output: [{"price": 20}, {"price": 30}] #}
+///
+/// {% set users = [{"name": "Alice"}, {"name": "Bob"}] %}
+/// {{ array_filter_by(array=users, key="name", op="contains", value="lic") }}
+/// {# Output: [{"name": "Alice"}] #}
+/// ```
+pub fn array_filter_by_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array: Value = kwargs.get("array")?;
+    let key: String = kwargs.get("key")?;
+    let op: String = kwargs.get("op")?;
+    let value: Value = kwargs.get("value")?;
+
+    if !matches!(array.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_filter_by requires an array",
+        ));
+    }
+
+    let compare_value: serde_json::Value = serde_json::to_value(&value).map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to convert value: {}", e),
+        )
+    })?;
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+
+    if let Ok(seq) = array.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert item: {}", e),
+                )
+            })?;
+
+            if let Some(obj) = json_value.as_object()
+                && let Some(item_val) = obj.get(&key)
+            {
+                let matches = match op.as_str() {
+                    "eq" => *item_val == compare_value,
+                    "ne" => *item_val != compare_value,
+                    "gt" => compare_numeric(item_val, &compare_value, |a, b| a > b),
+                    "lt" => compare_numeric(item_val, &compare_value, |a, b| a < b),
+                    "gte" => compare_numeric(item_val, &compare_value, |a, b| a >= b),
+                    "lte" => compare_numeric(item_val, &compare_value, |a, b| a <= b),
+                    "contains" => {
+                        if let (Some(s1), Some(s2)) = (item_val.as_str(), compare_value.as_str()) {
+                            s1.contains(s2)
+                        } else {
+                            false
+                        }
+                    }
+                    _ => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidOperation,
+                            format!(
+                                "Invalid operator '{}'. Use: eq, ne, gt, lt, gte, lte, contains",
+                                op
+                            ),
+                        ));
+                    }
+                };
+
+                if matches {
+                    result.push(json_value);
+                }
+            }
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+fn compare_numeric<F>(a: &serde_json::Value, b: &serde_json::Value, cmp: F) -> bool
+where
+    F: Fn(f64, f64) -> bool,
+{
+    match (a.as_f64(), b.as_f64()) {
+        (Some(a_num), Some(b_num)) => cmp(a_num, b_num),
+        _ => false,
+    }
+}
+
+/// Extract nested key from array of objects (pluck)
+///
+/// # Arguments
+///
+/// * `array` (required) - Array of objects
+/// * `key` (required) - Key path to extract (supports dot notation like "user.name")
+///
+/// # Returns
+///
+/// Returns array of extracted values
+///
+/// # Example
+///
+/// ```jinja
+/// {% set users = [{"name": "Alice"}, {"name": "Bob"}] %}
+/// {{ array_pluck(array=users, key="name") }}
+/// {# Output: ["Alice", "Bob"] #}
+///
+/// {% set data = [{"user": {"name": "Alice"}}, {"user": {"name": "Bob"}}] %}
+/// {{ array_pluck(array=data, key="user.name") }}
+/// {# Output: ["Alice", "Bob"] #}
+/// ```
+pub fn array_pluck_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array: Value = kwargs.get("array")?;
+    let key: String = kwargs.get("key")?;
+
+    if !matches!(array.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_pluck requires an array",
+        ));
+    }
+
+    let key_parts: Vec<&str> = key.split('.').collect();
+    let mut result: Vec<serde_json::Value> = Vec::new();
+
+    if let Ok(seq) = array.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to convert item: {}", e),
+                )
+            })?;
+
+            // Navigate through the key path
+            let mut current = &json_value;
+            let mut found = true;
+
+            for part in &key_parts {
+                if let Some(obj) = current.as_object() {
+                    if let Some(val) = obj.get(*part) {
+                        current = val;
+                    } else {
+                        found = false;
+                        break;
+                    }
+                } else {
+                    found = false;
+                    break;
+                }
+            }
+
+            if found {
+                result.push(current.clone());
+            } else {
+                result.push(serde_json::Value::Null);
+            }
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+// ==================== Set Operations ====================
+
+/// Get intersection of two arrays (common elements)
+///
+/// # Arguments
+///
+/// * `array1` (required) - First array
+/// * `array2` (required) - Second array
+///
+/// # Returns
+///
+/// Returns array of elements present in both arrays
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_intersection(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) }}
+/// {# Output: [3, 4] #}
+///
+/// {{ array_intersection(array1=["a", "b", "c"], array2=["b", "c", "d"]) }}
+/// {# Output: ["b", "c"] #}
+/// ```
+pub fn array_intersection_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array1: Value = kwargs.get("array1")?;
+    let array2: Value = kwargs.get("array2")?;
+
+    if !matches!(array1.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_intersection requires array1 to be an array",
+        ));
+    }
+    if !matches!(array2.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_intersection requires array2 to be an array",
+        ));
+    }
+
+    // Convert array2 to a set for O(1) lookup
+    let mut set2: HashSet<String> = HashSet::new();
+    if let Ok(seq) = array2.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            set2.insert(serde_json::to_string(&json_value).unwrap_or_default());
+        }
+    }
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    if let Ok(seq) = array1.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            let item_str = serde_json::to_string(&json_value).unwrap_or_default();
+
+            if set2.contains(&item_str) && seen.insert(item_str) {
+                result.push(json_value);
+            }
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+/// Get difference of two arrays (elements in first but not in second)
+///
+/// # Arguments
+///
+/// * `array1` (required) - First array
+/// * `array2` (required) - Second array
+///
+/// # Returns
+///
+/// Returns array of elements in array1 but not in array2
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_difference(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) }}
+/// {# Output: [1, 2] #}
+///
+/// {{ array_difference(array1=["a", "b", "c"], array2=["b"]) }}
+/// {# Output: ["a", "c"] #}
+/// ```
+pub fn array_difference_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array1: Value = kwargs.get("array1")?;
+    let array2: Value = kwargs.get("array2")?;
+
+    if !matches!(array1.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_difference requires array1 to be an array",
+        ));
+    }
+    if !matches!(array2.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_difference requires array2 to be an array",
+        ));
+    }
+
+    // Convert array2 to a set for O(1) lookup
+    let mut set2: HashSet<String> = HashSet::new();
+    if let Ok(seq) = array2.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            set2.insert(serde_json::to_string(&json_value).unwrap_or_default());
+        }
+    }
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    if let Ok(seq) = array1.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            let item_str = serde_json::to_string(&json_value).unwrap_or_default();
+
+            if !set2.contains(&item_str) && seen.insert(item_str) {
+                result.push(json_value);
+            }
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+/// Get union of two arrays (all unique elements from both)
+///
+/// # Arguments
+///
+/// * `array1` (required) - First array
+/// * `array2` (required) - Second array
+///
+/// # Returns
+///
+/// Returns array of all unique elements from both arrays
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_union(array1=[1, 2, 3], array2=[3, 4, 5]) }}
+/// {# Output: [1, 2, 3, 4, 5] #}
+///
+/// {{ array_union(array1=["a", "b"], array2=["b", "c"]) }}
+/// {# Output: ["a", "b", "c"] #}
+/// ```
+pub fn array_union_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array1: Value = kwargs.get("array1")?;
+    let array2: Value = kwargs.get("array2")?;
+
+    if !matches!(array1.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_union requires array1 to be an array",
+        ));
+    }
+    if !matches!(array2.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_union requires array2 to be an array",
+        ));
+    }
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    // Add all unique items from array1
+    if let Ok(seq) = array1.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            let item_str = serde_json::to_string(&json_value).unwrap_or_default();
+
+            if seen.insert(item_str) {
+                result.push(json_value);
+            }
+        }
+    }
+
+    // Add unique items from array2 that aren't in array1
+    if let Ok(seq) = array2.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            let item_str = serde_json::to_string(&json_value).unwrap_or_default();
+
+            if seen.insert(item_str) {
+                result.push(json_value);
+            }
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
+}
+
+/// Get symmetric difference of two arrays (elements in either but not both)
+///
+/// # Arguments
+///
+/// * `array1` (required) - First array
+/// * `array2` (required) - Second array
+///
+/// # Returns
+///
+/// Returns array of elements in either array but not in both
+///
+/// # Example
+///
+/// ```jinja
+/// {{ array_symmetric_difference(array1=[1, 2, 3, 4], array2=[3, 4, 5, 6]) }}
+/// {# Output: [1, 2, 5, 6] #}
+///
+/// {{ array_symmetric_difference(array1=["a", "b", "c"], array2=["b", "c", "d"]) }}
+/// {# Output: ["a", "d"] #}
+/// ```
+pub fn array_symmetric_difference_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let array1: Value = kwargs.get("array1")?;
+    let array2: Value = kwargs.get("array2")?;
+
+    if !matches!(array1.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_symmetric_difference requires array1 to be an array",
+        ));
+    }
+    if !matches!(array2.kind(), minijinja::value::ValueKind::Seq) {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "array_symmetric_difference requires array2 to be an array",
+        ));
+    }
+
+    // Convert both arrays to sets
+    let mut set1: HashSet<String> = HashSet::new();
+    let mut vec1: Vec<serde_json::Value> = Vec::new();
+    if let Ok(seq) = array1.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            let item_str = serde_json::to_string(&json_value).unwrap_or_default();
+            if set1.insert(item_str) {
+                vec1.push(json_value);
+            }
+        }
+    }
+
+    let mut set2: HashSet<String> = HashSet::new();
+    let mut vec2: Vec<serde_json::Value> = Vec::new();
+    if let Ok(seq) = array2.try_iter() {
+        for item in seq {
+            let json_value: serde_json::Value = serde_json::to_value(&item).unwrap_or_default();
+            let item_str = serde_json::to_string(&json_value).unwrap_or_default();
+            if set2.insert(item_str) {
+                vec2.push(json_value);
+            }
+        }
+    }
+
+    let mut result: Vec<serde_json::Value> = Vec::new();
+
+    // Add items from array1 that are not in array2
+    for item in vec1 {
+        let item_str = serde_json::to_string(&item).unwrap_or_default();
+        if !set2.contains(&item_str) {
+            result.push(item);
+        }
+    }
+
+    // Add items from array2 that are not in array1
+    for item in vec2 {
+        let item_str = serde_json::to_string(&item).unwrap_or_default();
+        if !set1.contains(&item_str) {
+            result.push(item);
+        }
+    }
+
+    Ok(Value::from_serialize(&result))
 }
