@@ -182,7 +182,7 @@ jobs:
       - name: Build DEB package (aarch64)
         if: matrix.deb_arch == 'arm64'
         run: |
-          cargo deb --no-build --target ${{ matrix.target }}
+          cargo deb --no-build --no-strip --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/debian/*.deb tmpltool_${{ needs.semantic-release.outputs.new_release_version }}_${{ matrix.deb_arch }}.deb
 
       - name: Upload artifact (Linux/macOS)
