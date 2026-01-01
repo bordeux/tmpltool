@@ -51,6 +51,7 @@ hash generation (MD5, SHA1, SHA256, SHA512), filesystem operations, \
 data parsing (JSON, YAML, TOML), validation functions, and more."""
 section = "utils"
 priority = "optional"
+depends = "libc6"
 assets = [
     ["target/release/tmpltool", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/tmpltool/README.md", "644"],
