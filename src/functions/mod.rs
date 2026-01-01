@@ -87,6 +87,7 @@ pub mod random;
 pub mod serialization;
 pub mod statistics;
 pub mod system;
+pub mod url;
 pub mod uuid_gen;
 pub mod validation;
 
@@ -304,6 +305,12 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("k8s_resource_request", kubernetes::k8s_resource_request_fn);
     env.add_function("k8s_label_safe", kubernetes::k8s_label_safe_fn);
     env.add_function("k8s_dns_label_safe", kubernetes::k8s_dns_label_safe_fn);
+
+    // URL and HTTP utility functions
+    env.add_function("basic_auth", url::basic_auth_fn);
+    env.add_function("parse_url", url::parse_url_fn);
+    env.add_function("build_url", url::build_url_fn);
+    env.add_function("query_string", url::query_string_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);

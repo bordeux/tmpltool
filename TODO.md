@@ -238,10 +238,10 @@ This document contains ideas for new functions and features to make tmpltool mor
 ### 🌐 Web & API Helpers
 *For nginx, apache, API configs*
 
-- [ ] `basic_auth(username, password)` - Generate basic auth header
-- [ ] `parse_url(url)` - Parse URL into components
-- [ ] `build_url(scheme, host, port, path, query)` - Build URL from components
-- [ ] `query_string(params)` - Build URL query string from object
+- [x] `basic_auth(username, password)` - Generate basic auth header
+- [x] `parse_url(url)` - Parse URL into components
+- [x] `build_url(scheme, host, port, path, query)` - Build URL from components
+- [x] `query_string(params)` - Build URL query string from object
 
 ### ✅ Debugging & Development Functions
 *Helpful during template development*
