@@ -290,9 +290,9 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 ## Platform & Distribution
 
 - [ ] Publish to crates.io for `cargo install tmpltool`
-- [ ] Create Homebrew formula for macOS
-- [ ] Create APT/DEB package for Debian/Ubuntu
-- [ ] Create RPM package for Fedora/RHEL
+- [x] Create Homebrew formula for macOS
+- [x] Create APT/DEB package for Debian/Ubuntu
+- [x] Create RPM package for Fedora/RHEL
 - [ ] Create Chocolatey package for Windows
 - [ ] Create Nix package
 - [ ] Create Alpine APK package

@@ -74,6 +74,8 @@ jobs:
             os: ubuntu-latest
             artifact_name: tmpltool
             asset_name: tmpltool-linux-x86_64
+            deb_arch: amd64
+            rpm_arch: x86_64
 
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
@@ -84,6 +86,8 @@ jobs:
             os: ubuntu-latest
             artifact_name: tmpltool
             asset_name: tmpltool-linux-aarch64
+            deb_arch: arm64
+            rpm_arch: aarch64
 
           - target: x86_64-apple-darwin
             os: macos-latest
@@ -165,12 +169,52 @@ jobs:
           cd target/${{ matrix.target }}/release
           Compress-Archive -Path ${{ matrix.artifact_name }} -DestinationPath ../../../${{ matrix.asset_name }}.zip
 
+      - name: Install cargo-deb (Linux DEB)
+        if: matrix.deb_arch != ''
+        run: cargo install cargo-deb
+
+      - name: Build DEB package (x86_64)
+        if: matrix.deb_arch == 'amd64'
+        run: |
+          cargo deb --no-build --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/debian/*.deb tmpltool_${{ needs.semantic-release.outputs.new_release_version }}_${{ matrix.deb_arch }}.deb
+
+      - name: Build DEB package (aarch64)
+        if: matrix.deb_arch == 'arm64'
+        run: |
+          cargo deb --no-build --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/debian/*.deb tmpltool_${{ needs.semantic-release.outputs.new_release_version }}_${{ matrix.deb_arch }}.deb
+
       - name: Upload artifact (Linux/macOS)
         if: matrix.os != 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}
           path: ${{ matrix.asset_name }}.tar.gz
+
+      - name: Upload DEB artifact
+        if: matrix.deb_arch != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmpltool-deb-${{ matrix.deb_arch }}
+          path: tmpltool_${{ needs.semantic-release.outputs.new_release_version }}_${{ matrix.deb_arch }}.deb
+
+      - name: Install cargo-generate-rpm (Linux RPM)
+        if: matrix.rpm_arch != ''
+        run: cargo install cargo-generate-rpm
+
+      - name: Build RPM package
+        if: matrix.rpm_arch != ''
+        run: |
+          cargo generate-rpm --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/generate-rpm/*.rpm tmpltool-${{ needs.semantic-release.outputs.new_release_version }}-1.${{ matrix.rpm_arch }}.rpm
+
+      - name: Upload RPM artifact
+        if: matrix.rpm_arch != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmpltool-rpm-${{ matrix.rpm_arch }}
+          path: tmpltool-${{ needs.semantic-release.outputs.new_release_version }}-1.${{ matrix.rpm_arch }}.rpm
 
       - name: Upload artifact (Windows)
         if: matrix.os == 'windows-latest'
@@ -241,3 +285,16 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  update-homebrew:
+    name: Trigger Homebrew Formula Update
+    needs: [semantic-release, upload-release-assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger homebrew-tap workflow
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.HOMEBREW_TAP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/bordeux/homebrew-tap/actions/workflows/update-formulas.yml/dispatches \
+            -d '{"ref":"main","inputs":{"project":"tmpltool"}}'
