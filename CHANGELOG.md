@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/bordeux/tmpltool/compare/v1.1.1...v1.1.2) (2026-01-01)
+
+
+### Bug Fixes
+
+* upgrade docker rust version ([cc38acb](https://github.com/bordeux/tmpltool/commit/cc38acb4f6fd48d86dbf476fbbc73074543a3232))
+
 ## [1.1.1](https://github.com/bordeux/tmpltool/compare/v1.1.0...v1.1.1) (2026-01-01)
 
 
