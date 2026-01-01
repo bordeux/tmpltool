@@ -75,6 +75,7 @@ jobs:
             artifact_name: tmpltool
             asset_name: tmpltool-linux-x86_64
             deb_arch: amd64
+            rpm_arch: x86_64
 
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
@@ -86,6 +87,7 @@ jobs:
             artifact_name: tmpltool
             asset_name: tmpltool-linux-aarch64
             deb_arch: arm64
+            rpm_arch: aarch64
 
           - target: x86_64-apple-darwin
             os: macos-latest
@@ -196,6 +198,23 @@ jobs:
         with:
           name: tmpltool-deb-${{ matrix.deb_arch }}
           path: tmpltool_${{ needs.semantic-release.outputs.new_release_version }}_${{ matrix.deb_arch }}.deb
+
+      - name: Install cargo-generate-rpm (Linux RPM)
+        if: matrix.rpm_arch != ''
+        run: cargo install cargo-generate-rpm
+
+      - name: Build RPM package
+        if: matrix.rpm_arch != ''
+        run: |
+          cargo generate-rpm --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/generate-rpm/*.rpm tmpltool-${{ needs.semantic-release.outputs.new_release_version }}-1.${{ matrix.rpm_arch }}.rpm
+
+      - name: Upload RPM artifact
+        if: matrix.rpm_arch != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmpltool-rpm-${{ matrix.rpm_arch }}
+          path: tmpltool-${{ needs.semantic-release.outputs.new_release_version }}-1.${{ matrix.rpm_arch }}.rpm
 
       - name: Upload artifact (Windows)
         if: matrix.os == 'windows-latest'

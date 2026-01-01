@@ -56,3 +56,10 @@ assets = [
     ["README.md", "usr/share/doc/tmpltool/README.md", "644"],
     ["LICENSE", "usr/share/doc/tmpltool/LICENSE", "644"],
 ]
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/tmpltool", dest = "/usr/bin/tmpltool", mode = "0755" },
+    { source = "README.md", dest = "/usr/share/doc/tmpltool/README.md", mode = "0644" },
+    { source = "LICENSE", dest = "/usr/share/doc/tmpltool/LICENSE", mode = "0644" },
+]
