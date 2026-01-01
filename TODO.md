@@ -106,13 +106,13 @@ This document contains ideas for new functions and features to make tmpltool mor
 ### 🔢 Math & Calculation Functions
 *Useful for resource calculations, sizing configs*
 
-- [ ] `min(a, b)` - Return minimum value
-- [ ] `max(a, b)` - Return maximum value
-- [ ] `abs(number)` - Absolute value
-- [ ] `round(number, decimals)` - Round to N decimal places
-- [ ] `ceil(number)` - Round up
-- [ ] `floor(number)` - Round down
-- [ ] `percentage(value, total)` - Calculate percentage
+- [x] `min(a, b)` - Return minimum value
+- [x] `max(a, b)` - Return maximum value
+- [x] `abs(number)` - Absolute value
+- [x] `round(number, decimals)` - Round to N decimal places
+- [x] `ceil(number)` - Round up
+- [x] `floor(number)` - Round down
+- [x] `percentage(value, total)` - Calculate percentage
 - [ ] `bytes_to_mb(bytes)` - Convert bytes to megabytes
 - [ ] `mb_to_bytes(mb)` - Convert megabytes to bytes
 

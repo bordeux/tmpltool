@@ -77,6 +77,7 @@ pub mod environment;
 pub mod exec;
 pub mod filesystem;
 pub mod hash;
+pub mod math;
 pub mod network;
 pub mod object;
 pub mod predicates;
@@ -281,6 +282,15 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("array_group_by", array::array_group_by_fn);
     env.add_function("array_unique", array::array_unique_fn);
     env.add_function("array_flatten", array::array_flatten_fn);
+
+    // Math functions
+    env.add_function("min", math::min_fn);
+    env.add_function("max", math::max_fn);
+    env.add_function("abs", math::abs_fn);
+    env.add_function("round", math::round_fn);
+    env.add_function("ceil", math::ceil_fn);
+    env.add_function("floor", math::floor_fn);
+    env.add_function("percentage", math::percentage_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);
