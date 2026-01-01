@@ -239,12 +239,9 @@ This document contains ideas for new functions and features to make tmpltool mor
 *For nginx, apache, API configs*
 
 - [ ] `basic_auth(username, password)` - Generate basic auth header
-- [ ] `jwt_decode(token)` - Decode JWT token (header and payload only)
 - [ ] `parse_url(url)` - Parse URL into components
-- [ ] `build_url(scheme, host, port, path)` - Build URL from components
+- [ ] `build_url(scheme, host, port, path, query)` - Build URL from components
 - [ ] `query_string(params)` - Build URL query string from object
-- [ ] `mime_type(filename)` - Guess MIME type from filename
-- [ ] `http_status_text(code)` - Get HTTP status text from code
 
 ### ✅ Debugging & Development Functions
 *Helpful during template development*
