@@ -201,7 +201,7 @@ pub fn array_median_fn(kwargs: Kwargs) -> Result<Value, Error> {
     numbers.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
     let len = numbers.len();
-    let median = if len.is_multiple_of(2) {
+    let median = if len % 2 == 0 {
         // Even length: average of two middle values
         (numbers[len / 2 - 1] + numbers[len / 2]) / 2.0
     } else {

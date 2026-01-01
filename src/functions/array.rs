@@ -327,17 +327,17 @@ pub fn array_group_by_fn(kwargs: Kwargs) -> Result<Value, Error> {
             })?;
 
             // Get the key value as string
-            if let Some(obj) = json_value.as_object()
-                && let Some(key_val) = obj.get(&key)
-            {
-                let group_key = match key_val {
-                    serde_json::Value::String(s) => s.clone(),
-                    serde_json::Value::Number(n) => n.to_string(),
-                    serde_json::Value::Bool(b) => b.to_string(),
-                    _ => "null".to_string(),
-                };
+            if let Some(obj) = json_value.as_object() {
+                if let Some(key_val) = obj.get(&key) {
+                    let group_key = match key_val {
+                        serde_json::Value::String(s) => s.clone(),
+                        serde_json::Value::Number(n) => n.to_string(),
+                        serde_json::Value::Bool(b) => b.to_string(),
+                        _ => "null".to_string(),
+                    };
 
-                groups.entry(group_key).or_default().push(json_value);
+                    groups.entry(group_key).or_default().push(json_value);
+                }
             }
         }
     }
