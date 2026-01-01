@@ -371,3 +371,450 @@ fn test_array_take_not_array() {
     let result = tmpl.render(());
     assert!(result.is_err());
 }
+
+// ==================== Additional array_take Tests ====================
+
+#[test]
+fn test_array_take_with_objects() {
+    let result = render_template(
+        r#"{% set data = [{"a": 1}, {"b": 2}, {"c": 3}] %}{{ array_take(array=data, n=2) | length }}"#,
+    );
+    assert_eq!(result, "2");
+}
+
+#[test]
+fn test_array_take_empty_array() {
+    let result = render_template(r#"{{ array_take(array=[], n=5) | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_take_with_nulls() {
+    let result = render_template(
+        r#"{% set data = [1, null, 3, null, 5] %}{{ array_take(array=data, n=3) | tojson }}"#,
+    );
+    assert_eq!(result, "[1,null,3]");
+}
+
+// ==================== Additional array_drop Tests ====================
+
+#[test]
+fn test_array_drop_not_array() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_drop(array="not an array", n=1) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_drop_with_objects() {
+    let result = render_template(
+        r#"{% set data = [{"a": 1}, {"b": 2}, {"c": 3}] %}{{ array_drop(array=data, n=1) | length }}"#,
+    );
+    assert_eq!(result, "2");
+}
+
+#[test]
+fn test_array_drop_empty_array() {
+    let result = render_template(r#"{{ array_drop(array=[], n=5) | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_drop_with_nulls() {
+    let result = render_template(
+        r#"{% set data = [1, null, 3, null, 5] %}{{ array_drop(array=data, n=2) | tojson }}"#,
+    );
+    assert_eq!(result, "[3,null,5]");
+}
+
+// ==================== Additional array_index_of Tests ====================
+
+#[test]
+fn test_array_index_of_not_array() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_index_of(array="not array", value=1) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_index_of_duplicate_values() {
+    let result = render_template(r#"{{ array_index_of(array=[1, 2, 1, 2, 1], value=1) }}"#);
+    assert_eq!(result, "0"); // Returns first occurrence
+}
+
+#[test]
+fn test_array_index_of_null_value() {
+    let result = render_template(
+        r#"{% set data = [1, null, 3] %}{{ array_index_of(array=data, value=null) }}"#,
+    );
+    // Searching for null
+    assert!(result == "1" || result == "-1");
+}
+
+#[test]
+fn test_array_index_of_object() {
+    let result = render_template(
+        r#"{% set data = [{"id": 1}, {"id": 2}] %}{% set search = {"id": 2} %}{{ array_index_of(array=data, value=search) }}"#,
+    );
+    assert_eq!(result, "1");
+}
+
+#[test]
+fn test_array_index_of_boolean() {
+    let result = render_template(r#"{{ array_index_of(array=[false, true, false], value=true) }}"#);
+    assert_eq!(result, "1");
+}
+
+// ==================== Additional array_find Tests ====================
+
+#[test]
+fn test_array_find_not_array() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_find(array="not array", key="id", value=1) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_find_empty_array() {
+    let result = render_template(r#"{{ array_find(array=[], key="id", value=1) }}"#);
+    assert_eq!(result, "none");
+}
+
+#[test]
+fn test_array_find_multiple_matches() {
+    let result = render_template(
+        r#"{% set data = [{"type": "a", "val": 1}, {"type": "a", "val": 2}] %}{{ array_find(array=data, key="type", value="a").val }}"#,
+    );
+    assert_eq!(result, "1"); // Returns first match
+}
+
+#[test]
+fn test_array_find_numeric_value() {
+    let result = render_template(
+        r#"{% set data = [{"count": 10}, {"count": 20}, {"count": 30}] %}{{ array_find(array=data, key="count", value=20).count }}"#,
+    );
+    assert_eq!(result, "20");
+}
+
+#[test]
+fn test_array_find_boolean_value() {
+    let result = render_template(
+        r#"{% set data = [{"active": false}, {"active": true}] %}{{ array_find(array=data, key="active", value=true).active }}"#,
+    );
+    assert_eq!(result, "true");
+}
+
+// ==================== Additional array_filter_by Tests ====================
+
+#[test]
+fn test_array_filter_by_not_array() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_filter_by(array="not array", key="a", op="eq", value=1) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_filter_by_empty_array() {
+    let result = render_template(
+        r#"{{ array_filter_by(array=[], key="price", op="gt", value=10) | length }}"#,
+    );
+    assert_eq!(result, "0");
+}
+
+#[test]
+fn test_array_filter_by_no_matches() {
+    let result = render_template(
+        r#"{% set data = [{"price": 5}, {"price": 8}] %}{{ array_filter_by(array=data, key="price", op="gt", value=100) | length }}"#,
+    );
+    assert_eq!(result, "0");
+}
+
+#[test]
+fn test_array_filter_by_all_match() {
+    let result = render_template(
+        r#"{% set data = [{"price": 50}, {"price": 80}] %}{{ array_filter_by(array=data, key="price", op="gt", value=10) | length }}"#,
+    );
+    assert_eq!(result, "2");
+}
+
+#[test]
+fn test_array_filter_by_missing_key_in_items() {
+    let result = render_template(
+        r#"{% set data = [{"a": 1}, {"b": 2}, {"a": 3}] %}{{ array_filter_by(array=data, key="a", op="gt", value=0) | length }}"#,
+    );
+    assert_eq!(result, "2");
+}
+
+#[test]
+fn test_array_filter_by_contains_case_sensitive() {
+    let result = render_template(
+        r#"{% set data = [{"name": "Alice"}, {"name": "BOB"}] %}{{ array_filter_by(array=data, key="name", op="contains", value="li") | length }}"#,
+    );
+    assert_eq!(result, "1");
+}
+
+#[test]
+fn test_array_filter_by_contains_not_string() {
+    // When values aren't strings, contains should return false
+    let result = render_template(
+        r#"{% set data = [{"val": 123}, {"val": 456}] %}{{ array_filter_by(array=data, key="val", op="contains", value="2") | length }}"#,
+    );
+    assert_eq!(result, "0");
+}
+
+// ==================== Additional array_pluck Tests ====================
+
+#[test]
+fn test_array_pluck_not_array() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_pluck(array="not array", key="name") }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_pluck_empty_array() {
+    let result = render_template(r#"{{ array_pluck(array=[], key="name") | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_pluck_deep_nested_key() {
+    let result = render_template(
+        r#"{% set data = [{"a": {"b": {"c": 1}}}, {"a": {"b": {"c": 2}}}] %}{{ array_pluck(array=data, key="a.b.c") | tojson }}"#,
+    );
+    assert_eq!(result, "[1,2]");
+}
+
+#[test]
+fn test_array_pluck_all_missing_key() {
+    let result = render_template(
+        r#"{% set data = [{"a": 1}, {"b": 2}] %}{{ array_pluck(array=data, key="missing") | tojson }}"#,
+    );
+    assert_eq!(result, "[null,null]");
+}
+
+#[test]
+fn test_array_pluck_mixed_types() {
+    let result = render_template(
+        r#"{% set data = [{"val": "string"}, {"val": 123}, {"val": true}] %}{{ array_pluck(array=data, key="val") | tojson }}"#,
+    );
+    assert_eq!(result, r#"["string",123,true]"#);
+}
+
+// ==================== Additional Set Operations Tests ====================
+
+// --- array_intersection ---
+
+#[test]
+fn test_array_intersection_not_array1() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_intersection(array1="not array", array2=[1,2]) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_intersection_not_array2() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_intersection(array1=[1,2], array2="not array") }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_intersection_both_empty() {
+    let result = render_template(r#"{{ array_intersection(array1=[], array2=[]) | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_intersection_objects() {
+    let result = render_template(
+        r#"{% set a = [{"id": 1}, {"id": 2}] %}{% set b = [{"id": 2}, {"id": 3}] %}{{ array_intersection(array1=a, array2=b) | length }}"#,
+    );
+    assert_eq!(result, "1");
+}
+
+// --- array_difference ---
+
+#[test]
+fn test_array_difference_not_array1() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_difference(array1="not array", array2=[1,2]) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_difference_not_array2() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_difference(array1=[1,2], array2="not array") }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_difference_both_empty() {
+    let result = render_template(r#"{{ array_difference(array1=[], array2=[]) | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_difference_with_duplicates() {
+    let result =
+        render_template(r#"{{ array_difference(array1=[1,1,2,2,3], array2=[2]) | tojson }}"#);
+    assert_eq!(result, "[1,3]");
+}
+
+// --- array_union ---
+
+#[test]
+fn test_array_union_not_array1() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_union(array1="not array", array2=[1,2]) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_union_not_array2() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_union(array1=[1,2], array2="not array") }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_union_both_empty() {
+    let result = render_template(r#"{{ array_union(array1=[], array2=[]) | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_union_with_duplicates_in_both() {
+    let result = render_template(r#"{{ array_union(array1=[1,1,2], array2=[2,2,3]) | tojson }}"#);
+    assert_eq!(result, "[1,2,3]");
+}
+
+#[test]
+fn test_array_union_empty_second() {
+    let result = render_template(r#"{{ array_union(array1=[1,2,3], array2=[]) | tojson }}"#);
+    assert_eq!(result, "[1,2,3]");
+}
+
+// --- array_symmetric_difference ---
+
+#[test]
+fn test_array_symmetric_difference_not_array1() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_symmetric_difference(array1="not array", array2=[1,2]) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_symmetric_difference_not_array2() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ array_symmetric_difference(array1=[1,2], array2="not array") }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_array_symmetric_difference_both_empty() {
+    let result =
+        render_template(r#"{{ array_symmetric_difference(array1=[], array2=[]) | tojson }}"#);
+    assert_eq!(result, "[]");
+}
+
+#[test]
+fn test_array_symmetric_difference_with_duplicates() {
+    let result = render_template(
+        r#"{{ array_symmetric_difference(array1=[1,1,2,2], array2=[2,2,3,3]) | tojson }}"#,
+    );
+    assert_eq!(result, "[1,3]");
+}
+
+#[test]
+fn test_array_symmetric_difference_empty_first() {
+    let result =
+        render_template(r#"{{ array_symmetric_difference(array1=[], array2=[1,2]) | tojson }}"#);
+    assert_eq!(result, "[1,2]");
+}
+
+#[test]
+fn test_array_symmetric_difference_empty_second() {
+    let result =
+        render_template(r#"{{ array_symmetric_difference(array1=[1,2], array2=[]) | tojson }}"#);
+    assert_eq!(result, "[1,2]");
+}

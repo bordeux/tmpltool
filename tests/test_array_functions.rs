@@ -376,3 +376,186 @@ fn test_array_zip_missing_array2() {
 
     assert!(result.is_err());
 }
+
+// ============================================================================
+// Additional Array Count Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_count_with_nulls() {
+    let arr = serde_json::json!([1, null, 3, null, 5]);
+    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&arr),
+    )]))
+    .unwrap();
+
+    assert_eq!(result, Value::from(5));
+}
+
+#[test]
+fn test_array_count_nested_arrays() {
+    let arr = serde_json::json!([[1, 2], [3, 4], [5]]);
+    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&arr),
+    )]))
+    .unwrap();
+
+    assert_eq!(result, Value::from(3));
+}
+
+#[test]
+fn test_array_count_objects() {
+    let arr = serde_json::json!([{"a": 1}, {"b": 2}]);
+    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+        "array",
+        Value::from_serialize(&arr),
+    )]))
+    .unwrap();
+
+    assert_eq!(result, Value::from(2));
+}
+
+#[test]
+fn test_array_count_number_not_array() {
+    let result = array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(42))]));
+
+    assert!(result.is_err());
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("requires an array")
+    );
+}
+
+#[test]
+fn test_array_count_bool_not_array() {
+    let result = array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(true))]));
+
+    assert!(result.is_err());
+}
+
+// ============================================================================
+// Additional Array Chunk Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_chunk_with_nulls() {
+    let arr = serde_json::json!([1, null, 3, null, 5]);
+    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&arr)),
+        ("size", Value::from(2)),
+    ]))
+    .unwrap();
+
+    let expected = serde_json::json!([[1, null], [3, null], [5]]);
+    assert_eq!(
+        result.to_string(),
+        Value::from_serialize(&expected).to_string()
+    );
+}
+
+#[test]
+fn test_array_chunk_with_objects() {
+    let arr = serde_json::json!([{"a": 1}, {"b": 2}, {"c": 3}]);
+    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+        ("array", Value::from_serialize(&arr)),
+        ("size", Value::from(2)),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn test_array_chunk_single_element() {
+    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+        ("array", Value::from(vec![42])),
+        ("size", Value::from(5)),
+    ]))
+    .unwrap();
+
+    let expected = vec![vec![42]];
+    assert_eq!(
+        result.to_string(),
+        Value::from_serialize(&expected).to_string()
+    );
+}
+
+#[test]
+fn test_array_chunk_exact_multiple() {
+    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+        ("array", Value::from(vec![1, 2, 3, 4, 5, 6, 7, 8, 9])),
+        ("size", Value::from(3)),
+    ]))
+    .unwrap();
+
+    let expected = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
+    assert_eq!(
+        result.to_string(),
+        Value::from_serialize(&expected).to_string()
+    );
+}
+
+#[test]
+fn test_array_chunk_negative_size_error() {
+    // Negative size should fail since size is usize (will error on parse)
+    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+        ("array", Value::from(vec![1, 2, 3])),
+        ("size", Value::from(-1_i64)),
+    ]));
+
+    assert!(result.is_err());
+}
+
+// ============================================================================
+// Additional Array Zip Edge Cases
+// ============================================================================
+
+#[test]
+fn test_array_zip_with_objects() {
+    let arr1 = serde_json::json!([{"a": 1}, {"a": 2}]);
+    let arr2 = serde_json::json!([{"b": 3}, {"b": 4}]);
+
+    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+        ("array1", Value::from_serialize(&arr1)),
+        ("array2", Value::from_serialize(&arr2)),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn test_array_zip_with_nulls() {
+    let arr1 = serde_json::json!([1, null, 3]);
+    let arr2 = serde_json::json!(["a", "b", "c"]);
+
+    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+        ("array1", Value::from_serialize(&arr1)),
+        ("array2", Value::from_serialize(&arr2)),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn test_array_zip_large_arrays() {
+    let arr1: Vec<i32> = (1..=100).collect();
+    let arr2: Vec<i32> = (101..=200).collect();
+
+    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+        ("array1", Value::from(arr1)),
+        ("array2", Value::from(arr2)),
+    ]))
+    .unwrap();
+
+    let json_result: serde_json::Value = serde_json::to_value(&result).unwrap();
+    assert_eq!(json_result.as_array().unwrap().len(), 100);
+}
