@@ -1,3 +1,8 @@
+## <small>1.2.2 (2026-01-01)</small>
+
+* Merge pull request #25 from bordeux/fix/fix-building-debian-package ([8247089](https://github.com/bordeux/tmpltool/commit/8247089)), closes [#25](https://github.com/bordeux/tmpltool/issues/25)
+* fix: fix ARM64 DEB package build in cross-compilation ([5356105](https://github.com/bordeux/tmpltool/commit/5356105))
+
 ## <small>1.2.1 (2026-01-01)</small>
 
 * Merge pull request #21 from bordeux/dependabot/npm_and_yarn/multi-289c097fca ([5bf7a2a](https://github.com/bordeux/tmpltool/commit/5bf7a2a)), closes [#21](https://github.com/bordeux/tmpltool/issues/21)
