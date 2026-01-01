@@ -1,16 +1,8 @@
-use clap::Parser;
 use std::process;
-use tmpltool::{Cli, render_template};
+use tmpltool::run;
 
 fn main() {
-    let cli = Cli::parse();
-
-    if let Err(e) = render_template(
-        cli.template.as_deref(),
-        cli.output.as_deref(),
-        cli.trust,
-        cli.validate,
-    ) {
+    if let Err(e) = run(std::env::args_os()) {
         eprintln!("Error: {}", e);
         process::exit(1);
     }
