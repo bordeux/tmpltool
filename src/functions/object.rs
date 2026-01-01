@@ -472,7 +472,10 @@ fn query_json_path(value: &serde_json::Value, path: &str) -> Result<serde_json::
                     (&remaining_path[..dot_pos], &remaining_path[dot_pos + 1..])
                 }
             } else if let Some(bracket_pos) = remaining_path.find('[') {
-                (&remaining_path[..bracket_pos], &remaining_path[bracket_pos..])
+                (
+                    &remaining_path[..bracket_pos],
+                    &remaining_path[bracket_pos..],
+                )
             } else {
                 (remaining_path, "")
             };
@@ -537,7 +540,7 @@ pub fn object_pick_fn(kwargs: Kwargs) -> Result<Value, Error> {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
                 "keys must be an array of strings".to_string(),
-            ))
+            ));
         }
     };
 
@@ -548,7 +551,7 @@ pub fn object_pick_fn(kwargs: Kwargs) -> Result<Value, Error> {
                 result.insert(key, value.clone());
             }
         }
-        Ok(Value::from_serialize(&serde_json::Value::Object(result)))
+        Ok(Value::from_serialize(serde_json::Value::Object(result)))
     } else {
         Err(Error::new(
             ErrorKind::InvalidOperation,
@@ -604,7 +607,7 @@ pub fn object_omit_fn(kwargs: Kwargs) -> Result<Value, Error> {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
                 "keys must be an array of strings".to_string(),
-            ))
+            ));
         }
     };
 
@@ -615,7 +618,7 @@ pub fn object_omit_fn(kwargs: Kwargs) -> Result<Value, Error> {
                 result.insert(key, value);
             }
         }
-        Ok(Value::from_serialize(&serde_json::Value::Object(result)))
+        Ok(Value::from_serialize(serde_json::Value::Object(result)))
     } else {
         Err(Error::new(
             ErrorKind::InvalidOperation,
@@ -672,7 +675,7 @@ pub fn object_rename_keys_fn(kwargs: Kwargs) -> Result<Value, Error> {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
                 "mapping must be an object".to_string(),
-            ))
+            ));
         }
     };
 
@@ -682,7 +685,7 @@ pub fn object_rename_keys_fn(kwargs: Kwargs) -> Result<Value, Error> {
             let new_key = key_map.get(&key).cloned().unwrap_or(key);
             result.insert(new_key, value);
         }
-        Ok(Value::from_serialize(&serde_json::Value::Object(result)))
+        Ok(Value::from_serialize(serde_json::Value::Object(result)))
     } else {
         Err(Error::new(
             ErrorKind::InvalidOperation,
@@ -734,7 +737,7 @@ pub fn object_flatten_fn(kwargs: Kwargs) -> Result<Value, Error> {
     let mut result = Map::new();
     flatten_recursive(&json_object, "", &delimiter, &mut result);
 
-    Ok(Value::from_serialize(&serde_json::Value::Object(result)))
+    Ok(Value::from_serialize(serde_json::Value::Object(result)))
 }
 
 /// Recursively flatten object
@@ -760,7 +763,7 @@ fn flatten_recursive(
                 let new_key = if prefix.is_empty() {
                     index.to_string()
                 } else {
-                    format!("{}{}{}",  prefix, delimiter, index)
+                    format!("{}{}{}", prefix, delimiter, index)
                 };
                 flatten_recursive(val, &new_key, delimiter, result);
             }

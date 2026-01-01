@@ -359,6 +359,20 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("k8s_env_var_ref", kubernetes::k8s_env_var_ref_fn);
     env.add_function("k8s_secret_ref", kubernetes::k8s_secret_ref_fn);
     env.add_function("k8s_configmap_ref", kubernetes::k8s_configmap_ref_fn);
+    env.add_function("helm_tpl", kubernetes::helm_tpl_fn);
+    env.add_function("k8s_annotation_safe", kubernetes::k8s_annotation_safe_fn);
+    env.add_function(
+        "k8s_quantity_to_bytes",
+        kubernetes::k8s_quantity_to_bytes_fn,
+    );
+    env.add_function(
+        "k8s_bytes_to_quantity",
+        kubernetes::k8s_bytes_to_quantity_fn,
+    );
+    env.add_function("k8s_selector", kubernetes::k8s_selector_fn);
+    env.add_function("k8s_pod_affinity", kubernetes::k8s_pod_affinity_fn);
+    env.add_function("k8s_toleration", kubernetes::k8s_toleration_fn);
+    env.add_function("k8s_probe", kubernetes::k8s_probe_fn);
 
     // URL and HTTP utility functions
     env.add_function("basic_auth", url::basic_auth_fn);

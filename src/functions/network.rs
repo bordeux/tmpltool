@@ -183,7 +183,10 @@ fn parse_cidr(cidr: &str) -> Result<(Ipv4Addr, u8), Error> {
     if parts.len() != 2 {
         return Err(Error::new(
             ErrorKind::InvalidOperation,
-            format!("Invalid CIDR notation '{}': expected format 'IP/prefix'", cidr),
+            format!(
+                "Invalid CIDR notation '{}': expected format 'IP/prefix'",
+                cidr
+            ),
         ));
     }
 

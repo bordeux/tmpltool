@@ -812,11 +812,8 @@ fn test_object_flatten_unflatten_roundtrip() {
     .unwrap();
 
     // Unflatten
-    let result = object::object_unflatten_fn(Kwargs::from_iter(vec![(
-        "object",
-        flattened,
-    )]))
-    .unwrap();
+    let result =
+        object::object_unflatten_fn(Kwargs::from_iter(vec![("object", flattened)])).unwrap();
 
     let json: serde_json::Value = serde_json::to_value(&result).unwrap();
     assert_eq!(json["user"]["name"], "John");

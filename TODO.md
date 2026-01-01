@@ -175,24 +175,15 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 
 ### DevOps & Cloud Integrations
 
-#### Connection String Builders
-- [ ] `postgres_connection_string(host, port, db, user, password, options)` - PostgreSQL
-- [ ] `mysql_connection_string(host, port, db, user, password, options)` - MySQL
-- [ ] `redis_connection_string(host, port, password, db)` - Redis
-- [ ] `mongodb_connection_string(hosts, db, user, password, options)` - MongoDB
-- [ ] `amqp_connection_string(host, port, user, password, vhost)` - RabbitMQ/AMQP
-- [ ] `elasticsearch_url(hosts, user, password, options)` - Elasticsearch
-- [ ] `kafka_bootstrap_servers(hosts)` - Kafka bootstrap servers
-
 #### Helm/Kubernetes Extended
-- [ ] `helm_tpl(template, values)` - Helm-style templating
-- [ ] `k8s_annotation_safe(string)` - Sanitize for annotation values
-- [ ] `k8s_quantity_to_bytes(quantity)` - Convert K8s quantity (1Gi) to bytes
-- [ ] `k8s_bytes_to_quantity(bytes)` - Convert bytes to K8s quantity
-- [ ] `k8s_selector(labels)` - Generate label selector string
-- [ ] `k8s_pod_affinity(key, operator, values)` - Generate pod affinity YAML
-- [ ] `k8s_toleration(key, operator, value, effect)` - Generate toleration YAML
-- [ ] `k8s_probe(type, path, port, options)` - Generate liveness/readiness probe
+- [x] `helm_tpl(template, values)` - Helm-style templating
+- [x] `k8s_annotation_safe(string)` - Sanitize for annotation values
+- [x] `k8s_quantity_to_bytes(quantity)` - Convert K8s quantity (1Gi) to bytes
+- [x] `k8s_bytes_to_quantity(bytes)` - Convert bytes to K8s quantity
+- [x] `k8s_selector(labels)` - Generate label selector string
+- [x] `k8s_pod_affinity(key, operator, values)` - Generate pod affinity YAML
+- [x] `k8s_toleration(key, operator, value, effect)` - Generate toleration YAML
+- [x] `k8s_probe(type, path, port, options)` - Generate liveness/readiness probe
 
 #### Docker Helpers
 - [ ] `docker_image_tag(registry, repo, tag)` - Build Docker image reference

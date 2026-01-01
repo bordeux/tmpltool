@@ -65,7 +65,15 @@ fn test_get_arch() {
     let arch_str = arch.as_str().unwrap();
 
     // Should be one of the known architecture values
-    let valid_arch = ["x86_64", "x86", "aarch64", "arm", "riscv64", "powerpc64", "s390x"];
+    let valid_arch = [
+        "x86_64",
+        "x86",
+        "aarch64",
+        "arm",
+        "riscv64",
+        "powerpc64",
+        "s390x",
+    ];
     assert!(
         valid_arch.contains(&arch_str),
         "Expected one of {:?}, got '{}'",

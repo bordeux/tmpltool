@@ -158,10 +158,8 @@ fn test_cidr_broadcast_class_c() {
 
 #[test]
 fn test_cidr_broadcast_class_a() {
-    let result = network::cidr_broadcast_fn(Kwargs::from_iter(vec![(
-        "cidr",
-        Value::from("10.0.0.0/8"),
-    )]));
+    let result =
+        network::cidr_broadcast_fn(Kwargs::from_iter(vec![("cidr", Value::from("10.0.0.0/8"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "10.255.255.255");
 }
@@ -238,8 +236,7 @@ fn test_cidr_netmask_0() {
 
 #[test]
 fn test_ip_to_int_basic() {
-    let result =
-        network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from("192.168.1.1"))]));
+    let result = network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from("192.168.1.1"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_i64(), Some(3232235777));
 }
@@ -253,8 +250,10 @@ fn test_ip_to_int_zero() {
 
 #[test]
 fn test_ip_to_int_max() {
-    let result =
-        network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from("255.255.255.255"))]));
+    let result = network::ip_to_int_fn(Kwargs::from_iter(vec![(
+        "ip",
+        Value::from("255.255.255.255"),
+    )]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_i64(), Some(4294967295));
 }
@@ -269,8 +268,10 @@ fn test_ip_to_int_invalid() {
 
 #[test]
 fn test_int_to_ip_basic() {
-    let result =
-        network::int_to_ip_fn(Kwargs::from_iter(vec![("int", Value::from(3232235777_i64))]));
+    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![(
+        "int",
+        Value::from(3232235777_i64),
+    )]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "192.168.1.1");
 }
@@ -284,8 +285,10 @@ fn test_int_to_ip_zero() {
 
 #[test]
 fn test_int_to_ip_max() {
-    let result =
-        network::int_to_ip_fn(Kwargs::from_iter(vec![("int", Value::from(4294967295_i64))]));
+    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![(
+        "int",
+        Value::from(4294967295_i64),
+    )]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "255.255.255.255");
 }
@@ -299,8 +302,10 @@ fn test_int_to_ip_negative() {
 
 #[test]
 fn test_int_to_ip_too_large() {
-    let result =
-        network::int_to_ip_fn(Kwargs::from_iter(vec![("int", Value::from(4294967296_i64))]));
+    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![(
+        "int",
+        Value::from(4294967296_i64),
+    )]));
     assert!(result.is_err());
 }
 
