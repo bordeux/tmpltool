@@ -113,7 +113,8 @@ assert_matches "$OUTPUT" "^(x86_64|x86|aarch64|arm)$" "get_arch() returns valid 
 # Test: get_cwd() - returns non-empty path
 create_template "cwd1.tmpl" '{{ get_cwd() }}'
 OUTPUT=$(run_binary "cwd1.tmpl")
-assert_matches "$OUTPUT" "^/" "get_cwd() returns absolute path"
+# Match Unix paths (starting with /) or Windows paths (starting with drive letter like C:)
+assert_matches "$OUTPUT" "^(/|[A-Za-z]:)" "get_cwd() returns absolute path"
 
 # Test: Combined system info
 create_template "sysinfo.tmpl" 'OS={{ get_os() }}, Arch={{ get_arch() }}'
