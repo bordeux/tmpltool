@@ -333,41 +333,40 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  update-homebrew:
-    name: Trigger Homebrew Formula Update
+  update-package-repos:
+    name: Trigger ${{ matrix.name }} Update
     needs: [semantic-release, upload-release-assets]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: Homebrew
+            repo: bordeux/homebrew-tap
+            workflow: update-formulas.yml
+            token_env: HOMEBREW_TAP_TOKEN
+          - name: APT Repository
+            repo: bordeux/apt-repo
+            workflow: update-repo.yml
+            token_env: APT_REPO_TOKEN
+          - name: APK Repository
+            repo: bordeux/apk-repo
+            workflow: update-repo.yml
+            token_env: APK_REPO_TOKEN
+          - name: RPM Repository
+            repo: bordeux/rpm-repo
+            workflow: update-repo.yml
+            token_env: RPM_REPO_TOKEN
     steps:
-      - name: Trigger homebrew-tap workflow
+      - name: Trigger ${{ matrix.name }} workflow
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          APT_REPO_TOKEN: ${{ secrets.APT_REPO_TOKEN }}
+          APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          RPM_REPO_TOKEN: ${{ secrets.RPM_REPO_TOKEN }}
         run: |
+          TOKEN="${!${{ matrix.token_env }}}"
           curl -X POST \
-            -H "Authorization: token ${{ secrets.HOMEBREW_TAP_TOKEN }}" \
+            -H "Authorization: token $TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/bordeux/homebrew-tap/actions/workflows/update-formulas.yml/dispatches \
-            -d '{"ref":"master","inputs":{"project":"tmpltool"}}'
-
-  update-apt-repo:
-    name: Trigger APT Repository Update
-    needs: [semantic-release, upload-release-assets]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger apt-repo workflow
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.APT_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/bordeux/apt-repo/actions/workflows/update-repo.yml/dispatches \
-            -d '{"ref":"master","inputs":{"project":"bordeux/tmpltool"}}'
-
-  update-apk-repo:
-    name: Trigger APK Repository Update
-    needs: [semantic-release, upload-release-assets]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger apk-repo workflow
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.APK_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/bordeux/apk-repo/actions/workflows/update-repo.yml/dispatches \
+            "https://api.github.com/repos/${{ matrix.repo }}/actions/workflows/${{ matrix.workflow }}/dispatches" \
             -d '{"ref":"master","inputs":{"project":"bordeux/tmpltool"}}'
