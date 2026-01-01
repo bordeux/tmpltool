@@ -4129,6 +4129,181 @@ line3" %}
 {% endfor %}
 ```
 
+#### `wrap(string, width, indent)`
+
+Word wrap text at a specified width.
+
+**Arguments:**
+- `string` (required): The input string to wrap
+- `width` (required): Maximum line width
+- `indent` (optional): Indentation string for wrapped lines (default: "")
+
+**Returns:** The wrapped text with newlines inserted
+
+```jinja
+{{ wrap(string="The quick brown fox jumps over the lazy dog", width=20) }}
+{# Output:
+The quick brown fox
+jumps over the lazy
+dog
+#}
+
+{{ wrap(string="Hello World Example", width=10, indent="  ") }}
+{# Output:
+Hello
+  World
+  Example
+#}
+```
+
+#### `center(string, width, char)`
+
+Center text with padding.
+
+**Arguments:**
+- `string` (required): The input string
+- `width` (required): Total width of the result
+- `char` (optional): Padding character (default: space)
+
+**Returns:** The centered string with padding
+
+```jinja
+{{ center(string="hello", width=11) }}
+{# Output: "   hello   " #}
+
+{{ center(string="hi", width=10, char="-") }}
+{# Output: "----hi----" #}
+
+{{ center(string="test", width=8, char="*") }}
+{# Output: "**test**" #}
+```
+
+#### `sentence_case(string)`
+
+Convert to Sentence case (first letter capitalized, rest lowercase).
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** The string in sentence case
+
+```jinja
+{{ sentence_case(string="hello world") }}
+{# Output: Hello world #}
+
+{{ sentence_case(string="HELLO WORLD") }}
+{# Output: Hello world #}
+
+{{ sentence_case(string="hELLO wORLD") }}
+{# Output: Hello world #}
+```
+
+#### `strip_html(string)`
+
+Remove HTML tags from a string.
+
+**Arguments:**
+- `string` (required): The input string with HTML
+
+**Returns:** The string with all HTML tags removed
+
+```jinja
+{{ strip_html(string="<p>Hello <b>World</b></p>") }}
+{# Output: Hello World #}
+
+{{ strip_html(string="<div class='test'>Content</div>") }}
+{# Output: Content #}
+
+{{ strip_html(string="<a href='link'>Click here</a>") }}
+{# Output: Click here #}
+```
+
+#### `strip_ansi(string)`
+
+Remove ANSI escape codes from a string.
+
+**Arguments:**
+- `string` (required): The input string with ANSI codes
+
+**Returns:** The string with all ANSI escape codes removed
+
+```jinja
+{# Remove color codes from terminal output #}
+{{ strip_ansi(string="\x1b[31mRed Text\x1b[0m") }}
+{# Output: Red Text #}
+
+{{ strip_ansi(string="\x1b[1;32mBold Green\x1b[0m Normal") }}
+{# Output: Bold Green Normal #}
+```
+
+#### `normalize_whitespace(string)`
+
+Normalize whitespace by collapsing multiple spaces/tabs/newlines into a single space.
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** The string with normalized whitespace (trimmed and collapsed)
+
+```jinja
+{{ normalize_whitespace(string="  hello   world  ") }}
+{# Output: hello world #}
+
+{{ normalize_whitespace(string="line1\n\n\nline2\t\tline3") }}
+{# Output: line1 line2 line3 #}
+
+{{ normalize_whitespace(string="  multiple   spaces   here  ") }}
+{# Output: multiple spaces here #}
+```
+
+#### `to_constant_case(string)`
+
+Convert to CONSTANT_CASE (uppercase with underscores).
+
+**Arguments:**
+- `string` (required): The input string
+
+**Returns:** The string in CONSTANT_CASE format
+
+```jinja
+{{ to_constant_case(string="hello world") }}
+{# Output: HELLO_WORLD #}
+
+{{ to_constant_case(string="helloWorld") }}
+{# Output: HELLO_WORLD #}
+
+{{ to_constant_case(string="hello-world-test") }}
+{# Output: HELLO_WORLD_TEST #}
+
+{{ to_constant_case(string="HTTPResponse") }}
+{# Output: HTTPRESPONSE #}
+```
+
+#### `pluralize(count, singular, plural)`
+
+Pluralize a word based on count.
+
+**Arguments:**
+- `count` (required): The count to check
+- `singular` (required): The singular form of the word
+- `plural` (optional): The plural form (default: singular + "s")
+
+**Returns:** Singular if count is 1, otherwise plural
+
+```jinja
+{{ pluralize(count=1, singular="item") }}
+{# Output: item #}
+
+{{ pluralize(count=5, singular="item") }}
+{# Output: items #}
+
+{{ pluralize(count=0, singular="child", plural="children") }}
+{# Output: children #}
+
+{# Use with variables #}
+You have {{ count }} {{ pluralize(count=count, singular="message", plural="messages") }}
+```
+
 ### System & Network Functions
 
 Access system information and perform network operations.

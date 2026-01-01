@@ -281,3 +281,229 @@ fn test_count_occurrences_empty_substring() {
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("cannot be empty"));
 }
+
+// ==================== wrap Tests ====================
+
+#[test]
+fn test_wrap_basic() {
+    let result = render_template(
+        r#"{{ wrap(string="The quick brown fox jumps over the lazy dog", width=20) }}"#,
+    );
+    assert!(result.contains("The quick brown fox"));
+    assert!(result.contains("\n"));
+}
+
+#[test]
+fn test_wrap_with_indent() {
+    let result =
+        render_template(r#"{{ wrap(string="Hello World Example Test", width=10, indent="  ") }}"#);
+    assert!(result.contains("  "));
+}
+
+#[test]
+fn test_wrap_single_word() {
+    let result = render_template(r#"{{ wrap(string="Hello", width=20) }}"#);
+    assert_eq!(result, "Hello");
+}
+
+#[test]
+fn test_wrap_zero_width_error() {
+    let mut env = Environment::new();
+    let ctx = TemplateContext::new(PathBuf::from("."), false);
+    register_all(&mut env, ctx);
+
+    let tmpl = env
+        .template_from_str(r#"{{ wrap(string="test", width=0) }}"#)
+        .unwrap();
+    let result = tmpl.render(());
+    assert!(result.is_err());
+}
+
+// ==================== center Tests ====================
+
+#[test]
+fn test_center_basic() {
+    let result = render_template(r#"{{ center(string="hello", width=11) }}"#);
+    assert_eq!(result, "   hello   ");
+}
+
+#[test]
+fn test_center_custom_char() {
+    let result = render_template(r#"{{ center(string="hi", width=10, char="-") }}"#);
+    assert_eq!(result, "----hi----");
+}
+
+#[test]
+fn test_center_string_longer_than_width() {
+    let result = render_template(r#"{{ center(string="hello world", width=5) }}"#);
+    assert_eq!(result, "hello world");
+}
+
+#[test]
+fn test_center_odd_padding() {
+    let result = render_template(r#"{{ center(string="hi", width=7, char="*") }}"#);
+    assert_eq!(result, "**hi***");
+}
+
+// ==================== sentence_case Tests ====================
+
+#[test]
+fn test_sentence_case_lowercase() {
+    let result = render_template(r#"{{ sentence_case(string="hello world") }}"#);
+    assert_eq!(result, "Hello world");
+}
+
+#[test]
+fn test_sentence_case_uppercase() {
+    let result = render_template(r#"{{ sentence_case(string="HELLO WORLD") }}"#);
+    assert_eq!(result, "Hello world");
+}
+
+#[test]
+fn test_sentence_case_mixed() {
+    let result = render_template(r#"{{ sentence_case(string="hELLO wORLD") }}"#);
+    assert_eq!(result, "Hello world");
+}
+
+#[test]
+fn test_sentence_case_empty() {
+    let result = render_template(r#"{{ sentence_case(string="") }}"#);
+    assert_eq!(result, "");
+}
+
+// ==================== strip_html Tests ====================
+
+#[test]
+fn test_strip_html_basic() {
+    let result = render_template(r#"{{ strip_html(string="<p>Hello World</p>") }}"#);
+    assert_eq!(result, "Hello World");
+}
+
+#[test]
+fn test_strip_html_nested() {
+    let result = render_template(r#"{{ strip_html(string="<p>Hello <b>World</b></p>") }}"#);
+    assert_eq!(result, "Hello World");
+}
+
+#[test]
+fn test_strip_html_with_attributes() {
+    let result = render_template(r#"{{ strip_html(string="<div class='test'>Content</div>") }}"#);
+    assert_eq!(result, "Content");
+}
+
+#[test]
+fn test_strip_html_no_tags() {
+    let result = render_template(r#"{{ strip_html(string="No tags here") }}"#);
+    assert_eq!(result, "No tags here");
+}
+
+// ==================== strip_ansi Tests ====================
+
+#[test]
+fn test_strip_ansi_color() {
+    let result = render_template(r#"{{ strip_ansi(string="\x1b[31mRed\x1b[0m") }}"#);
+    assert_eq!(result, "Red");
+}
+
+#[test]
+fn test_strip_ansi_bold() {
+    let result = render_template(r#"{{ strip_ansi(string="\x1b[1mBold\x1b[0m") }}"#);
+    assert_eq!(result, "Bold");
+}
+
+#[test]
+fn test_strip_ansi_no_codes() {
+    let result = render_template(r#"{{ strip_ansi(string="Plain text") }}"#);
+    assert_eq!(result, "Plain text");
+}
+
+// ==================== normalize_whitespace Tests ====================
+
+#[test]
+fn test_normalize_whitespace_spaces() {
+    let result = render_template(r#"{{ normalize_whitespace(string="  hello   world  ") }}"#);
+    assert_eq!(result, "hello world");
+}
+
+#[test]
+fn test_normalize_whitespace_tabs() {
+    let result = render_template("{{ normalize_whitespace(string=\"hello\\t\\tworld\") }}");
+    assert_eq!(result, "hello world");
+}
+
+#[test]
+fn test_normalize_whitespace_newlines() {
+    let result = render_template("{{ normalize_whitespace(string=\"line1\\n\\nline2\") }}");
+    assert_eq!(result, "line1 line2");
+}
+
+#[test]
+fn test_normalize_whitespace_mixed() {
+    let result = render_template("{{ normalize_whitespace(string=\"  a  \\t b \\n c  \") }}");
+    assert_eq!(result, "a b c");
+}
+
+// ==================== to_constant_case Tests ====================
+
+#[test]
+fn test_to_constant_case_spaces() {
+    let result = render_template(r#"{{ to_constant_case(string="hello world") }}"#);
+    assert_eq!(result, "HELLO_WORLD");
+}
+
+#[test]
+fn test_to_constant_case_camel() {
+    let result = render_template(r#"{{ to_constant_case(string="helloWorld") }}"#);
+    assert_eq!(result, "HELLO_WORLD");
+}
+
+#[test]
+fn test_to_constant_case_kebab() {
+    let result = render_template(r#"{{ to_constant_case(string="hello-world-test") }}"#);
+    assert_eq!(result, "HELLO_WORLD_TEST");
+}
+
+#[test]
+fn test_to_constant_case_snake() {
+    let result = render_template(r#"{{ to_constant_case(string="hello_world") }}"#);
+    assert_eq!(result, "HELLO_WORLD");
+}
+
+#[test]
+fn test_to_constant_case_empty() {
+    let result = render_template(r#"{{ to_constant_case(string="") }}"#);
+    assert_eq!(result, "");
+}
+
+// ==================== pluralize Tests ====================
+
+#[test]
+fn test_pluralize_singular() {
+    let result = render_template(r#"{{ pluralize(count=1, singular="item") }}"#);
+    assert_eq!(result, "item");
+}
+
+#[test]
+fn test_pluralize_plural_default() {
+    let result = render_template(r#"{{ pluralize(count=5, singular="item") }}"#);
+    assert_eq!(result, "items");
+}
+
+#[test]
+fn test_pluralize_zero() {
+    let result = render_template(r#"{{ pluralize(count=0, singular="item") }}"#);
+    assert_eq!(result, "items");
+}
+
+#[test]
+fn test_pluralize_custom_plural() {
+    let result =
+        render_template(r#"{{ pluralize(count=2, singular="child", plural="children") }}"#);
+    assert_eq!(result, "children");
+}
+
+#[test]
+fn test_pluralize_custom_singular() {
+    let result = render_template(r#"{{ pluralize(count=1, singular="person", plural="people") }}"#);
+    assert_eq!(result, "person");
+}

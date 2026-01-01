@@ -99,14 +99,14 @@ Before implementing new functions/filters, note that MiniJinja already provides 
 
 ### New Filters
 
-- [ ] `wrap(width, indent)` - Word wrap text at specified width
-- [ ] `center(width, char)` - Center text with padding
-- [ ] `sentence_case` - Convert to Sentence case (first letter of first word only)
-- [ ] `strip_html` - Remove HTML tags from string
-- [ ] `strip_ansi` - Remove ANSI escape codes
-- [ ] `normalize_whitespace` - Collapse multiple spaces/newlines to single space
-- [ ] `to_constant_case` - Convert to CONSTANT_CASE (uppercase snake)
-- [ ] `pluralize(count, singular, plural)` - Pluralize based on count
+- [x] `wrap(width, indent)` - Word wrap text at specified width
+- [x] `center(width, char)` - Center text with padding
+- [x] `sentence_case` - Convert to Sentence case (first letter of first word only)
+- [x] `strip_html` - Remove HTML tags from string
+- [x] `strip_ansi` - Remove ANSI escape codes
+- [x] `normalize_whitespace` - Collapse multiple spaces/newlines to single space
+- [x] `to_constant_case` - Convert to CONSTANT_CASE (uppercase snake)
+- [x] `pluralize(count, singular, plural)` - Pluralize based on count
 
 ---
 

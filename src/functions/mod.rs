@@ -313,6 +313,14 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("truncate", string::truncate_fn);
     env.add_function("word_count", string::word_count_fn);
     env.add_function("split_lines", string::split_lines_fn);
+    env.add_function("wrap", string::wrap_fn);
+    env.add_function("center", string::center_fn);
+    env.add_function("sentence_case", string::sentence_case_fn);
+    env.add_function("strip_html", string::strip_html_fn);
+    env.add_function("strip_ansi", string::strip_ansi_fn);
+    env.add_function("normalize_whitespace", string::normalize_whitespace_fn);
+    env.add_function("to_constant_case", string::to_constant_case_fn);
+    env.add_function("pluralize", string::pluralize_fn);
 
     // Math functions
     env.add_function("min", math::min_fn);
