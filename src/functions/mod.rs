@@ -77,6 +77,7 @@ pub mod environment;
 pub mod exec;
 pub mod filesystem;
 pub mod hash;
+pub mod logic;
 pub mod math;
 pub mod network;
 pub mod object;
@@ -291,6 +292,12 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("ceil", math::ceil_fn);
     env.add_function("floor", math::floor_fn);
     env.add_function("percentage", math::percentage_fn);
+
+    // Logic functions
+    env.add_function("default", logic::default_fn);
+    env.add_function("coalesce", logic::coalesce_fn);
+    env.add_function("ternary", logic::ternary_fn);
+    env.add_function("in_range", logic::in_range_fn);
 
     // Register custom filters from the filters module
     crate::filters::register_all(env);

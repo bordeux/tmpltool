@@ -210,10 +210,10 @@ This document contains ideas for new functions and features to make tmpltool mor
 *Enhanced conditional logic*
 
 **General Logic:**
-- [ ] `default(value, default)` - Return default if value is falsy
-- [ ] `coalesce(values...)` - Return first non-null value
-- [ ] `ternary(condition, true_val, false_val)` - Ternary operator
-- [ ] `in_range(value, min, max)` - Check if value in range
+- [x] `default(value, default)` - Return default if value is falsy
+- [x] `coalesce(values...)` - Return first non-null value
+- [x] `ternary(condition, true_val, false_val)` - Ternary operator
+- [x] `in_range(value, min, max)` - Check if value in range
 
 **Array Predicates:**
 - [x] `array_any(array, predicate)` - Check if any item matches
