@@ -1,0 +1,242 @@
+# Command Execution Examples
+# ==========================================
+# SECURITY WARNING: This template requires --trust mode
+# Run with: tmpltool --trust examples/exec-functions.tmpl
+
+## Two Functions Available
+
+# exec(command)      - Simple: returns stdout, throws error on failure
+# exec_raw(command)  - Advanced: returns object with exit_code, stdout, stderr
+
+## Simple exec() - For Common Cases
+
+### Basic usage - output goes directly to template
+Hostname: {{ exec(command="hostname") }}
+
+### Use in variable
+{% set git_hash = exec(command="git rev-parse --short HEAD 2>/dev/null || echo 'unknown'") %}
+Git commit: {{ git_hash | trim }}
+
+### Multiple simple commands
+System: {{ exec(command="uname -s") | trim }}
+Kernel: {{ exec(command="uname -r") | trim }}
+
+## Advanced exec_raw() - For Full Control
+
+### Check exit code and handle different cases
+{% set result = exec_raw(command="grep -q 'root' /etc/passwd") %}
+{% if result.exit_code == 0 %}
+✓ Root user found in /etc/passwd
+{% elif result.exit_code == 1 %}
+✗ Root user not found
+{% else %}
+⚠ Error checking /etc/passwd: {{ result.stderr }}
+{% endif %}
+
+### Handle commands that might fail
+{% set result = exec_raw(command="which docker") %}
+{% if result.success %}
+Docker installed at: {{ result.stdout | trim }}
+{% else %}
+Docker not found (exit {{ result.exit_code }})
+{% endif %}
+
+### Access stderr for debugging
+{% set result = exec_raw(command="ls /nonexistent_path 2>&1") %}
+Exit code: {{ result.exit_code }}
+Stdout: {{ result.stdout }}
+Stderr: {{ result.stderr }}
+Success: {{ result.success }}
+
+## Comparison: exec() vs exec_raw()
+
+### exec() - Throws error on failure
+{# This works fine #}
+CPU cores: {{ exec(command="nproc 2>/dev/null || echo '2'") | trim }}
+
+{# This would throw an error if the file doesn't exist #}
+{# Content: {{ exec(command="cat /etc/nonexistent") }} #}
+
+### exec_raw() - Never throws, you handle errors
+{% set result = exec_raw(command="cat /etc/hosts") %}
+{% if result.success %}
+Hosts file (first 100 chars):
+{{ result.stdout[:100] }}
+{% else %}
+Failed to read /etc/hosts (exit {{ result.exit_code }})
+{% endif %}
+
+## Real-World Use Cases
+
+### 1. Build Info with exec()
+```yaml
+build:
+  commit: {{ exec(command="git rev-parse --short HEAD 2>/dev/null || echo 'dev'") | trim }}
+  branch: {{ exec(command="git branch --show-current 2>/dev/null || echo 'unknown'") | trim }}
+  date: {{ exec(command="date -u +%Y-%m-%dT%H:%M:%SZ") | trim }}
+  user: {{ exec(command="whoami") | trim }}
+```
+
+### 2. Conditional Configuration with exec_raw()
+{% set docker_check = exec_raw(command="which docker") %}
+{% set node_check = exec_raw(command="which node") %}
+
+services:
+  docker_enabled: {{ docker_check.success | lower }}
+  {% if docker_check.success %}
+  docker_path: {{ docker_check.stdout | trim }}
+  {% endif %}
+
+  node_enabled: {{ node_check.success | lower }}
+  {% if node_check.success %}
+  node_version: {{ exec(command="node --version") | trim }}
+  {% endif %}
+
+### 3. Dynamic Worker Count
+{% set cpu_count = exec(command="nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo '2'") | trim | int %}
+
+workers:
+  count: {{ cpu_count * 2 }}
+  per_worker_connections: 1000
+  total_capacity: {{ cpu_count * 2 * 1000 }}
+
+### 4. SSL Certificate Check with exec_raw()
+{% set cert_check = exec_raw(command="openssl x509 -enddate -noout -in /etc/ssl/cert.pem 2>/dev/null") %}
+{% if cert_check.success %}
+ssl:
+  status: active
+  expires: {{ cert_check.stdout | trim }}
+{% else %}
+ssl:
+  status: unavailable
+  reason: {{ cert_check.stderr | trim if cert_check.stderr else "Certificate file not found" }}
+{% endif %}
+
+### 5. Version Detection
+{% set node = exec_raw(command="node --version 2>/dev/null") %}
+{% set python = exec_raw(command="python3 --version 2>/dev/null") %}
+{% set ruby = exec_raw(command="ruby --version 2>/dev/null") %}
+{% set go = exec_raw(command="go version 2>/dev/null") %}
+
+runtime_versions:
+  node: {% if node.success %}{{ node.stdout | trim }}{% else %}not installed{% endif %}
+  python: {% if python.success %}{{ python.stdout | trim }}{% else %}not installed{% endif %}
+  ruby: {% if ruby.success %}{{ ruby.stdout | trim }}{% else %}not installed{% endif %}
+  go: {% if go.success %}{{ go.stdout | trim }}{% else %}not installed{% endif %}
+
+### 6. Parse Command Output
+{% set result = exec_raw(command="ls -1 /etc/*.conf 2>/dev/null | head -n 5") %}
+{% if result.success %}
+Configuration files:
+{{ result.stdout }}
+{% endif %}
+
+### 7. Disk Space Warning
+{% set disk_result = exec_raw(command="df / | tail -n 1 | awk '{print $5}' | tr -d '%'") %}
+{% if disk_result.success %}
+{% set disk_usage = disk_result.stdout | trim | int %}
+disk:
+  usage_percent: {{ disk_usage }}
+  {% if disk_usage > 90 %}
+  status: CRITICAL
+  action: immediate_cleanup_required
+  {% elif disk_usage > 75 %}
+  status: WARNING
+  action: monitor_closely
+  {% else %}
+  status: OK
+  {% endif %}
+{% endif %}
+
+### 8. Service Health Check
+{% set services = ["sshd", "nginx", "postgresql"] %}
+
+service_health:
+{% for service in services %}
+  {{ service }}:
+    {% set check = exec_raw(command="systemctl is-active " ~ service ~ " 2>/dev/null") %}
+    {% if check.success and check.stdout | trim == "active" %}
+    status: running
+    {% else %}
+    status: stopped
+    exit_code: {{ check.exit_code }}
+    {% endif %}
+{% endfor %}
+
+### 9. Network Interface Discovery
+{% set iface_result = exec_raw(command="ip -o link show | awk '{print $2}' | tr -d ':' | grep -v '^lo$' | head -n 1") %}
+{% if iface_result.success %}
+{% set primary_interface = iface_result.stdout | trim %}
+network:
+  primary_interface: {{ primary_interface }}
+  {% set ip_result = exec_raw(command="ip addr show " ~ primary_interface ~ " | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1") %}
+  {% if ip_result.success %}
+  ip_address: {{ ip_result.stdout | trim }}
+  {% endif %}
+{% endif %}
+
+### 10. Fallback Pattern with exec()
+{# exec() makes fallback chains easy #}
+{% set hostname = exec(command="hostname -f 2>/dev/null || hostname 2>/dev/null || echo 'localhost'") | trim %}
+{% set ip = exec(command="hostname -I 2>/dev/null | awk '{print $1}' || echo '127.0.0.1'") | trim %}
+
+server:
+  name: {{ hostname }}
+  address: {{ ip }}
+
+## Error Handling Patterns
+
+### Pattern 1: Simple with fallback in command
+Memory: {{ exec(command="free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo 'unknown'") | trim }}
+
+### Pattern 2: Check result with exec_raw()
+{% set mem_result = exec_raw(command="free -h | grep Mem | awk '{print $2}'") %}
+Memory: {% if mem_result.success %}{{ mem_result.stdout | trim }}{% else %}unknown{% endif %}
+
+### Pattern 3: Try-catch style with exec_raw()
+{% set db_check = exec_raw(command="pg_isready -h localhost") %}
+{% if db_check.exit_code == 0 %}
+  database: ready
+{% elif db_check.exit_code == 1 %}
+  database: rejecting_connections
+{% elif db_check.exit_code == 2 %}
+  database: connection_failed
+{% else %}
+  database: unknown_error
+  details: {{ db_check.stderr }}
+{% endif %}
+
+## Security Considerations
+
+{# ✓ GOOD: Hardcoded, trusted commands #}
+Date: {{ exec(command="date") | trim }}
+Hostname: {{ exec(command="hostname") | trim }}
+
+{# ⚠️ WARNING: Be extremely careful with any form of user input
+   NEVER do this with untrusted input:
+   {% set user_input = get_env(name="USER_INPUT") %}
+   {{ exec(command="echo " ~ user_input) }}  ← COMMAND INJECTION!
+
+   Even with quotes, shell metacharacters can break out:
+   Input: foo; rm -rf /
+   Result: echo foo; rm -rf /  ← VERY BAD!
+
+   ✓ BETTER: If you must use variables, sanitize heavily or use exec_raw()
+   and check the result carefully #}
+
+## Performance Notes
+
+{# Commands are executed sequentially, each one blocks
+   Keep commands fast:
+   ✓ Good: date, hostname, uname
+   ⚠ Slow: ping with high count, long-running scripts
+   ✗ Bad: sleep 100, infinite loops #}
+
+## Timeout (documented but not yet enforced)
+
+{# The timeout parameter is accepted but not yet enforced in this version: #}
+{% set result = exec_raw(command="echo hello", timeout=5) %}
+Timeout test: {{ result.stdout | trim }}
+
+{# In a future version, this will kill the command after 5 seconds.
+   For now, use quick-running commands. #}

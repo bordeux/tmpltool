@@ -24,6 +24,7 @@ fn test_filter_env() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_ok());

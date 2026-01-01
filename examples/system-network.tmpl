@@ -1,0 +1,158 @@
+# System and Network Information
+# ================================
+
+## System Information
+
+Hostname: {{ get_hostname() }}
+Username: {{ get_username() }}
+Home Directory: {{ get_home_dir() }}
+Temp Directory: {{ get_temp_dir() }}
+
+## Network Information
+
+### Primary Local IP Address
+Local IP: {{ get_ip_address() }}
+
+### DNS Resolution Examples
+DNS Resolution:
+  localhost            -> {{ resolve_dns(hostname="localhost") }}
+  google.com           -> {{ resolve_dns(hostname="google.com") }}
+
+### Port Availability Check
+Common Ports:
+{% set ports = [80, 443, 3000, 8080, 8443, 9000] %}
+{% for port in ports %}
+  Port {{ port | string | pad_left(5) }}: {% if is_port_available(port=port) %}Available ✓{% else %}In Use ✗{% endif %}
+{% endfor %}
+
+## Real-World Use Case Examples
+
+### 1. Application Configuration
+```yaml
+application:
+  instance_id: {{ uuid() }}
+  hostname: {{ get_hostname() }}
+  user: {{ get_username() }}
+
+paths:
+  home: {{ get_home_dir() }}
+  temp: {{ get_temp_dir() }}
+  logs: {{ get_home_dir() }}/logs/app.log
+
+network:
+  bind_ip: {{ get_ip_address() }}
+  {% if is_port_available(port=8080) %}
+  port: 8080
+  {% else %}
+  port: 8081  # 8080 is in use, fallback to 8081
+  {% endif %}
+```
+
+### 2. Docker Compose Service Discovery
+```yaml
+version: '3.8'
+services:
+  web:
+    image: myapp:latest
+    hostname: {{ get_hostname() }}-web
+    environment:
+      - HOST_IP={{ get_ip_address() }}
+      - USER={{ get_username() }}
+    {% if is_port_available(port=80) %}
+    ports:
+      - "80:8080"
+    {% else %}
+    ports:
+      - "8080:8080"  # Port 80 is taken
+    {% endif %}
+```
+
+### 3. Nginx Configuration
+```nginx
+# Generated for: {{ get_hostname() }}
+# By user: {{ get_username() }}
+# Local IP: {{ get_ip_address() }}
+
+upstream backend {
+    # Example: server {{ "{" }}{ resolve_dns(hostname="backend.local") }}:8080;
+    server 127.0.0.1:8080;
+}
+
+server {
+    listen {{ get_ip_address() }}:80;
+    server_name {{ get_hostname() }};
+
+    access_log {{ get_home_dir() }}/logs/nginx/access.log;
+    error_log {{ get_home_dir() }}/logs/nginx/error.log;
+
+    location / {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### 4. Environment Configuration Script
+```bash
+#!/bin/bash
+# Auto-generated environment setup for {{ get_username() }}@{{ get_hostname() }}
+
+export APP_HOST={{ get_ip_address() }}
+export APP_USER={{ get_username() }}
+export APP_HOME={{ get_home_dir() }}
+export APP_TMP={{ get_temp_dir() }}
+
+# Port selection
+{% if is_port_available(port=3000) %}
+export APP_PORT=3000
+{% elif is_port_available(port=3001) %}
+export APP_PORT=3001
+{% else %}
+export APP_PORT=8080
+{% endif %}
+
+# DNS resolution for services (examples commented)
+# export DATABASE_HOST={{ "{" }}{ resolve_dns(hostname="db.local") }}
+# export CACHE_HOST={{ "{" }}{ resolve_dns(hostname="redis.local") }}
+export DATABASE_HOST={{ resolve_dns(hostname="localhost") }}
+export CACHE_HOST={{ resolve_dns(hostname="localhost") }}
+
+echo "Environment configured for {{ get_username() }} on {{ get_hostname() }}"
+echo "  Local IP: $APP_HOST"
+echo "  App Port: $APP_PORT"
+```
+
+### 5. Monitoring Configuration (Prometheus)
+```yaml
+global:
+  scrape_interval: 15s
+  external_labels:
+    hostname: {{ get_hostname() }}
+    instance_ip: {{ get_ip_address() }}
+    user: {{ get_username() }}
+
+scrape_configs:
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['{{ get_ip_address() }}:9100']
+        labels:
+          hostname: {{ get_hostname() }}
+```
+
+### 6. Database Connection Configuration
+```yaml
+database:
+  host: {{ resolve_dns(hostname="localhost") }}  # Example: use resolve_dns(hostname="postgres.local")
+  port: 5432
+  user: {{ get_username() }}
+  connection_pool:
+    max_size: 100
+
+redis:
+  host: {{ resolve_dns(hostname="localhost") }}  # Example: use resolve_dns(hostname="redis.local")
+  port: 6379
+
+# Fallback ports if defaults are unavailable
+app_port: {% if is_port_available(port=8000) %}8000{% else %}8001{% endif %}
+```

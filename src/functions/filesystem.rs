@@ -297,3 +297,370 @@ pub fn create_file_modified_fn(
         Ok(Value::from(duration.as_secs()))
     }
 }
+
+/// Get the filename from a path
+///
+/// # Arguments
+///
+/// * `path` (required) - File path
+///
+/// # Returns
+///
+/// Returns the filename component of the path
+///
+/// # Example
+///
+/// ```jinja
+/// {{ basename(path="/path/to/file.txt") }}  => file.txt
+/// {{ basename(path="folder/document.pdf") }}  => document.pdf
+/// ```
+pub fn basename_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let path: String = kwargs.get("path")?;
+
+    let path_obj = std::path::Path::new(&path);
+    let filename = path_obj.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+    Ok(Value::from(filename))
+}
+
+/// Get the directory component from a path
+///
+/// # Arguments
+///
+/// * `path` (required) - File path
+///
+/// # Returns
+///
+/// Returns the directory component of the path
+///
+/// # Example
+///
+/// ```jinja
+/// {{ dirname(path="/path/to/file.txt") }}  => /path/to
+/// {{ dirname(path="folder/document.pdf") }}  => folder
+/// ```
+pub fn dirname_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let path: String = kwargs.get("path")?;
+
+    let path_obj = std::path::Path::new(&path);
+    let dir = path_obj.parent().and_then(|p| p.to_str()).unwrap_or("");
+
+    Ok(Value::from(dir))
+}
+
+/// Get the file extension from a path
+///
+/// # Arguments
+///
+/// * `path` (required) - File path
+///
+/// # Returns
+///
+/// Returns the file extension (without the dot)
+///
+/// # Example
+///
+/// ```jinja
+/// {{ file_extension(path="document.pdf") }}  => pdf
+/// {{ file_extension(path="/path/to/file.tar.gz") }}  => gz
+/// {{ file_extension(path="noextension") }}  => (empty string)
+/// ```
+pub fn file_extension_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let path: String = kwargs.get("path")?;
+
+    let path_obj = std::path::Path::new(&path);
+    let extension = path_obj.extension().and_then(|e| e.to_str()).unwrap_or("");
+
+    Ok(Value::from(extension))
+}
+
+/// Join path components
+///
+/// # Arguments
+///
+/// * `parts` (required) - Array of path components to join
+///
+/// # Returns
+///
+/// Returns the joined path
+///
+/// # Example
+///
+/// ```jinja
+/// {{ join_path(parts=["path", "to", "file.txt"]) }}  => path/to/file.txt
+/// {{ join_path(parts=["/home", "user", "documents"]) }}  => /home/user/documents
+/// ```
+pub fn join_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let parts: Vec<String> = kwargs.get("parts")?;
+
+    if parts.is_empty() {
+        return Ok(Value::from(""));
+    }
+
+    let mut path_buf = std::path::PathBuf::new();
+    for part in parts {
+        path_buf.push(part);
+    }
+
+    let joined = path_buf.to_str().ok_or_else(|| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            "Failed to convert path to string".to_string(),
+        )
+    })?;
+
+    // Normalize to forward slashes for cross-platform consistency
+    let normalized = joined.replace('\\', "/");
+
+    Ok(Value::from(normalized))
+}
+
+/// Normalize a path (resolve .. and . components)
+///
+/// # Arguments
+///
+/// * `path` (required) - Path to normalize
+///
+/// # Returns
+///
+/// Returns the normalized path
+///
+/// # Example
+///
+/// ```jinja
+/// {{ normalize_path(path="./foo/../bar") }}  => bar
+/// {{ normalize_path(path="/path/to/../file.txt") }}  => /path/file.txt
+/// ```
+pub fn normalize_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let path: String = kwargs.get("path")?;
+
+    let path_obj = std::path::Path::new(&path);
+
+    // Use components to normalize the path
+    let mut normalized = std::path::PathBuf::new();
+    for component in path_obj.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                normalized.pop();
+            }
+            std::path::Component::CurDir => {
+                // Skip current directory
+            }
+            _ => {
+                normalized.push(component);
+            }
+        }
+    }
+
+    let result = normalized.to_str().ok_or_else(|| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            "Failed to convert normalized path to string".to_string(),
+        )
+    })?;
+
+    // Normalize to forward slashes for cross-platform consistency
+    let normalized_slashes = result.replace('\\', "/");
+
+    Ok(Value::from(normalized_slashes))
+}
+
+/// Check if a path is a file
+///
+/// # Arguments
+///
+/// * `path` (required) - Path to check
+///
+/// # Returns
+///
+/// Returns true if the path exists and is a file
+///
+/// # Example
+///
+/// ```jinja
+/// {% if is_file(path="config.txt") %}
+///   File exists
+/// {% endif %}
+/// ```
+pub fn create_is_file_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+    move |kwargs: Kwargs| {
+        let path: String = kwargs.get("path")?;
+
+        // Resolve path relative to template's base directory
+        let resolved_path = context.resolve_path(&path);
+
+        // Check if path is a file
+        let is_file = resolved_path.is_file();
+
+        Ok(Value::from(is_file))
+    }
+}
+
+/// Check if a path is a directory
+///
+/// # Arguments
+///
+/// * `path` (required) - Path to check
+///
+/// # Returns
+///
+/// Returns true if the path exists and is a directory
+///
+/// # Example
+///
+/// ```jinja
+/// {% if is_dir(path="src") %}
+///   Directory exists
+/// {% endif %}
+/// ```
+pub fn create_is_dir_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+    move |kwargs: Kwargs| {
+        let path: String = kwargs.get("path")?;
+
+        // Resolve path relative to template's base directory
+        let resolved_path = context.resolve_path(&path);
+
+        // Check if path is a directory
+        let is_dir = resolved_path.is_dir();
+
+        Ok(Value::from(is_dir))
+    }
+}
+
+/// Check if a path is a symlink
+///
+/// # Arguments
+///
+/// * `path` (required) - Path to check
+///
+/// # Returns
+///
+/// Returns true if the path exists and is a symlink
+///
+/// # Example
+///
+/// ```jinja
+/// {% if is_symlink(path="link.txt") %}
+///   Path is a symlink
+/// {% endif %}
+/// ```
+pub fn create_is_symlink_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+    move |kwargs: Kwargs| {
+        let path: String = kwargs.get("path")?;
+
+        // Resolve path relative to template's base directory
+        let resolved_path = context.resolve_path(&path);
+
+        // Check if path is a symlink
+        let is_symlink = resolved_path
+            .symlink_metadata()
+            .map(|m| m.file_type().is_symlink())
+            .unwrap_or(false);
+
+        Ok(Value::from(is_symlink))
+    }
+}
+
+/// Read lines from a file
+///
+/// # Arguments
+///
+/// * `path` (required) - Path to file
+/// * `max_lines` (optional) - Number of lines to read (default: 10)
+///   - Positive number: Read first N lines
+///   - Negative number: Read last N lines
+///   - Zero: Read entire file
+///
+/// # Returns
+///
+/// Returns an array of lines (without newline characters)
+///
+/// # Example
+///
+/// ```jinja
+/// {# Read first 5 lines #}
+/// {% set first_lines = read_lines(path="log.txt", max_lines=5) %}
+///
+/// {# Read last 5 lines #}
+/// {% set last_lines = read_lines(path="log.txt", max_lines=-5) %}
+///
+/// {# Read entire file #}
+/// {% set all_lines = read_lines(path="config.txt", max_lines=0) %}
+/// ```
+pub fn create_read_lines_fn(
+    context: Arc<TemplateContext>,
+) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
+    move |kwargs: Kwargs| {
+        let path: String = kwargs.get("path")?;
+        let max_lines: i64 = kwargs.get::<i64>("max_lines").ok().unwrap_or(10);
+
+        // Validate max_lines range
+        if max_lines.abs() > 10000 {
+            return Err(Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "max_lines absolute value must be between 0 and 10000, got {}",
+                    max_lines
+                ),
+            ));
+        }
+
+        // Security: Prevent reading absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+        if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
+            return Err(Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "Security: Absolute paths and parent directory (..) access are not allowed: {}. Use --trust to bypass this restriction.",
+                    path
+                ),
+            ));
+        }
+
+        // Resolve path relative to template's base directory
+        let resolved_path = context.resolve_path(&path);
+
+        // Read file content
+        let content = fs::read_to_string(&resolved_path).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to read file '{}': {}", path, e),
+            )
+        })?;
+
+        // Collect all lines
+        let all_lines: Vec<&str> = content.lines().collect();
+
+        // Select lines based on max_lines
+        let lines: Vec<Value> = if max_lines == 0 {
+            // Read entire file
+            all_lines
+                .iter()
+                .map(|line| Value::from(line.to_string()))
+                .collect()
+        } else if max_lines > 0 {
+            // Read first N lines
+            all_lines
+                .iter()
+                .take(max_lines as usize)
+                .map(|line| Value::from(line.to_string()))
+                .collect()
+        } else {
+            // Read last N lines (max_lines is negative)
+            let n = (-max_lines) as usize;
+            let start_index = all_lines.len().saturating_sub(n);
+            all_lines
+                .iter()
+                .skip(start_index)
+                .map(|line| Value::from(line.to_string()))
+                .collect()
+        };
+
+        Ok(Value::from(lines))
+    }
+}

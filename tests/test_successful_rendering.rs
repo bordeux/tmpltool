@@ -23,6 +23,7 @@ fn test_successful_rendering() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Verify success

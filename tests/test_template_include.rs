@@ -57,6 +57,7 @@ fn test_simple_include() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -102,6 +103,7 @@ fn test_include_with_env_vars() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -149,6 +151,7 @@ fn test_nested_includes() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -192,6 +195,7 @@ fn test_include_with_subdirectory() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -225,6 +229,7 @@ fn test_include_nonexistent_template() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(result.is_err(), "Expected error for nonexistent template");
@@ -258,7 +263,8 @@ fn test_include_parent_directory_blocked() {
     let result = render_template(
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
-        false, // trust_mode = false
+        false,
+        None, // trust_mode = false
     );
 
     assert!(
@@ -299,7 +305,8 @@ fn test_include_parent_directory_allowed_with_trust() {
     let result = render_template(
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
-        true, // trust_mode = true
+        true,
+        None, // trust_mode = true
     );
 
     assert!(
@@ -328,7 +335,8 @@ fn test_include_absolute_path_blocked() {
     let result = render_template(
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
-        false, // trust_mode = false
+        false,
+        None, // trust_mode = false
     );
 
     assert!(result.is_err(), "Expected error for absolute path");
@@ -365,6 +373,7 @@ fn test_include_multiple_partials() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -406,6 +415,7 @@ fn test_include_with_conditionals() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
     assert!(result.is_ok());
     let output = fs::read_to_string(&output_file).unwrap();
@@ -419,6 +429,7 @@ fn test_include_with_conditionals() {
         Some(main_template.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
     assert!(result.is_ok());
     let output = fs::read_to_string(&output_file).unwrap();
@@ -440,6 +451,7 @@ fn test_include_fixture_templates() {
         Some(template_path.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(
@@ -466,6 +478,7 @@ fn test_include_nested_fixture_templates() {
         Some(template_path.to_str().unwrap()),
         Some(output_file.to_str().unwrap()),
         false,
+        None,
     );
 
     assert!(

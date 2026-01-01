@@ -1,4 +1,4 @@
-use crate::{TemplateContext, functions};
+use crate::{TemplateContext, cli::ValidateFormat, functions, validator};
 use minijinja::Environment;
 use serde::Serialize;
 use std::fs;
@@ -11,6 +11,7 @@ use std::io::{self, Read, Write};
 /// * `template_source` - Optional path to template file. If None, reads from stdin
 /// * `output_file` - Optional path to output file. If None, prints to stdout
 /// * `trust_mode` - If true, disables filesystem security restrictions
+/// * `validate_format` - Optional format to validate output against (JSON, YAML, or TOML)
 ///
 /// # Returns
 ///
@@ -19,6 +20,7 @@ pub fn render_template(
     template_source: Option<&str>,
     output_file: Option<&str>,
     trust_mode: bool,
+    validate_format: Option<ValidateFormat>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Read template from file or stdin
     let template_content = read_template(template_source)?;
@@ -39,6 +41,11 @@ pub fn render_template(
         &context,
         template_context,
     )?;
+
+    // Validate output if requested
+    if let Some(format) = validate_format {
+        validator::validate_output(&rendered, format)?;
+    }
 
     // Write output to file or stdout
     write_output(&rendered, output_file)?;

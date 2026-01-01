@@ -18,6 +18,7 @@ fn test_invalid_template_syntax() {
         Some(template_path.to_str().unwrap()),
         Some(output_path.to_str().unwrap()),
         false,
+        None,
     );
 
     // Verify error
