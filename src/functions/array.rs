@@ -295,7 +295,7 @@ pub fn array_sort_by_fn(kwargs: Kwargs) -> Result<Value, Error> {
 ///   {"name": "Charlie", "dept": "Engineering"}
 /// ] %}
 /// {% set grouped = array_group_by(array=users, key="dept") %}
-/// {% for dept, members in grouped %}
+/// {% for dept, members in grouped | items %}
 ///   {{ dept }}: {{ members | length }} members
 /// {% endfor %}
 /// {# Output:

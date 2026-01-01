@@ -27,9 +27,9 @@ create_template "array_sort_by_string.tmpl" '{%- set items = [
   {"name": "Apple"},
   {"name": "Mango"}
 ] -%}
-{%- for item in array_sort_by(array=items, key="name") %}
+{% for item in array_sort_by(array=items, key="name") -%}
 {{ item.name }}
-{%- endfor %}'
+{% endfor -%}'
 OUTPUT=$(run_binary "array_sort_by_string.tmpl")
 # Check order by extracting lines
 FIRST=$(echo "$OUTPUT" | sed -n '1p' | xargs)
@@ -50,9 +50,9 @@ create_template "array_group_by_basic.tmpl" '{%- set users = [
   {"name": "Charlie", "dept": "Engineering"}
 ] -%}
 {%- set grouped = array_group_by(array=users, key="dept") -%}
-{%- for dept, members in grouped %}
+{% for dept, members in grouped | items -%}
 {{ dept }}: {{ members | length }}
-{%- endfor %}'
+{% endfor -%}'
 OUTPUT=$(run_binary "array_group_by_basic.tmpl")
 assert_contains "$OUTPUT" "Engineering: 2" "array_group_by groups by key"
 assert_contains "$OUTPUT" "Sales: 1" "array_group_by groups by key"
@@ -194,7 +194,7 @@ create_template "realworld_tasks.tmpl" '{%- set tasks = [
 ] -%}
 {%- set by_status = array_group_by(array=tasks, key="status") %}
 Status Report:
-{% for status, items in by_status -%}
+{% for status, items in by_status | items -%}
   {{ status }}: {{ items | length }} tasks
 {% endfor -%}'
 OUTPUT=$(run_binary "realworld_tasks.tmpl")

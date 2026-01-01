@@ -3572,7 +3572,7 @@ Group array items by a key value.
   {"name": "Charlie", "dept": "Engineering"}
 ] %}
 {% set grouped = array_group_by(array=users, key="dept") %}
-{% for dept, members in grouped %}
+{% for dept, members in grouped | items %}
   {{ dept }}:
   {% for user in members %}
     - {{ user.name }}
@@ -3672,7 +3672,7 @@ Total IPs: {{ all_ips | length }}
 {% set by_status = array_group_by(array=tasks, key="status") %}
 
 Task Status Dashboard:
-{% for status, items in by_status %}
+{% for status, items in by_status | items %}
 {{ status | upper }} ({{ items | length }} tasks):
   {% for task in array_sort_by(array=items, key="name") %}
   - {{ task.name }} ({{ task.assignee }})
