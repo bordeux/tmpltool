@@ -1,3 +1,21 @@
+## <small>1.2.1 (2026-01-01)</small>
+
+* Merge pull request #21 from bordeux/dependabot/npm_and_yarn/multi-289c097fca ([5bf7a2a](https://github.com/bordeux/tmpltool/commit/5bf7a2a)), closes [#21](https://github.com/bordeux/tmpltool/issues/21)
+* Merge pull request #22 from bordeux/feature/distribution ([e2538fe](https://github.com/bordeux/tmpltool/commit/e2538fe)), closes [#22](https://github.com/bordeux/tmpltool/issues/22)
+* Merge pull request #23 from bordeux/feature/distribution ([0b2150a](https://github.com/bordeux/tmpltool/commit/0b2150a)), closes [#23](https://github.com/bordeux/tmpltool/issues/23)
+* Merge pull request #24 from bordeux/fix/upgrade-node-version ([9f77263](https://github.com/bordeux/tmpltool/commit/9f77263)), closes [#24](https://github.com/bordeux/tmpltool/issues/24)
+* Merge remote-tracking branch 'origin/master' into feature/distribution ([60cc65f](https://github.com/bordeux/tmpltool/commit/60cc65f))
+* fix: Force redeployment for new packages ([d3fdf2b](https://github.com/bordeux/tmpltool/commit/d3fdf2b))
+* fix: upgrade Node.js version from 20 to 24 ([1aef904](https://github.com/bordeux/tmpltool/commit/1aef904))
+* ci: add APT repository update trigger on release ([b01f26e](https://github.com/bordeux/tmpltool/commit/b01f26e))
+* ci: add DEB package generation for Debian/Ubuntu ([9b2e338](https://github.com/bordeux/tmpltool/commit/9b2e338))
+* ci: add DEB/RPM package building to CI workflow ([ff30cfc](https://github.com/bordeux/tmpltool/commit/ff30cfc))
+* ci: add Homebrew formula auto-update on release ([586b164](https://github.com/bordeux/tmpltool/commit/586b164))
+* ci: add RPM package generation for Fedora/RHEL ([cba83a3](https://github.com/bordeux/tmpltool/commit/cba83a3))
+* ci: add versioned Homebrew formulas support ([cd5b383](https://github.com/bordeux/tmpltool/commit/cd5b383))
+* ci: simplify Homebrew update to trigger external workflow ([0b1afb5](https://github.com/bordeux/tmpltool/commit/0b1afb5))
+* chore(deps): bump glob and semantic-release ([21639a5](https://github.com/bordeux/tmpltool/commit/21639a5))
+
 ## [1.2.0](https://github.com/bordeux/tmpltool/compare/v1.1.2...v1.2.0) (2026-01-01)
 
 
