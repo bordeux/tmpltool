@@ -298,3 +298,16 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/bordeux/homebrew-tap/actions/workflows/update-formulas.yml/dispatches \
             -d '{"ref":"main","inputs":{"project":"tmpltool"}}'
+
+  update-apt-repo:
+    name: Trigger APT Repository Update
+    needs: [semantic-release, upload-release-assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger apt-repo workflow
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.APT_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/bordeux/apt-repo/actions/workflows/update-repo.yml/dispatches \
+            -d '{"ref":"main","inputs":{"project":"bordeux/tmpltool"}}'
