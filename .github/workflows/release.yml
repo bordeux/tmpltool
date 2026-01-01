@@ -297,7 +297,7 @@ jobs:
             -H "Authorization: token ${{ secrets.HOMEBREW_TAP_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/bordeux/homebrew-tap/actions/workflows/update-formulas.yml/dispatches \
-            -d '{"ref":"main","inputs":{"project":"tmpltool"}}'
+            -d '{"ref":"master","inputs":{"project":"tmpltool"}}'
 
   update-apt-repo:
     name: Trigger APT Repository Update
@@ -310,4 +310,4 @@ jobs:
             -H "Authorization: token ${{ secrets.APT_REPO_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/bordeux/apt-repo/actions/workflows/update-repo.yml/dispatches \
-            -d '{"ref":"main","inputs":{"project":"bordeux/tmpltool"}}'
+            -d '{"ref":"master","inputs":{"project":"bordeux/tmpltool"}}'
