@@ -1,3 +1,10 @@
+## <small>1.2.5 (2026-01-02)</small>
+
+* Merge pull request #29 from bordeux/fix/fix-triggers ([4bee433](https://github.com/bordeux/tmpltool/commit/4bee433)), closes [#29](https://github.com/bordeux/tmpltool/issues/29)
+* Merge remote-tracking branch 'origin/master' into fix/fix-triggers ([4584654](https://github.com/bordeux/tmpltool/commit/4584654))
+* ci: update workflow names during repo update ([18cf9ab](https://github.com/bordeux/tmpltool/commit/18cf9ab))
+* fix(ci): use ubuntu-22.04 for glibc builds for Debian 12 compatibility ([6670c6b](https://github.com/bordeux/tmpltool/commit/6670c6b))
+
 ## <small>1.2.4 (2026-01-02)</small>
 
 * Merge pull request #28 from bordeux/fix/fix-triggers ([5b1c5b7](https://github.com/bordeux/tmpltool/commit/5b1c5b7)), closes [#28](https://github.com/bordeux/tmpltool/issues/28)
