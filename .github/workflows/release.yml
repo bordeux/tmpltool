@@ -356,6 +356,10 @@ jobs:
             repo: bordeux/rpm-repo
             workflow: update-repo.yml
             token_env: RPM_REPO_TOKEN
+          - name: ARCH Repository
+            repo: bordeux/arch-repo
+            workflow: update-repo.yml
+            token_env: ARCH_REPO_TOKEN
     steps:
       - name: Trigger ${{ matrix.name }} workflow
         env:
@@ -363,6 +367,7 @@ jobs:
           APT_REPO_TOKEN: ${{ secrets.APT_REPO_TOKEN }}
           APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
           RPM_REPO_TOKEN: ${{ secrets.RPM_REPO_TOKEN }}
+          ARCH_REPO_TOKEN: ${{ secrets.ARCH_REPO_TOKEN }}
         run: |
           TOKEN="${!${{ matrix.token_env }}}"
           curl -X POST \
