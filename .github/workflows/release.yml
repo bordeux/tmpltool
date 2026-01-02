@@ -71,7 +71,7 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-22.04
             artifact_name: tmpltool
             asset_name: tmpltool-linux-x86_64
             deb_arch: amd64
@@ -90,7 +90,7 @@ jobs:
             apk_arch: aarch64
 
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-22.04
             artifact_name: tmpltool
             asset_name: tmpltool-linux-aarch64
             deb_arch: arm64
