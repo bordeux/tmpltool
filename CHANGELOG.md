@@ -1,3 +1,8 @@
+## <small>1.2.4 (2026-01-02)</small>
+
+* Merge pull request #28 from bordeux/fix/fix-triggers ([5b1c5b7](https://github.com/bordeux/tmpltool/commit/5b1c5b7)), closes [#28](https://github.com/bordeux/tmpltool/issues/28)
+* fix(ci): correct bash indirect variable expansion for token lookup ([cafb472](https://github.com/bordeux/tmpltool/commit/cafb472))
+
 ## <small>1.2.3 (2026-01-02)</small>
 
 * Merge pull request #26 from bordeux/hotfix/fix-branch-for-repos ([37981e5](https://github.com/bordeux/tmpltool/commit/37981e5)), closes [#26](https://github.com/bordeux/tmpltool/issues/26)
