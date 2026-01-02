@@ -1,3 +1,13 @@
+## <small>1.2.3 (2026-01-02)</small>
+
+* Merge pull request #26 from bordeux/hotfix/fix-branch-for-repos ([37981e5](https://github.com/bordeux/tmpltool/commit/37981e5)), closes [#26](https://github.com/bordeux/tmpltool/issues/26)
+* Merge pull request #27 from bordeux/feature/distribution-v2 ([d4dd748](https://github.com/bordeux/tmpltool/commit/d4dd748)), closes [#27](https://github.com/bordeux/tmpltool/issues/27)
+* fix: Add arch repo ([c8def93](https://github.com/bordeux/tmpltool/commit/c8def93))
+* ci: add Alpine APK package support ([c9c3607](https://github.com/bordeux/tmpltool/commit/c9c3607))
+* ci: add APK package building to CI workflow ([6cf676f](https://github.com/bordeux/tmpltool/commit/6cf676f))
+* ci: consolidate package repo triggers into matrix job ([e58eda3](https://github.com/bordeux/tmpltool/commit/e58eda3))
+* ci: fix branch ref for publishing repos ([235e1cc](https://github.com/bordeux/tmpltool/commit/235e1cc))
+
 ## <small>1.2.2 (2026-01-01)</small>
 
 * Merge pull request #25 from bordeux/fix/fix-building-debian-package ([8247089](https://github.com/bordeux/tmpltool/commit/8247089)), closes [#25](https://github.com/bordeux/tmpltool/issues/25)
