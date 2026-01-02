@@ -369,7 +369,8 @@ jobs:
           RPM_REPO_TOKEN: ${{ secrets.RPM_REPO_TOKEN }}
           ARCH_REPO_TOKEN: ${{ secrets.ARCH_REPO_TOKEN }}
         run: |
-          TOKEN="${!${{ matrix.token_env }}}"
+          TOKEN_VAR="${{ matrix.token_env }}"
+          TOKEN="${!TOKEN_VAR}"
           curl -X POST \
             -H "Authorization: token $TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
