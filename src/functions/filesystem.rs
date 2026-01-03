@@ -465,107 +465,11 @@ pub fn normalize_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
     Ok(Value::from(normalized_slashes))
 }
 
-/// Check if a path is a file
-///
-/// # Arguments
-///
-/// * `path` (required) - Path to check
-///
-/// # Returns
-///
-/// Returns true if the path exists and is a file
-///
-/// # Example
-///
-/// ```jinja
-/// {% if is_file(path="config.txt") %}
-///   File exists
-/// {% endif %}
-/// ```
-pub fn create_is_file_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        let path: String = kwargs.get("path")?;
-
-        // Resolve path relative to template's base directory
-        let resolved_path = context.resolve_path(&path);
-
-        // Check if path is a file
-        let is_file = resolved_path.is_file();
-
-        Ok(Value::from(is_file))
-    }
-}
-
-/// Check if a path is a directory
-///
-/// # Arguments
-///
-/// * `path` (required) - Path to check
-///
-/// # Returns
-///
-/// Returns true if the path exists and is a directory
-///
-/// # Example
-///
-/// ```jinja
-/// {% if is_dir(path="src") %}
-///   Directory exists
-/// {% endif %}
-/// ```
-pub fn create_is_dir_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        let path: String = kwargs.get("path")?;
-
-        // Resolve path relative to template's base directory
-        let resolved_path = context.resolve_path(&path);
-
-        // Check if path is a directory
-        let is_dir = resolved_path.is_dir();
-
-        Ok(Value::from(is_dir))
-    }
-}
-
-/// Check if a path is a symlink
-///
-/// # Arguments
-///
-/// * `path` (required) - Path to check
-///
-/// # Returns
-///
-/// Returns true if the path exists and is a symlink
-///
-/// # Example
-///
-/// ```jinja
-/// {% if is_symlink(path="link.txt") %}
-///   Path is a symlink
-/// {% endif %}
-/// ```
-pub fn create_is_symlink_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        let path: String = kwargs.get("path")?;
-
-        // Resolve path relative to template's base directory
-        let resolved_path = context.resolve_path(&path);
-
-        // Check if path is a symlink
-        let is_symlink = resolved_path
-            .symlink_metadata()
-            .map(|m| m.file_type().is_symlink())
-            .unwrap_or(false);
-
-        Ok(Value::from(is_symlink))
-    }
-}
+// Note: is_file, is_dir, and is_symlink have been migrated to src/is_functions/filesystem.rs
+// and support both function syntax and "is" test syntax:
+// - `{{ is_file(path="config.txt") }}` / `{% if "config.txt" is file %}`
+// - `{{ is_dir(path="src") }}` / `{% if "src" is dir %}`
+// - `{{ is_symlink(path="link") }}` / `{% if "link" is symlink %}`
 
 /// Read lines from a file
 ///

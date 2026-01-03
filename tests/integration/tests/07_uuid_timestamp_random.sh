@@ -26,10 +26,15 @@ create_template "uuid_invalid.tmpl" '{{ uuid(version="v99") }}'
 OUTPUT=$(run_binary "uuid_invalid.tmpl" 2>&1) || true
 assert_contains "$OUTPUT" "Invalid UUID version" "UUID invalid version returns error"
 
-# Test 5: now() returns valid ISO8601 timestamp
+# Test 5: now() returns valid Unix timestamp (integer)
 create_template "timestamp.tmpl" '{{ now() }}'
 OUTPUT=$(run_binary "timestamp.tmpl")
-assert_matches "$OUTPUT" '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}' "now() returns valid ISO8601 timestamp"
+assert_matches "$OUTPUT" '^[0-9]+$' "now() returns valid Unix timestamp"
+
+# Test 5b: now() with format returns ISO8601 timestamp
+create_template "timestamp_formatted.tmpl" '{{ now(format="%Y-%m-%dT%H:%M:%S") }}'
+OUTPUT=$(run_binary "timestamp_formatted.tmpl")
+assert_matches "$OUTPUT" '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}' "now(format=...) returns formatted timestamp"
 
 # Test 6: get_random() returns number in range
 create_template "random.tmpl" '{{ get_random(start=1, end=100) }}'

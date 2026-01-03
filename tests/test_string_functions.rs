@@ -507,3 +507,323 @@ fn test_pluralize_custom_singular() {
     let result = render_template(r#"{{ pluralize(count=1, singular="person", plural="people") }}"#);
     assert_eq!(result, "person");
 }
+
+// ==================== Direct Unit Tests ====================
+// These tests call the functions directly to ensure coverage of all code paths
+
+mod unit_tests {
+    use minijinja::Value;
+    use minijinja::value::Kwargs;
+    use tmpltool::functions::string::{
+        center_fn, contains_fn, count_occurrences_fn, index_of_fn, normalize_whitespace_fn,
+        pluralize_fn, regex_find_all_fn, regex_match_fn, regex_replace_fn, sentence_case_fn,
+        split_lines_fn, strip_ansi_fn, strip_html_fn, substring_fn, to_constant_case_fn,
+        truncate_fn, word_count_fn, wrap_fn,
+    };
+
+    #[test]
+    fn test_regex_replace_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello123world")),
+            ("pattern", Value::from("[0-9]+")),
+            ("replacement", Value::from("-")),
+        ]);
+        let result = regex_replace_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "hello-world");
+    }
+
+    #[test]
+    fn test_regex_replace_invalid_pattern_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello")),
+            ("pattern", Value::from("[invalid")),
+            ("replacement", Value::from("-")),
+        ]);
+        let result = regex_replace_fn(kwargs);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid regex"));
+    }
+
+    #[test]
+    fn test_regex_match_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello123")),
+            ("pattern", Value::from("[0-9]+")),
+        ]);
+        let result = regex_match_fn(kwargs).unwrap();
+        assert!(result.is_true());
+    }
+
+    #[test]
+    fn test_regex_match_invalid_pattern_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello")),
+            ("pattern", Value::from("[invalid")),
+        ]);
+        let result = regex_match_fn(kwargs);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_regex_find_all_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("a1b2c3")),
+            ("pattern", Value::from("[0-9]+")),
+        ]);
+        let result = regex_find_all_fn(kwargs).unwrap();
+        let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(json, serde_json::json!(["1", "2", "3"]));
+    }
+
+    #[test]
+    fn test_regex_find_all_invalid_pattern_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello")),
+            ("pattern", Value::from("[invalid")),
+        ]);
+        let result = regex_find_all_fn(kwargs);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_substring_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello world")),
+            ("start", Value::from(0)),
+            ("length", Value::from(5)),
+        ]);
+        let result = substring_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "hello");
+    }
+
+    #[test]
+    fn test_substring_negative_start_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello world")),
+            ("start", Value::from(-5)),
+        ]);
+        let result = substring_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "world");
+    }
+
+    #[test]
+    fn test_substring_very_negative_start() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello")),
+            ("start", Value::from(-100)),
+        ]);
+        let result = substring_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "hello");
+    }
+
+    #[test]
+    fn test_contains_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello world")),
+            ("substring", Value::from("world")),
+        ]);
+        let result = contains_fn(kwargs).unwrap();
+        assert!(result.is_true());
+    }
+
+    #[test]
+    fn test_index_of_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello world")),
+            ("substring", Value::from("world")),
+        ]);
+        let result = index_of_fn(kwargs).unwrap();
+        assert_eq!(result.as_i64().unwrap(), 6);
+    }
+
+    #[test]
+    fn test_count_occurrences_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello hello hello")),
+            ("substring", Value::from("hello")),
+        ]);
+        let result = count_occurrences_fn(kwargs).unwrap();
+        assert_eq!(result.as_i64().unwrap(), 3);
+    }
+
+    #[test]
+    fn test_count_occurrences_empty_error_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello")),
+            ("substring", Value::from("")),
+        ]);
+        let result = count_occurrences_fn(kwargs);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("cannot be empty"));
+    }
+
+    #[test]
+    fn test_truncate_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("Hello World")),
+            ("length", Value::from(8)),
+        ]);
+        let result = truncate_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "Hello...");
+    }
+
+    #[test]
+    fn test_truncate_very_short_length() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("Hello World")),
+            ("length", Value::from(2)),
+        ]);
+        let result = truncate_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "...");
+    }
+
+    #[test]
+    fn test_word_count_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("Hello World"))]);
+        let result = word_count_fn(kwargs).unwrap();
+        assert_eq!(result.as_i64().unwrap(), 2);
+    }
+
+    #[test]
+    fn test_split_lines_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("line1\nline2"))]);
+        let result = split_lines_fn(kwargs).unwrap();
+        let json: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(json, serde_json::json!(["line1", "line2"]));
+    }
+
+    #[test]
+    fn test_wrap_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("Hello World Test")),
+            ("width", Value::from(10)),
+        ]);
+        let result = wrap_fn(kwargs).unwrap();
+        assert!(result.as_str().unwrap().contains('\n'));
+    }
+
+    #[test]
+    fn test_wrap_zero_width_error_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello")),
+            ("width", Value::from(0)),
+        ]);
+        let result = wrap_fn(kwargs);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("greater than 0"));
+    }
+
+    #[test]
+    fn test_wrap_with_indent_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("Hello World Test Example")),
+            ("width", Value::from(12)),
+            ("indent", Value::from("  ")),
+        ]);
+        let result = wrap_fn(kwargs).unwrap();
+        let s = result.as_str().unwrap();
+        // Check that wrapped lines have indent
+        let lines: Vec<&str> = s.lines().collect();
+        if lines.len() > 1 {
+            assert!(lines[1].starts_with("  "));
+        }
+    }
+
+    #[test]
+    fn test_center_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hi")),
+            ("width", Value::from(10)),
+            ("char", Value::from("-")),
+        ]);
+        let result = center_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "----hi----");
+    }
+
+    #[test]
+    fn test_center_no_padding_needed() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("string", Value::from("hello world")),
+            ("width", Value::from(5)),
+        ]);
+        let result = center_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "hello world");
+    }
+
+    #[test]
+    fn test_sentence_case_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("HELLO WORLD"))]);
+        let result = sentence_case_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "Hello world");
+    }
+
+    #[test]
+    fn test_sentence_case_empty_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from(""))]);
+        let result = sentence_case_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "");
+    }
+
+    #[test]
+    fn test_strip_html_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("<p>Hello</p>"))]);
+        let result = strip_html_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "Hello");
+    }
+
+    #[test]
+    fn test_strip_ansi_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("\x1b[31mRed\x1b[0m"))]);
+        let result = strip_ansi_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "Red");
+    }
+
+    #[test]
+    fn test_normalize_whitespace_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("  hello   world  "))]);
+        let result = normalize_whitespace_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "hello world");
+    }
+
+    #[test]
+    fn test_to_constant_case_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("helloWorld"))]);
+        let result = to_constant_case_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "HELLO_WORLD");
+    }
+
+    #[test]
+    fn test_to_constant_case_empty_direct() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from(""))]);
+        let result = to_constant_case_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "");
+    }
+
+    #[test]
+    fn test_to_constant_case_trailing_separator() {
+        let kwargs = Kwargs::from_iter(vec![("string", Value::from("hello-"))]);
+        let result = to_constant_case_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "HELLO");
+    }
+
+    #[test]
+    fn test_pluralize_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("count", Value::from(5)),
+            ("singular", Value::from("item")),
+        ]);
+        let result = pluralize_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "items");
+    }
+
+    #[test]
+    fn test_pluralize_with_custom_plural_direct() {
+        let kwargs = Kwargs::from_iter(vec![
+            ("count", Value::from(0)),
+            ("singular", Value::from("child")),
+            ("plural", Value::from("children")),
+        ]);
+        let result = pluralize_fn(kwargs).unwrap();
+        assert_eq!(result.as_str().unwrap(), "children");
+    }
+}

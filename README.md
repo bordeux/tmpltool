@@ -366,6 +366,49 @@ tmpltool uses the [MiniJinja](https://github.com/mitsuhiko/minijinja) template e
 {% endif %}
 ```
 
+### Is Syntax (Validation & Checks)
+
+The `is` syntax provides readable conditionals for validation and type checking. All is-functions support both function syntax and the more readable "is" syntax:
+
+| Test | Function Equivalent | Description |
+|------|---------------------|-------------|
+| `{% if x is email %}` | `is_email(string=x)` | Valid email format |
+| `{% if x is url %}` | `is_url(string=x)` | Valid URL format |
+| `{% if x is ip %}` | `is_ip(string=x)` | Valid IPv4/IPv6 address |
+| `{% if x is uuid %}` | `is_uuid(string=x)` | Valid UUID format |
+| `{% if y is leap_year %}` | `is_leap_year(year=y)` | Year is a leap year |
+| `{% if p is port_available %}` | `is_port_available(port=p)` | Port is free to use |
+| `{% if f is file %}` | `is_file(path=f)` | Path is an existing file |
+| `{% if d is dir %}` | `is_dir(path=d)` | Path is a directory |
+| `{% if s is symlink %}` | `is_symlink(path=s)` | Path is a symbolic link |
+
+**Examples:**
+```jinja
+{# Validate user input #}
+{% if user_email is email %}
+  Valid email: {{ user_email }}
+{% else %}
+  Invalid email format
+{% endif %}
+
+{# Check filesystem #}
+{% if "config.json" is file %}
+  {% set config = read_json_file(path="config.json") %}
+{% endif %}
+
+{# Port availability #}
+{% if 8080 is port_available %}
+  port: 8080
+{% elif 3000 is port_available %}
+  port: 3000
+{% endif %}
+
+{# Negation with "is not" #}
+{% if user_input is not uuid %}
+  Warning: Invalid ID format
+{% endif %}
+```
+
 ### Loops
 
 ```
@@ -397,42 +440,66 @@ Access loop metadata:
 - `split(pat=",")` - Split string into array
 - `length` - Get array/string length
 
-**Custom string manipulation filters:**
-- `slugify` - Convert to URL-friendly slug (e.g., "Hello World" → "hello-world")
-- `indent(spaces=4)` - Indent text by N spaces (useful for YAML/configs)
-- `dedent` - Remove common leading whitespace
-- `quote(style="double")` - Quote string (single/double/backtick)
-- `escape_quotes` - Escape quotes in string
-- `to_snake_case` - Convert to snake_case (e.g., "HelloWorld" → "hello_world")
-- `to_camel_case` - Convert to camelCase (e.g., "hello_world" → "helloWorld")
-- `to_pascal_case` - Convert to PascalCase (e.g., "hello_world" → "HelloWorld")
-- `to_kebab_case` - Convert to kebab-case (e.g., "HelloWorld" → "hello-world")
-- `pad_left(length, char=" ")` - Pad string on left
-- `pad_right(length, char=" ")` - Pad string on right
-- `repeat(count)` - Repeat string N times
-- `reverse` - Reverse string
+**String manipulation (function + filter syntax):**
 
-**Formatting filters:**
-- `urlencode` - URL encoding
-- `filesizeformat` - Format bytes (e.g., "1.5 KB")
+All string filters support both function and filter syntax:
+
+- `slugify(string)` / `| slugify` - Convert to URL-friendly slug (e.g., "Hello World" → "hello-world")
+- `indent(string, spaces=4)` / `| indent(spaces=4)` - Indent text by N spaces (useful for YAML/configs)
+- `dedent(string)` / `| dedent` - Remove common leading whitespace
+- `quote(string, style="double")` / `| quote(style="double")` - Quote string (single/double/backtick)
+- `escape_quotes(string)` / `| escape_quotes` - Escape quotes in string
+- `to_snake_case(string)` / `| to_snake_case` - Convert to snake_case (e.g., "HelloWorld" → "hello_world")
+- `to_camel_case(string)` / `| to_camel_case` - Convert to camelCase (e.g., "hello_world" → "helloWorld")
+- `to_pascal_case(string)` / `| to_pascal_case` - Convert to PascalCase (e.g., "hello_world" → "HelloWorld")
+- `to_kebab_case(string)` / `| to_kebab_case` - Convert to kebab-case (e.g., "HelloWorld" → "hello-world")
+- `pad_left(string, length, char=" ")` / `| pad_left(length, char=" ")` - Pad string on left
+- `pad_right(string, length, char=" ")` / `| pad_right(length, char=" ")` - Pad string on right
+- `repeat(string, count)` / `| repeat(count)` - Repeat string N times
+- `reverse(string)` / `| reverse` - Reverse string
+
+**Formatting (function + filter syntax):**
+- `filesizeformat(bytes)` / `| filesizeformat` - Format bytes (e.g., "1.5 KB")
+- `urlencode(string)` / `| urlencode` - URL encoding (percent-encoding)
 
 **Examples:**
 ```
-{# Case conversion #}
-{{ "hello_world" | to_camel_case }}  {# Output: helloWorld #}
-{{ "HelloWorld" | to_snake_case }}   {# Output: hello_world #}
+{# Case conversion - both syntaxes work #}
+{{ "hello_world" | to_camel_case }}           {# Output: helloWorld #}
+{{ to_camel_case(string="hello_world") }}     {# Output: helloWorld #}
+
+{{ "HelloWorld" | to_snake_case }}            {# Output: hello_world #}
+{{ to_snake_case(string="HelloWorld") }}      {# Output: hello_world #}
+
+{# Slugify #}
+{{ "Hello World!" | slugify }}                {# Output: hello-world #}
+{{ slugify(string="Hello World!") }}          {# Output: hello-world #}
 
 {# Indentation for configs #}
-{{ "host: localhost\nport: 8080" | indent(2) }}
+{{ "host: localhost\nport: 8080" | indent(spaces=2) }}
+{{ indent(string="host: localhost", spaces=4) }}
 
 {# Padding for alignment #}
-{{ "1" | pad_left(4, "0") }}  {# Output: 0001 #}
+{{ "1" | pad_left(length=4, char="0") }}      {# Output: 0001 #}
+{{ pad_left(string="5", length=3, char="0") }} {# Output: 005 #}
 
 {# Creating separators #}
-{{ "=" | repeat(40) }}  {# Output: ======================================== #}
+{{ "=" | repeat(count=40) }}                  {# Output: ======================================== #}
+{{ repeat(string="-", count=5) }}             {# Output: ----- #}
+
+{# Quoting #}
+{{ "hello" | quote(style="single") }}         {# Output: 'hello' #}
+{{ quote(string="world", style="backtick") }} {# Output: `world` #}
 
 {# Chaining filters #}
 {{ "hello_world" | to_pascal_case | reverse }}  {# Output: dlroWolleH #}
+
+{# Formatting - both syntaxes work #}
+{{ 1048576 | filesizeformat }}                {# Output: 1 MB #}
+{{ filesizeformat(bytes=1048576) }}           {# Output: 1 MB #}
+
+{{ "hello world" | urlencode }}               {# Output: hello%20world #}
+{{ urlencode(string="hello world") }}         {# Output: hello%20world #}
 ```
 
 ### Comments
@@ -505,39 +572,70 @@ Found {{ db_vars | length }} database variables
 
 ### Hash & Crypto Functions
 
-#### `md5(string)`
+Hash functions support both **function syntax** and **filter syntax**. Both produce identical results.
+
+#### `md5(string)` / `| md5`
 
 Calculate MD5 hash of a string.
 
-```
+```jinja
+{# Function syntax #}
 Checksum: {{ md5(string="hello world") }}
+{# Output: 5eb63bbbe01eeed093cb22bb8f5acdc3 #}
+
+{# Filter syntax #}
+Checksum: {{ "hello world" | md5 }}
 {# Output: 5eb63bbbe01eeed093cb22bb8f5acdc3 #}
 ```
 
-#### `sha1(string)`
+#### `sha1(string)` / `| sha1`
 
 Calculate SHA1 hash of a string.
 
-```
+```jinja
+{# Function syntax #}
 Hash: {{ sha1(string="tmpltool") }}
+
+{# Filter syntax #}
+Hash: {{ "tmpltool" | sha1 }}
 {# Output: c054a2a60ca2fe935ea1056bd90386194116f14f #}
 ```
 
-#### `sha256(string)`
+#### `sha256(string)` / `| sha256`
 
 Calculate SHA256 hash (recommended for password hashing).
 
-```
+```jinja
+{# Function syntax #}
 {% set password = get_env(name="PASSWORD", default="secret") %}
 Password hash: {{ sha256(string=password) }}
+
+{# Filter syntax #}
+Password hash: {{ password | sha256 }}
 ```
 
-#### `sha512(string)`
+#### `sha512(string)` / `| sha512`
 
 Calculate SHA512 hash (most secure).
 
-```
+```jinja
+{# Function syntax #}
 Secure hash: {{ sha512(string="secure-data") }}
+
+{# Filter syntax #}
+Secure hash: {{ "secure-data" | sha512 }}
+```
+
+#### Chaining Hash Filters
+
+Filter syntax enables chaining multiple operations:
+
+```jinja
+{# Chain hash with encoding #}
+{{ "hello" | sha256 | md5 }}
+
+{# Equivalent function syntax (nested) #}
+{{ md5(string=sha256(string="hello")) }}
 ```
 
 **Important:** These hash functions are for checksums and general-purpose hashing. For production password storage, use dedicated password hashing libraries with salt and proper key derivation functions (bcrypt, argon2, etc.).
@@ -621,9 +719,9 @@ security:
 
 Functions for encoding, decoding, password hashing, and escaping data for various contexts.
 
-#### `base64_encode(string)`
+#### `base64_encode`
 
-Encode a string to Base64 format.
+Encode a string to Base64 format. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - String to encode
@@ -632,17 +730,22 @@ Encode a string to Base64 format.
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {{ base64_encode(string="Hello World") }}
+{# Output: SGVsbG8gV29ybGQ= #}
+
+{# Filter syntax #}
+{{ "Hello World" | base64_encode }}
 {# Output: SGVsbG8gV29ybGQ= #}
 
 {# Basic Authentication header #}
 {% set credentials = "admin:password123" %}
-Authorization: Basic {{ base64_encode(string=credentials) }}
+Authorization: Basic {{ credentials | base64_encode }}
 ```
 
-#### `base64_decode(string)`
+#### `base64_decode`
 
-Decode a Base64-encoded string.
+Decode a Base64-encoded string. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - Base64 string to decode
@@ -651,13 +754,18 @@ Decode a Base64-encoded string.
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {{ base64_decode(string="SGVsbG8gV29ybGQ=") }}
+{# Output: Hello World #}
+
+{# Filter syntax #}
+{{ "SGVsbG8gV29ybGQ=" | base64_decode }}
 {# Output: Hello World #}
 ```
 
-#### `hex_encode(string)`
+#### `hex_encode`
 
-Encode a string to hexadecimal format.
+Encode a string to hexadecimal format. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - String to encode
@@ -666,13 +774,18 @@ Encode a string to hexadecimal format.
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {{ hex_encode(string="Hello") }}
+{# Output: 48656c6c6f #}
+
+{# Filter syntax #}
+{{ "Hello" | hex_encode }}
 {# Output: 48656c6c6f #}
 ```
 
-#### `hex_decode(string)`
+#### `hex_decode`
 
-Decode a hexadecimal-encoded string.
+Decode a hexadecimal-encoded string. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - Hexadecimal string to decode
@@ -681,7 +794,12 @@ Decode a hexadecimal-encoded string.
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {{ hex_decode(string="48656c6c6f") }}
+{# Output: Hello #}
+
+{# Filter syntax #}
+{{ "48656c6c6f" | hex_decode }}
 {# Output: Hello #}
 ```
 
@@ -763,9 +881,9 @@ X-Signature: {{ signature }}
 X-Hub-Signature-256: sha256={{ hmac_sha256(key=webhook_secret, message=payload) }}
 ```
 
-#### `escape_html(string)`
+#### `escape_html`
 
-Escape HTML entities to prevent XSS attacks.
+Escape HTML entities to prevent XSS attacks. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - String to escape
@@ -774,18 +892,21 @@ Escape HTML entities to prevent XSS attacks.
 
 **Examples:**
 ```jinja
-{# Escape user input for HTML #}
+{# Function syntax #}
 {% set user_input = '<script>alert("XSS")</script>' %}
 <div>{{ escape_html(string=user_input) }}</div>
 {# Output: &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; #}
 
-{# Safe HTML output #}
-<p>User comment: {{ escape_html(string=get_env(name="USER_COMMENT", default="")) }}</p>
+{# Filter syntax #}
+<div>{{ user_input | escape_html }}</div>
+
+{# Safe HTML output from env var #}
+<p>User comment: {{ get_env(name="USER_COMMENT", default="") | escape_html }}</p>
 ```
 
-#### `escape_xml(string)`
+#### `escape_xml`
 
-Escape XML entities.
+Escape XML entities. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - String to escape
@@ -794,15 +915,18 @@ Escape XML entities.
 
 **Examples:**
 ```jinja
-{# Escape for XML #}
+{# Function syntax #}
 {% set content = '<tag attr="value">text & more</tag>' %}
 <data>{{ escape_xml(string=content) }}</data>
 {# Output: &lt;tag attr=&quot;value&quot;&gt;text &amp; more&lt;/tag&gt; #}
+
+{# Filter syntax #}
+<data>{{ content | escape_xml }}</data>
 ```
 
-#### `escape_shell(string)`
+#### `escape_shell`
 
-Escape string for safe use in shell commands.
+Escape string for safe use in shell commands. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required) - String to escape
@@ -811,39 +935,76 @@ Escape string for safe use in shell commands.
 
 **Examples:**
 ```jinja
-{# Safe shell argument #}
+{# Function syntax #}
 {% set filename = "my file with spaces.txt" %}
 Command: cat {{ escape_shell(string=filename) }}
 {# Output: cat 'my file with spaces.txt' #}
 
+{# Filter syntax #}
+Command: cat {{ filename | escape_shell }}
+
 {# Escape special characters #}
 {% set message = "it's working!" %}
-echo {{ escape_shell(string=message) }}
+echo {{ message | escape_shell }}
 {# Output: echo 'it'\''s working!' #}
 ```
 
 **Security Warning:** While `escape_shell` helps prevent injection, the safest approach is to avoid dynamic shell commands entirely when possible. Use `exec()` function only with trusted, hardcoded commands.
 
+#### Chaining Encoding Filters
+
+Encoding functions can be chained with hash functions for powerful transformations:
+
+```jinja
+{# Encode then hash #}
+{{ "Hello" | base64_encode | sha256 }}
+{# First: "SGVsbG8=" then: SHA-256 of that #}
+
+{# Hash then encode #}
+{{ "Hello" | sha256 | base64_encode }}
+{# First: hex hash, then: base64 of the hex string #}
+
+{# Multi-step encoding #}
+{{ "secret" | hex_encode | base64_encode }}
+
+{# Decode chain #}
+{{ "NjE2MjYz" | base64_decode | hex_decode }}
+{# Output: abc #}
+```
+
 ### Date/Time Functions
 
 Work with dates, times, and timestamps. All functions use Unix timestamps (seconds since epoch) for consistent timezone-independent representation.
 
-#### `now()`
+#### `now(format)`
 
-Get the current timestamp in ISO 8601 format.
+Get the current Unix timestamp, or formatted date string.
 
-**Returns:** Current timestamp as ISO 8601 string (e.g., `"2024-12-31T12:34:56.789+00:00"`)
+**Arguments:**
+- `format` (optional) - Format string. If provided, returns formatted string.
+
+**Returns:** Unix timestamp (integer) by default, or formatted string if `format` is provided.
 
 **Examples:**
 ```
-Current time: {{ now() }}
-{# Output: 2024-12-31T12:34:56.789+00:00 #}
+{# Get Unix timestamp (default) #}
+Timestamp: {{ now() }}
+{# Output: 1704067200 #}
 
-{# Use with date filter for custom formatting #}
-{{ now() | date(format="%Y-%m-%d %H:%M:%S") }}
+{# Use with format_date for formatting #}
+{{ format_date(timestamp=now(), format="%Y-%m-%d %H:%M:%S") }}
+{# Output: 2024-12-31 12:34:56 #}
+
+{# Or use format parameter directly #}
+{{ now(format="%Y-%m-%d %H:%M:%S") }}
+{# Output: 2024-12-31 12:34:56 #}
+
+{# Date only #}
+{{ now(format="%Y-%m-%d") }}
+{# Output: 2024-12-31 #}
 ```
 
-#### `format_date(timestamp, format)`
+#### `format_date(timestamp, format)` / `| format_date`
 
 Format a Unix timestamp with a custom format string.
 
@@ -867,17 +1028,24 @@ Format a Unix timestamp with a custom format string.
 
 [Full format reference](https://docs.rs/chrono/latest/chrono/format/strftime/index.html)
 
-**Examples:**
+**Function syntax:**
 ```
 {% set ts = 1704067200 %}
 ISO date: {{ format_date(timestamp=ts, format="%Y-%m-%d") }}
 {# Output: 2024-01-01 #}
 
-US format: {{ format_date(timestamp=ts, format="%m/%d/%Y") }}
-{# Output: 01/01/2024 #}
-
 Full: {{ format_date(timestamp=ts, format="%B %d, %Y at %I:%M %p") }}
 {# Output: January 01, 2024 at 12:00 AM #}
+```
+
+**Filter syntax:**
+```
+{% set ts = 1704067200 %}
+{{ ts | format_date(format="%Y-%m-%d") }}
+{# Output: 2024-01-01 #}
+
+{# Chain with now() #}
+{{ now() | format_date(format="%B %d, %Y") }}
 ```
 
 #### `parse_date(string, format)`
@@ -944,37 +1112,130 @@ Days between: {{ date_diff(timestamp1=end, timestamp2=start) }}
 {# Output: 30 #}
 ```
 
-#### `get_year(timestamp)`, `get_month(timestamp)`, `get_day(timestamp)`
+#### `get_year(timestamp)` / `| get_year`
 
-Extract date components from a Unix timestamp.
-
-**Arguments:**
-- `timestamp` (required) - Unix timestamp in seconds
-
-**Returns:** Integer component value (year: 4-digit, month: 1-12, day: 1-31)
-
-**Examples:**
-```
-{% set ts = parse_date(string="2024-12-25", format="%Y-%m-%d") %}
-Year: {{ get_year(timestamp=ts) }}    {# Output: 2024 #}
-Month: {{ get_month(timestamp=ts) }}  {# Output: 12 #}
-Day: {{ get_day(timestamp=ts) }}      {# Output: 25 #}
-```
-
-#### `get_hour(timestamp)`, `get_minute(timestamp)`
-
-Extract time components from a Unix timestamp.
+Extract the year from a Unix timestamp.
 
 **Arguments:**
 - `timestamp` (required) - Unix timestamp in seconds
 
-**Returns:** Integer component value (hour: 0-23, minute: 0-59)
+**Returns:** Integer (4-digit year)
 
-**Examples:**
+**Function syntax:**
 ```
-{% set ts = parse_date(string="2024-01-01 15:30:00", format="%Y-%m-%d %H:%M:%S") %}
-Hour: {{ get_hour(timestamp=ts) }}      {# Output: 15 #}
-Minute: {{ get_minute(timestamp=ts) }}  {# Output: 30 #}
+{{ get_year(timestamp=1704067200) }}
+{# Output: 2024 #}
+```
+
+**Filter syntax:**
+```
+{{ 1704067200 | get_year }}
+{{ now() | get_year }}
+```
+
+#### `get_month(timestamp)` / `| get_month`
+
+Extract the month from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer (1-12)
+
+**Function syntax:**
+```
+{{ get_month(timestamp=1704067200) }}
+{# Output: 1 #}
+```
+
+**Filter syntax:**
+```
+{{ 1704067200 | get_month }}
+{{ now() | get_month }}
+```
+
+#### `get_day(timestamp)` / `| get_day`
+
+Extract the day from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer (1-31)
+
+**Function syntax:**
+```
+{{ get_day(timestamp=1704067200) }}
+{# Output: 1 #}
+```
+
+**Filter syntax:**
+```
+{{ 1704067200 | get_day }}
+{{ now() | get_day }}
+```
+
+#### `get_hour(timestamp)` / `| get_hour`
+
+Extract the hour from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer (0-23)
+
+**Function syntax:**
+```
+{{ get_hour(timestamp=1704110400) }}
+{# Output: 12 #}
+```
+
+**Filter syntax:**
+```
+{{ 1704110400 | get_hour }}
+{{ now() | get_hour }}
+```
+
+#### `get_minute(timestamp)` / `| get_minute`
+
+Extract the minute from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer (0-59)
+
+**Function syntax:**
+```
+{{ get_minute(timestamp=1704068700) }}
+{# Output: 25 #}
+```
+
+**Filter syntax:**
+```
+{{ 1704068700 | get_minute }}
+{{ now() | get_minute }}
+```
+
+#### `get_second(timestamp)` / `| get_second`
+
+Extract the second from a Unix timestamp.
+
+**Arguments:**
+- `timestamp` (required) - Unix timestamp in seconds
+
+**Returns:** Integer (0-59)
+
+**Function syntax:**
+```
+{{ get_second(timestamp=1704067245) }}
+{# Output: 45 #}
+```
+
+**Filter syntax:**
+```
+{{ 1704067245 | get_second }}
+{{ now() | get_second }}
 ```
 
 #### `timezone_convert(timestamp, from_tz, to_tz)`
@@ -996,24 +1257,34 @@ Convert a timestamp between timezones.
 {{ timezone_convert(timestamp=utc_ts, from_tz="UTC", to_tz="America/New_York") }}
 ```
 
-#### `is_leap_year(year)`
+#### `is_leap_year(year)` / `{% if year is leap_year %}`
 
-Check if a year is a leap year.
+Check if a year is a leap year. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `year` (required) - Year to check (4-digit integer)
+
+**Is-Test Syntax:**
+- The value must be an integer or a string that can be parsed as an integer
 
 **Returns:** Boolean (true if leap year, false otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 {% if is_leap_year(year=2024) %}
 2024 is a leap year
 {% endif %}
 
+{# Is-test syntax (preferred for readability) #}
+{% if 2024 is leap_year %}
+2024 is a leap year
+{% endif %}
+
+{# With variables #}
 {% set years = [2020, 2021, 2022, 2023, 2024] %}
 {% for year in years %}
-{{ year }}: {% if is_leap_year(year=year) %}Leap{% else %}Regular{% endif %}
+{{ year }}: {% if year is leap_year %}Leap{% else %}Regular{% endif %}
 {% endfor %}
 ```
 
@@ -1370,9 +1641,9 @@ Get the last modification time of a file as a Unix timestamp.
 {# Get modification timestamp #}
 Last modified: {{ file_modified(path="config.json") }}
 
-{# Format with date filter #}
+{# Format with format_date function #}
 {% set timestamp = file_modified(path="README.md") %}
-Last updated: {{ timestamp | date(format="%Y-%m-%d %H:%M:%S") }}
+Last updated: {{ format_date(timestamp=timestamp, format="%Y-%m-%d %H:%M:%S") }}
 
 {# Check if file is recent #}
 {% set mod_time = file_modified(path="cache.dat") %}
@@ -1388,7 +1659,7 @@ Cache is stale ({{ age_seconds / 3600 }} hours old)
 **Practical Example - Build Report:**
 ```
 # Build Report
-Generated: {{ now() | date(format="%Y-%m-%d %H:%M:%S") }}
+Generated: {{ now(format="%Y-%m-%d %H:%M:%S") }}
 
 ## Source Files
 {% set rs_files = glob(pattern="src/**/*.rs") %}
@@ -1397,7 +1668,7 @@ Total Rust files: {{ rs_files | length }}
 {% for file in rs_files %}
 - {{ file }}
   Size: {{ file_size(path=file) | filesizeformat }}
-  Modified: {{ file_modified(path=file) | date(format="%Y-%m-%d") }}
+  Modified: {{ format_date(timestamp=file_modified(path=file), format="%Y-%m-%d") }}
 {% endfor %}
 
 ## Configuration
@@ -1416,7 +1687,7 @@ Test files: {{ test_files | length }}
 
 Functions for manipulating file paths and checking filesystem metadata. These functions do not read file contents and work without security restrictions.
 
-#### `basename(path)`
+#### `basename(path)` / `| basename`
 
 Extract the filename from a path.
 
@@ -1425,21 +1696,24 @@ Extract the filename from a path.
 
 **Returns:** Filename (last component of the path)
 
-**Examples:**
+**Function syntax:**
 ```jinja
 {{ basename(path="/path/to/file.txt") }}
 {# Output: file.txt #}
+```
 
-{{ basename(path="folder/document.pdf") }}
-{# Output: document.pdf #}
+**Filter syntax:**
+```jinja
+{{ "/path/to/file.txt" | basename }}
+{# Output: file.txt #}
 
 {# Use with glob results #}
 {% for file in glob(pattern="src/**/*.rs") %}
-  - {{ basename(path=file) }}
+  - {{ file | basename }}
 {% endfor %}
 ```
 
-#### `dirname(path)`
+#### `dirname(path)` / `| dirname`
 
 Extract the directory portion from a path.
 
@@ -1448,21 +1722,24 @@ Extract the directory portion from a path.
 
 **Returns:** Directory path (all components except the last)
 
-**Examples:**
+**Function syntax:**
 ```jinja
 {{ dirname(path="/path/to/file.txt") }}
 {# Output: /path/to #}
+```
 
-{{ dirname(path="folder/document.pdf") }}
-{# Output: folder #}
+**Filter syntax:**
+```jinja
+{{ "/path/to/file.txt" | dirname }}
+{# Output: /path/to #}
 
 {# Get parent directory #}
 {% set file_path = "config/app/settings.json" %}
-Config directory: {{ dirname(path=file_path) }}
+Config directory: {{ file_path | dirname }}
 {# Output: config/app #}
 ```
 
-#### `file_extension(path)`
+#### `file_extension(path)` / `| file_extension`
 
 Extract the file extension from a path.
 
@@ -1471,29 +1748,33 @@ Extract the file extension from a path.
 
 **Returns:** File extension without the dot (empty string if no extension)
 
-**Examples:**
+**Function syntax:**
 ```jinja
 {{ file_extension(path="document.pdf") }}
 {# Output: pdf #}
 
 {{ file_extension(path="/path/to/file.tar.gz") }}
 {# Output: gz #}
+```
 
-{{ file_extension(path="README") }}
-{# Output: (empty) #}
+**Filter syntax:**
+```jinja
+{{ "document.pdf" | file_extension }}
+{# Output: pdf #}
+
+{# Chain with basename #}
+{{ "/path/to/file.tar.gz" | basename | file_extension }}
+{# Output: gz #}
 
 {# Group files by extension #}
-{% set files = glob(pattern="docs/*") %}
-{% for file in files %}
-  {% if file_extension(path=file) == "md" %}
+{% for file in glob(pattern="docs/*") %}
+  {% if file | file_extension == "md" %}
     - Markdown: {{ file }}
-  {% elif file_extension(path=file) == "pdf" %}
-    - PDF: {{ file }}
   {% endif %}
 {% endfor %}
 ```
 
-#### `join_path(parts)`
+#### `join_path(parts)` / `| join_path`
 
 Join multiple path components into a single path.
 
@@ -1502,23 +1783,27 @@ Join multiple path components into a single path.
 
 **Returns:** Joined path string
 
-**Examples:**
+**Function syntax:**
 ```jinja
 {{ join_path(parts=["path", "to", "file.txt"]) }}
 {# Output: path/to/file.txt #}
 
 {{ join_path(parts=["/home", "user", "documents"]) }}
 {# Output: /home/user/documents #}
-
-{# Build dynamic paths #}
-{% set base_dir = "config" %}
-{% set env = get_env(name="APP_ENV", default="development") %}
-{% set config_path = join_path(parts=[base_dir, env, "settings.json"]) %}
-Config file: {{ config_path }}
-{# Output: config/development/settings.json #}
 ```
 
-#### `normalize_path(path)`
+**Filter syntax:**
+```jinja
+{{ ["path", "to", "file.txt"] | join_path }}
+{# Output: path/to/file.txt #}
+
+{# Build dynamic paths #}
+{% set path_parts = ["config", "production", "settings.json"] %}
+{{ path_parts | join_path }}
+{# Output: config/production/settings.json #}
+```
+
+#### `normalize_path(path)` / `| normalize_path`
 
 Normalize a path by resolving `.` (current directory) and `..` (parent directory) components.
 
@@ -1527,85 +1812,117 @@ Normalize a path by resolving `.` (current directory) and `..` (parent directory
 
 **Returns:** Normalized path string
 
-**Examples:**
+**Function syntax:**
 ```jinja
 {{ normalize_path(path="./foo/bar") }}
 {# Output: foo/bar #}
 
-{{ normalize_path(path="foo/../bar") }}
-{# Output: bar #}
-
 {{ normalize_path(path="a/b/c/../../d") }}
 {# Output: a/d #}
+```
+
+**Filter syntax:**
+```jinja
+{{ "./foo/bar" | normalize_path }}
+{# Output: foo/bar #}
 
 {# Clean up path components #}
 {% set messy_path = "./config/../data/./files.txt" %}
-Clean path: {{ normalize_path(path=messy_path) }}
+{{ messy_path | normalize_path }}
 {# Output: data/files.txt #}
 ```
 
-#### `is_file(path)`
+#### `is_file(path)` / `{% if path is file %}`
 
-Check if a path exists and is a file.
+Check if a path exists and is a file. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `path` (required) - Path to check
+
+**Is-Test Syntax:**
+- The value must be a string representing a file path
 
 **Returns:** Boolean (true if path exists and is a file)
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {% if is_file(path="config.txt") %}
   Config file found!
-{% else %}
-  Config file missing
 {% endif %}
 
-{# Check before reading #}
-{% if is_file(path="README.md") %}
-  {{ read_file(path="README.md") }}
+{# Is-test syntax (preferred for readability) #}
+{% if "config.txt" is file %}
+  Config file found!
+{% endif %}
+
+{# With variables #}
+{% set config_path = "config.json" %}
+{% if config_path is file %}
+  {{ read_file(path=config_path) }}
 {% endif %}
 ```
 
-#### `is_dir(path)`
+#### `is_dir(path)` / `{% if path is dir %}`
 
-Check if a path exists and is a directory.
+Check if a path exists and is a directory. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `path` (required) - Path to check
+
+**Is-Test Syntax:**
+- The value must be a string representing a directory path
 
 **Returns:** Boolean (true if path exists and is a directory)
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {% if is_dir(path="src") %}
   Source directory exists
-{% else %}
-  Source directory not found
 {% endif %}
 
-{# Conditional directory operations #}
-{% if is_dir(path="tests") %}
+{# Is-test syntax (preferred for readability) #}
+{% if "src" is dir %}
+  Source directory exists
+{% endif %}
+
+{# With variables #}
+{% set test_dir = "tests" %}
+{% if test_dir is dir %}
   {% set test_files = glob(pattern="tests/**/*.rs") %}
   Found {{ test_files | length }} test files
 {% endif %}
 ```
 
-#### `is_symlink(path)`
+#### `is_symlink(path)` / `{% if path is symlink %}`
 
-Check if a path is a symbolic link.
+Check if a path is a symbolic link. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `path` (required) - Path to check
+
+**Is-Test Syntax:**
+- The value must be a string representing a path
 
 **Returns:** Boolean (true if path is a symlink)
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {% if is_symlink(path="current") %}
   'current' is a symbolic link
-{% else %}
-  'current' is not a symbolic link
+{% endif %}
+
+{# Is-test syntax (preferred for readability) #}
+{% if "current" is symlink %}
+  'current' is a symbolic link
+{% endif %}
+
+{# With variables #}
+{% set link_path = "latest" %}
+{% if link_path is symlink %}
+  Following symlink...
 {% endif %}
 ```
 
@@ -1703,34 +2020,41 @@ Parse structured data formats (JSON, YAML, TOML) from strings or files. Useful f
 
 **Security Note:** File-reading functions enforce the same security restrictions as other filesystem functions.
 
-#### `parse_json(string)`
+#### `parse_json(string)` / `| parse_json`
 
-Parse a JSON string into an object.
+Parse a JSON string into an object. Available as both function and filter.
 
 **Arguments:**
-- `string` (required) - JSON string to parse
+- `string` (required for function syntax) - JSON string to parse
 
 **Returns:** Parsed JSON object
 
-**Examples:**
-```
+**Function Syntax:**
+```jinja
 {% set config = parse_json(string='{"name": "myapp", "port": 8080, "debug": true}') %}
 Application: {{ config.name }}
 Port: {{ config.port }}
 Debug mode: {{ config.debug }}
 ```
 
-#### `parse_yaml(string)`
+**Filter Syntax:**
+```jinja
+{% set json_str = '{"name": "Alice", "age": 30}' %}
+{% set user = json_str | parse_json %}
+Name: {{ user.name }}, Age: {{ user.age }}
+```
 
-Parse a YAML string into an object.
+#### `parse_yaml(string)` / `| parse_yaml`
+
+Parse a YAML string into an object. Available as both function and filter.
 
 **Arguments:**
-- `string` (required) - YAML string to parse
+- `string` (required for function syntax) - YAML string to parse
 
 **Returns:** Parsed YAML object
 
-**Examples:**
-```
+**Function Syntax:**
+```jinja
 {% set data = parse_yaml(string="
 name: myapp
 settings:
@@ -1741,17 +2065,25 @@ App: {{ data.name }}
 Theme: {{ data.settings.theme }}
 ```
 
-#### `parse_toml(string)`
+**Filter Syntax:**
+```jinja
+{% set yaml_str = "name: Bob
+age: 25" %}
+{% set user = yaml_str | parse_yaml %}
+Name: {{ user.name }}, Age: {{ user.age }}
+```
 
-Parse a TOML string into an object.
+#### `parse_toml(string)` / `| parse_toml`
+
+Parse a TOML string into an object. Available as both function and filter.
 
 **Arguments:**
-- `string` (required) - TOML string to parse
+- `string` (required for function syntax) - TOML string to parse
 
 **Returns:** Parsed TOML object
 
-**Examples:**
-```
+**Function Syntax:**
+```jinja
 {% set config = parse_toml(string='
 [database]
 host = "localhost"
@@ -1762,6 +2094,14 @@ enabled = true
 ') %}
 Database: {{ config.database.host }}:{{ config.database.port }}
 Cache: {{ config.cache.enabled }}
+```
+
+**Filter Syntax:**
+```jinja
+{% set toml_str = 'name = "Charlie"
+age = 35' %}
+{% set user = toml_str | parse_toml %}
+Name: {{ user.name }}, Age: {{ user.age }}
 ```
 
 #### `read_json_file(path)`
@@ -1891,17 +2231,17 @@ Dependencies: {{ toml_config.dependencies | length }}
 
 Convert objects and data structures to formatted strings (JSON, YAML, TOML). Useful for generating configuration files, API payloads, or converting between formats.
 
-#### `to_json(object, pretty)`
+#### `to_json(object, pretty)` / `| to_json`
 
-Convert an object to a JSON string.
+Convert an object to a JSON string. Available as both function and filter.
 
 **Arguments:**
-- `object` (required) - Object/value to convert to JSON
+- `object` (required for function syntax) - Object/value to convert to JSON
 - `pretty` (optional) - Enable pretty-printing with indentation (default: false)
 
 **Returns:** JSON string
 
-**Examples:**
+**Function Syntax:**
 ```jinja
 {# Simple JSON serialization #}
 {% set config = {"host": "localhost", "port": 8080, "debug": true} %}
@@ -1917,7 +2257,24 @@ Convert an object to a JSON string.
   "debug": true
 }
 #}
+```
 
+**Filter Syntax:**
+```jinja
+{# Simple filter syntax #}
+{% set config = {"host": "localhost", "port": 8080} %}
+{{ config | to_json }}
+{# Output: {"host":"localhost","port":8080} #}
+
+{# Pretty-printed with filter #}
+{{ config | to_json(pretty=true) }}
+
+{# Chaining with other filters #}
+{{ config | to_json | base64_encode }}
+```
+
+**More Examples:**
+```jinja
 {# Convert array to JSON #}
 {% set items = [1, 2, 3, 4, 5] %}
 {{ to_json(object=items) }}
@@ -1935,16 +2292,16 @@ Convert an object to a JSON string.
 {{ to_json(object=api_request, pretty=true) }}
 ```
 
-#### `to_yaml(object)`
+#### `to_yaml(object)` / `| to_yaml`
 
-Convert an object to a YAML string.
+Convert an object to a YAML string. Available as both function and filter.
 
 **Arguments:**
-- `object` (required) - Object/value to convert to YAML
+- `object` (required for function syntax) - Object/value to convert to YAML
 
 **Returns:** YAML string
 
-**Examples:**
+**Function Syntax:**
 ```jinja
 {# Simple YAML serialization #}
 {% set config = {"host": "localhost", "port": 8080, "debug": true} %}
@@ -1954,7 +2311,24 @@ host: localhost
 port: 8080
 debug: true
 #}
+```
 
+**Filter Syntax:**
+```jinja
+{# Simple filter syntax #}
+{% set config = {"host": "localhost", "port": 8080} %}
+{{ config | to_yaml }}
+{# Output:
+host: localhost
+port: 8080
+#}
+
+{# Trim trailing newline #}
+{{ config | to_yaml | trim }}
+```
+
+**More Examples:**
+```jinja
 {# Convert array to YAML #}
 {% set items = ["apple", "banana", "cherry"] %}
 {{ to_yaml(object=items) }}
@@ -1980,12 +2354,12 @@ debug: true
 {{ to_yaml(object=k8s_config) }}
 ```
 
-#### `to_toml(object)`
+#### `to_toml(object)` / `| to_toml`
 
-Convert an object to a TOML string.
+Convert an object to a TOML string. Available as both function and filter.
 
 **Arguments:**
-- `object` (required) - Object/value to convert to TOML
+- `object` (required for function syntax) - Object/value to convert to TOML
 
 **Returns:** TOML string
 
@@ -1993,7 +2367,7 @@ Convert an object to a TOML string.
 - Root level must be a table (object/map)
 - Arrays must contain elements of the same type
 
-**Examples:**
+**Function Syntax:**
 ```jinja
 {# Simple TOML serialization #}
 {% set config = {"title": "My App", "version": "1.0.0"} %}
@@ -2002,7 +2376,24 @@ Convert an object to a TOML string.
 title = "My App"
 version = "1.0.0"
 #}
+```
 
+**Filter Syntax:**
+```jinja
+{# Simple filter syntax #}
+{% set config = {"title": "MyApp", "version": "1.0.0"} %}
+{{ config | to_toml }}
+{# Output:
+title = "MyApp"
+version = "1.0.0"
+#}
+
+{# Trim trailing newline #}
+{{ config | to_toml | trim }}
+```
+
+**More Examples:**
+```jinja
 {# Generate Cargo.toml dependencies #}
 {% set cargo_config = {
   "package": {
@@ -2240,7 +2631,7 @@ Set nested value in an object using dot-separated path notation. Creates interme
 {{ to_json(object=config, pretty=true) }}
 ```
 
-#### `object_keys(object)`
+#### `object_keys(object)` / `| object_keys`
 
 Get all keys from an object as an array.
 
@@ -2251,38 +2642,28 @@ Get all keys from an object as an array.
 
 **Examples:**
 ```jinja
-{# Get all keys #}
+{# Function syntax #}
 {% set config = {"host": "localhost", "port": 8080, "debug": true} %}
 {% set keys = object_keys(object=config) %}
 {{ to_json(object=keys) }}
 {# Output: ["host","port","debug"] #}
 
-{# Iterate over keys #}
-{% set config = {"host": "localhost", "port": 8080, "debug": true} %}
-Configuration keys:
-{% for key in object_keys(object=config) %}
-  - {{ key }}
-{% endfor %}
-{# Output:
-Configuration keys:
-  - host
-  - port
-  - debug
-#}
+{# Filter syntax #}
+{% set keys = config | object_keys %}
+{{ keys | join(sep=", ") }}
+{# Output: host, port, debug #}
 
-{# Dynamic configuration display #}
-{% set config = {
-  "SERVER_HOST": "localhost",
-  "SERVER_PORT": 8080,
-  "DATABASE_URL": "postgres://localhost/mydb"
-} %}
-# Environment Variables
-{% for key in object_keys(object=config) %}
-{{ key }}={{ config[key] }}
+{# Iterate over keys with filter syntax #}
+{% for key in config | object_keys %}
+  - {{ key }}: {{ config[key] }}
 {% endfor %}
+
+{# Chaining - get count of keys #}
+{{ config | object_keys | length }}
+{# Output: 3 #}
 ```
 
-#### `object_values(object)`
+#### `object_values(object)` / `| object_values`
 
 Get all values from an object as an array.
 
@@ -2293,30 +2674,27 @@ Get all values from an object as an array.
 
 **Examples:**
 ```jinja
-{# Get all values #}
+{# Function syntax #}
 {% set config = {"a": 1, "b": 2, "c": 3} %}
 {% set values = object_values(object=config) %}
 {{ to_json(object=values) }}
 {# Output: [1,2,3] #}
 
-{# Process all values #}
+{# Filter syntax #}
 {% set ports = {"http": 80, "https": 443, "app": 8080} %}
-Open ports:
-{% for port in object_values(object=ports) %}
+{% for port in ports | object_values %}
   - {{ port }}
 {% endfor %}
 {# Output:
-Open ports:
   - 80
   - 443
   - 8080
 #}
 
-{# Mixed type values #}
-{% set config = {"str": "hello", "num": 42, "bool": true} %}
-{% for value in object_values(object=config) %}
-  Value: {{ value }} (type: {{ type_of(value=value) }})
-{% endfor %}
+{# Chaining filters #}
+{% set scores = {"alice": 95, "bob": 87, "charlie": 92} %}
+Average: {{ scores | object_values | array_avg }}
+{# Output: Average: 91.33... #}
 ```
 
 #### `object_has_key(object, key)`
@@ -2508,7 +2886,7 @@ Rename object keys using a mapping.
 {% set api_data = object_rename_keys(object=response, mapping={"userId": "user_id", "createdAt": "created_at"}) %}
 ```
 
-#### `object_flatten(object, delimiter)`
+#### `object_flatten(object, delimiter)` / `| object_flatten`
 
 Flatten a nested object to dot-notation keys.
 
@@ -2519,22 +2897,25 @@ Flatten a nested object to dot-notation keys.
 **Returns:** A flat object with delimited keys
 
 ```jinja
+{# Function syntax #}
 {% set nested = {"server": {"host": "localhost", "port": 8080}, "database": {"name": "mydb"}} %}
-
-{# Default dot delimiter #}
 {% set flat = object_flatten(object=nested) %}
 {{ flat | tojson }}
 {# Output: {"server.host":"localhost","server.port":8080,"database.name":"mydb"} #}
 
-{# Custom delimiter #}
-{% set flat_underscore = object_flatten(object=nested, delimiter="_") %}
-{{ flat_underscore | tojson }}
-{# Output: {"server_host":"localhost","server_port":8080,"database_name":"mydb"} #}
+{# Filter syntax #}
+{% set flat = nested | object_flatten %}
+{{ flat["server.host"] }}
+{# Output: localhost #}
 
-{# Useful for environment variable generation #}
-{% for key, value in object_flatten(object=config, delimiter="_") %}
-export {{ key | upper }}="{{ value }}"
-{% endfor %}
+{# Filter syntax with delimiter #}
+{% set flat_underscore = nested | object_flatten(delimiter="_") %}
+{{ flat_underscore["server_host"] }}
+{# Output: localhost #}
+
+{# Chaining - get all flattened keys #}
+{{ nested | object_flatten | object_keys | join(sep=", ") }}
+{# Output: server.host, server.port, database.name #}
 ```
 
 #### `object_unflatten(object, delimiter)`
@@ -2815,7 +3196,7 @@ spec:
           {{ k8s_resource_request(cpu="1000m", memory="1Gi") | indent(10) }}
 ```
 
-#### `k8s_label_safe(value)`
+#### `k8s_label_safe(value)` / `| k8s_label_safe`
 
 Sanitize string to be Kubernetes label-safe.
 
@@ -2830,18 +3211,22 @@ Sanitize string to be Kubernetes label-safe.
 
 **Example:**
 ```jinja
-{# Sanitize label value #}
+{# Function syntax #}
 {{ k8s_label_safe(value="My App (v2.0)") }}
+{# Output: my-app-v2.0 #}
+
+{# Filter syntax #}
+{{ "My App (v2.0)" | k8s_label_safe }}
 {# Output: my-app-v2.0 #}
 
 {# Use in labels #}
 metadata:
   labels:
-    app: {{ k8s_label_safe(value=app_name) }}
-    version: {{ k8s_label_safe(value=version) }}
+    app: {{ app_name | k8s_label_safe }}
+    version: {{ version | k8s_label_safe }}
 ```
 
-#### `k8s_dns_label_safe(value)`
+#### `k8s_dns_label_safe(value)` / `| k8s_dns_label_safe`
 
 Format DNS-safe label (max 63 chars, lowercase, alphanumeric and dashes only).
 
@@ -2852,15 +3237,19 @@ Format DNS-safe label (max 63 chars, lowercase, alphanumeric and dashes only).
 
 **Example:**
 ```jinja
-{# Format DNS label #}
+{# Function syntax #}
 {{ k8s_dns_label_safe(value="My Service Name") }}
+{# Output: my-service-name #}
+
+{# Filter syntax #}
+{{ "My Service Name" | k8s_dns_label_safe }}
 {# Output: my-service-name #}
 
 {# Use in service names #}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ k8s_dns_label_safe(value=service_name) }}
+  name: {{ service_name | k8s_dns_label_safe }}
 ```
 
 #### `k8s_env_var_ref(var_name, source, name)`
@@ -3015,26 +3404,30 @@ metadata:
   name: {{ helm_tpl(template="{{ .Release.Name }}-{{ .Chart.Name }}", values={"Release": {"Name": "prod"}, "Chart": {"Name": "webapp"}}) }}
 ```
 
-#### `k8s_annotation_safe(string)`
+#### `k8s_annotation_safe(value)` / `| k8s_annotation_safe`
 
 Sanitize a string for use as a Kubernetes annotation value.
 
 **Arguments:**
-- `string` (required): The string to sanitize
+- `value` (required): The string to sanitize
 
-**Returns:** Sanitized string safe for annotation values (max 256KB, control chars removed)
+**Returns:** Sanitized string safe for annotation values (max 64KB, control chars replaced with spaces)
 
 **Example:**
 ```jinja
-{# Sanitize annotation value #}
-{{ k8s_annotation_safe(string="Description with\nnewlines and\ttabs") }}
+{# Function syntax #}
+{{ k8s_annotation_safe(value="Description with\nnewlines and\ttabs") }}
 {# Output: Description with newlines and tabs #}
+
+{# Filter syntax #}
+{{ "Description with\nnewlines" | k8s_annotation_safe }}
+{# Output: Description with newlines #}
 
 {# In Kubernetes manifest #}
 metadata:
   annotations:
-    description: "{{ k8s_annotation_safe(string=description) }}"
-    config: "{{ k8s_annotation_safe(string=to_json(config_obj)) }}"
+    description: "{{ description | k8s_annotation_safe }}"
+    config: "{{ config_obj | to_json | k8s_annotation_safe }}"
 ```
 
 #### `k8s_quantity_to_bytes(quantity)`
@@ -3310,7 +3703,63 @@ Authorization: {{ basic_auth(username=get_env(name="API_USER"), password=get_env
 proxy_set_header Authorization "{{ basic_auth(username="api_user", password="api_key") }}";
 ```
 
-#### `parse_url(url)`
+#### `url_encode(string)` / `| url_encode`
+
+URL-encode a string for safe use in URLs.
+
+**Arguments:**
+- `string` (required): The string to encode
+
+**Returns:** URL-encoded string
+
+**Example:**
+```jinja
+{# Function syntax #}
+{{ url_encode(string="hello world") }}
+{# Output: hello%20world #}
+
+{# Filter syntax #}
+{{ "hello world" | url_encode }}
+{# Output: hello%20world #}
+
+{# Encoding special characters #}
+{{ "foo=bar&baz=qux" | url_encode }}
+{# Output: foo%3Dbar%26baz%3Dqux #}
+
+{# In a query parameter #}
+{% set search_term = "jinja templates" %}
+https://example.com/search?q={{ search_term | url_encode }}
+{# Output: https://example.com/search?q=jinja%20templates #}
+```
+
+#### `url_decode(string)` / `| url_decode`
+
+Decode a percent-encoded URL string.
+
+**Arguments:**
+- `string` (required): The URL-encoded string to decode
+
+**Returns:** Decoded string
+
+**Example:**
+```jinja
+{# Function syntax #}
+{{ url_decode(string="hello%20world") }}
+{# Output: hello world #}
+
+{# Filter syntax #}
+{{ "hello%20world" | url_decode }}
+{# Output: hello world #}
+
+{# Decoding special characters #}
+{{ "foo%3Dbar%26baz%3Dqux" | url_decode }}
+{# Output: foo=bar&baz=qux #}
+
+{# Chaining with other operations #}
+{{ encoded_input | url_decode | upper }}
+```
+
+#### `parse_url(url)` / `| parse_url`
 
 Parse a URL into its component parts.
 
@@ -3329,7 +3778,7 @@ Parse a URL into its component parts.
 
 **Example:**
 ```jinja
-{# Parse URL #}
+{# Function syntax #}
 {% set url = parse_url(url="https://user:pass@api.example.com:8080/v1/users?limit=10#section") %}
 Scheme: {{ url.scheme }}
 Host: {{ url.host }}
@@ -3344,11 +3793,16 @@ Path: /v1/users
 Query: limit=10
 #}
 
+{# Filter syntax #}
+{% set url = "https://api.example.com:8080/path" | parse_url %}
+{{ url.host }}:{{ url.port }}
+{# Output: api.example.com:8080 #}
+
 {# Extract host from environment variable #}
-{% set db_url = parse_url(url=get_env(name="DATABASE_URL")) %}
+{% set db_url = get_env(name="DATABASE_URL") | parse_url %}
 DB_HOST={{ db_url.host }}
 DB_PORT={{ db_url.port }}
-DB_NAME={{ url.path | trim_start_matches(pat="/") }}
+DB_NAME={{ db_url.path | trim_start_matches(pat="/") }}
 ```
 
 #### `build_url(scheme, host, port, path, query)`
@@ -3593,7 +4047,7 @@ Peak memory: {{ max(a=memory1, b=memory2) }}MB
 
 #### `abs(number)`
 
-Return the absolute value of a number.
+Return the absolute value of a number. Supports both function and filter syntax.
 
 **Arguments:**
 - `number` (required): Number to get absolute value of
@@ -3602,19 +4056,27 @@ Return the absolute value of a number.
 
 **Example:**
 ```jinja
-{# Absolute value #}
+{# Function syntax #}
 {{ abs(number=-42) }}
 {# Output: 42 #}
 
-{# Temperature difference #}
+{# Filter syntax #}
+{{ -42 | abs }}
+{# Output: 42 #}
+
+{# Temperature difference - function syntax #}
 {% set temp1 = 25 %}
 {% set temp2 = 18 %}
 Difference: {{ abs(number=temp1 - temp2) }}°C
+
+{# Chaining filters #}
+{{ -3.7 | abs | ceil }}
+{# Output: 4 #}
 ```
 
 #### `round(number, decimals=0)`
 
-Round a number to N decimal places.
+Round a number to N decimal places. Supports both function and filter syntax.
 
 **Arguments:**
 - `number` (required): Number to round
@@ -3624,22 +4086,30 @@ Round a number to N decimal places.
 
 **Example:**
 ```jinja
-{# Round to nearest integer #}
+{# Function syntax #}
 {{ round(number=3.7) }}
 {# Output: 4 #}
 
-{# Round to 2 decimal places #}
+{# Filter syntax #}
+{{ 3.7 | round }}
+{# Output: 4 #}
+
+{# Round to 2 decimal places - function syntax #}
 {{ round(number=3.14159, decimals=2) }}
 {# Output: 3.14 #}
 
-{# Price calculation #}
+{# Round to 2 decimal places - filter syntax #}
+{{ 3.14159 | round(decimals=2) }}
+{# Output: 3.14 #}
+
+{# Price calculation with filter chaining #}
 {% set price = 19.999 %}
-Price: ${{ round(number=price, decimals=2) }}
+Price: ${{ price | round(decimals=2) }}
 ```
 
 #### `ceil(number)`
 
-Round up to the nearest integer.
+Round up to the nearest integer. Supports both function and filter syntax.
 
 **Arguments:**
 - `number` (required): Number to round up
@@ -3648,19 +4118,27 @@ Round up to the nearest integer.
 
 **Example:**
 ```jinja
-{# Round up #}
+{# Function syntax #}
 {{ ceil(number=3.1) }}
 {# Output: 4 #}
 
-{# Calculate required servers #}
+{# Filter syntax #}
+{{ 3.1 | ceil }}
+{# Output: 4 #}
+
+{# Calculate required servers - function syntax #}
 {% set users = 150 %}
 {% set users_per_server = 50 %}
 Servers needed: {{ ceil(number=users / users_per_server) }}
+
+{# With filter chaining #}
+{{ -3.7 | abs | ceil }}
+{# Output: 4 #}
 ```
 
 #### `floor(number)`
 
-Round down to the nearest integer.
+Round down to the nearest integer. Supports both function and filter syntax.
 
 **Arguments:**
 - `number` (required): Number to round down
@@ -3669,14 +4147,22 @@ Round down to the nearest integer.
 
 **Example:**
 ```jinja
-{# Round down #}
+{# Function syntax #}
 {{ floor(number=3.9) }}
 {# Output: 3 #}
 
-{# Calculate filled pages #}
+{# Filter syntax #}
+{{ 3.9 | floor }}
+{# Output: 3 #}
+
+{# Calculate filled pages - function syntax #}
 {% set items = 47 %}
 {% set items_per_page = 10 %}
 Full pages: {{ floor(number=items / items_per_page) }}
+
+{# With filter chaining #}
+{{ 3.999 | floor | abs }}
+{# Output: 3 #}
 ```
 
 #### `percentage(value, total)`
@@ -3710,7 +4196,7 @@ Disk usage: {{ round(number=percentage(value=used, total=capacity), decimals=2) 
 
 Calculate statistics on numeric arrays.
 
-#### `array_sum(array)`
+#### `array_sum(array)` / `| array_sum`
 
 Calculate the sum of all values in an array.
 
@@ -3719,7 +4205,7 @@ Calculate the sum of all values in an array.
 
 **Returns:** Sum of all values (integer if no decimals, float otherwise)
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Sum of integers #}
 {% set numbers = [1, 2, 3, 4, 5] %}
@@ -3730,13 +4216,21 @@ Total: {{ array_sum(array=numbers) }}
 {% set prices = [10.5, 20.25, 5.75] %}
 Total: ${{ array_sum(array=prices) }}
 {# Output: Total: $36.5 #}
-
-{# Calculate total disk usage #}
-{% set sizes = [1024, 2048, 512, 4096] %}
-Total MB: {{ array_sum(array=sizes) }}
 ```
 
-#### `array_avg(array)`
+**Filter syntax:**
+```jinja
+{% set numbers = [1, 2, 3, 4, 5] %}
+{{ numbers | array_sum }}
+{# Output: 15 #}
+
+{# Chaining: unique then sum #}
+{% set nums = [1, 2, 2, 3, 3] %}
+{{ nums | array_unique | array_sum }}
+{# Output: 6 #}
+```
+
+#### `array_avg(array)` / `| array_avg`
 
 Calculate the average (mean) of all values in an array.
 
@@ -3745,16 +4239,12 @@ Calculate the average (mean) of all values in an array.
 
 **Returns:** Arithmetic mean of all values (0 for empty arrays)
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Average score #}
 {% set scores = [85, 90, 78, 92, 88] %}
 Average: {{ array_avg(array=scores) }}
 {# Output: Average: 86.6 #}
-
-{# CPU usage over time #}
-{% set cpu = [45.2, 52.1, 48.7, 50.3] %}
-Avg CPU: {{ array_avg(array=cpu) }}%
 
 {# Empty array handling #}
 {% set empty = [] %}
@@ -3762,7 +4252,14 @@ Default: {{ array_avg(array=empty) }}
 {# Output: Default: 0 #}
 ```
 
-#### `array_median(array)`
+**Filter syntax:**
+```jinja
+{% set scores = [85, 90, 78, 92, 88] %}
+{{ scores | array_avg }}
+{# Output: 86.6 #}
+```
+
+#### `array_median(array)` / `| array_median`
 
 Calculate the median value of an array.
 
@@ -3771,7 +4268,7 @@ Calculate the median value of an array.
 
 **Returns:** Middle value for odd-length arrays, average of two middle values for even-length arrays
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Median of odd-length array #}
 {% set nums = [1, 3, 5, 7, 9] %}
@@ -3782,13 +4279,16 @@ Median: {{ array_median(array=nums) }}
 {% set nums = [1, 2, 3, 4] %}
 Median: {{ array_median(array=nums) }}
 {# Output: Median: 2.5 #}
-
-{# Response time analysis #}
-{% set response_times = [120, 95, 150, 105, 130] %}
-Median response: {{ array_median(array=response_times) }}ms
 ```
 
-#### `array_min(array)`
+**Filter syntax:**
+```jinja
+{% set nums = [1, 3, 5, 7, 9] %}
+{{ nums | array_median }}
+{# Output: 5 #}
+```
+
+#### `array_min(array)` / `| array_min`
 
 Find the minimum value in an array.
 
@@ -3797,7 +4297,7 @@ Find the minimum value in an array.
 
 **Returns:** Smallest value in the array
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Find minimum #}
 {% set numbers = [42, 17, 99, 8, 55] %}
@@ -3807,13 +4307,16 @@ Minimum: {{ array_min(array=numbers) }}
 {# Lowest price #}
 {% set prices = [10.99, 5.49, 15.99, 7.25] %}
 Best deal: ${{ array_min(array=prices) }}
-
-{# Temperature range #}
-{% set temps = [-5, 3, 8, -2, 12] %}
-Low: {{ array_min(array=temps) }}°C
 ```
 
-#### `array_max(array)`
+**Filter syntax:**
+```jinja
+{% set numbers = [42, 17, 99, 8, 55] %}
+{{ numbers | array_min }}
+{# Output: 8 #}
+```
+
+#### `array_max(array)` / `| array_max`
 
 Find the maximum value in an array.
 
@@ -3822,7 +4325,7 @@ Find the maximum value in an array.
 
 **Returns:** Largest value in the array
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Find maximum #}
 {% set numbers = [42, 17, 99, 8, 55] %}
@@ -3832,10 +4335,13 @@ Maximum: {{ array_max(array=numbers) }}
 {# Peak memory usage #}
 {% set memory = [512, 768, 1024, 896] %}
 Peak: {{ array_max(array=memory) }}MB
+```
 
-{# Temperature range #}
-{% set temps = [-5, 3, 8, -2, 12] %}
-High: {{ array_max(array=temps) }}°C
+**Filter syntax:**
+```jinja
+{% set numbers = [42, 17, 99, 8, 55] %}
+{{ numbers | array_max }}
+{# Output: 99 #}
 ```
 
 **Real-world use case - Resource allocation:**
@@ -4073,7 +4579,7 @@ Group array items by a key value.
 High priority: {{ by_priority["1"] | length }} tasks
 ```
 
-#### `array_unique(array)`
+#### `array_unique(array)` / `| array_unique`
 
 Remove duplicate values from an array.
 
@@ -4082,7 +4588,7 @@ Remove duplicate values from an array.
 
 **Returns:** New array with duplicates removed (first occurrence kept)
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Remove duplicate numbers #}
 {% set nums = [1, 2, 2, 3, 1, 4, 3, 5] %}
@@ -4093,16 +4599,20 @@ Remove duplicate values from an array.
 {% set tags = ["docker", "kubernetes", "docker", "helm", "kubernetes"] %}
 Unique tags: {{ array_unique(array=tags) | join(", ") }}
 {# Output: Unique tags: docker, kubernetes, helm #}
-
-{# Use in conditional #}
-{% set all_tags = ["prod", "dev", "prod", "staging", "dev"] %}
-{% set unique_envs = array_unique(array=all_tags) %}
-{% if unique_envs | length > 2 %}
-  Multiple environments detected
-{% endif %}
 ```
 
-#### `array_flatten(array)`
+**Filter syntax:**
+```jinja
+{% set nums = [1, 2, 2, 3, 3, 3] %}
+{{ nums | array_unique | join(", ") }}
+{# Output: 1, 2, 3 #}
+
+{# Chaining with sum #}
+{{ nums | array_unique | array_sum }}
+{# Output: 6 #}
+```
+
+#### `array_flatten(array)` / `| array_flatten`
 
 Flatten nested arrays by one level.
 
@@ -4111,29 +4621,30 @@ Flatten nested arrays by one level.
 
 **Returns:** New array with nested arrays flattened one level
 
-**Example:**
+**Function syntax:**
 ```jinja
 {# Flatten nested arrays #}
 {% set nested = [[1, 2], [3, 4], [5]] %}
 {{ array_flatten(array=nested) }}
 {# Output: [1, 2, 3, 4, 5] #}
 
-{# Mixed with non-arrays #}
-{% set mixed = [["a", "b"], "c", ["d", "e"]] %}
-{{ array_flatten(array=mixed) }}
-{# Output: ["a", "b", "c", "d", "e"] #}
-
 {# Only flattens one level #}
 {% set deep = [[1, [2, 3]], [4]] %}
 {{ array_flatten(array=deep) }}
 {# Output: [1, [2, 3], 4] #}
+```
+
+**Filter syntax:**
+```jinja
+{% set nested = [[1, 2], [3, 4], [5]] %}
+{{ nested | array_flatten | join(", ") }}
+{# Output: 1, 2, 3, 4, 5 #}
 
 {# Collect values from multiple sources #}
 {% set server1_ips = ["10.0.1.1", "10.0.1.2"] %}
-{% set server2_ips = ["10.0.2.1", "10.0.2.2"] %}
-{% set server3_ips = ["10.0.3.1"] %}
-{% set all_ips = array_flatten(array=[server1_ips, server2_ips, server3_ips]) %}
-Total IPs: {{ all_ips | length }}
+{% set server2_ips = ["10.0.2.1"] %}
+{{ [server1_ips, server2_ips] | array_flatten | join(", ") }}
+{# Output: 10.0.1.1, 10.0.1.2, 10.0.2.1 #}
 ```
 
 **Real-world use case - Task management dashboard:**
@@ -4371,7 +4882,7 @@ Advanced string operations including regex support.
 
 #### `regex_replace(string, pattern, replacement)`
 
-Replace substrings using a regex pattern.
+Replace substrings using a regex pattern. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
@@ -4382,14 +4893,19 @@ Replace substrings using a regex pattern.
 
 **Example:**
 ```jinja
+{# Function syntax #}
 {{ regex_replace(string="hello123world", pattern="[0-9]+", replacement="-") }}
 {# Output: hello-world #}
 
-{{ regex_replace(string="foo bar baz", pattern="\\s+", replacement="_") }}
+{# Filter syntax #}
+{{ "hello123world" | regex_replace(pattern="[0-9]+", replacement="-") }}
+{# Output: hello-world #}
+
+{{ "foo bar baz" | regex_replace(pattern="\\s+", replacement="_") }}
 {# Output: foo_bar_baz #}
 
 {# Using capture groups #}
-{{ regex_replace(string="hello world", pattern="(\\w+) (\\w+)", replacement="$2 $1") }}
+{{ "hello world" | regex_replace(pattern="(\\w+) (\\w+)", replacement="$2 $1") }}
 {# Output: world hello #}
 ```
 
@@ -4442,7 +4958,7 @@ Found {{ urls | length }} URLs
 
 #### `substring(string, start, length)`
 
-Extract a substring by position.
+Extract a substring by position. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
@@ -4453,14 +4969,19 @@ Extract a substring by position.
 
 **Example:**
 ```jinja
+{# Function syntax #}
 {{ substring(string="hello world", start=0, length=5) }}
 {# Output: hello #}
 
-{{ substring(string="hello world", start=6) }}
+{# Filter syntax #}
+{{ "hello world" | substring(start=0, length=5) }}
+{# Output: hello #}
+
+{{ "hello world" | substring(start=6) }}
 {# Output: world #}
 
 {# Negative start counts from end #}
-{{ substring(string="hello world", start=-5) }}
+{{ "hello world" | substring(start=-5) }}
 {# Output: world #}
 ```
 
@@ -4527,7 +5048,7 @@ Count occurrences of a substring.
 
 #### `truncate(string, length, suffix)`
 
-Truncate a string with a suffix.
+Truncate a string with a suffix. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
@@ -4538,20 +5059,25 @@ Truncate a string with a suffix.
 
 **Example:**
 ```jinja
+{# Function syntax #}
 {{ truncate(string="Hello World", length=8) }}
 {# Output: Hello... #}
 
-{{ truncate(string="Hello World", length=8, suffix=">>") }}
+{# Filter syntax #}
+{{ "Hello World" | truncate(length=8) }}
+{# Output: Hello... #}
+
+{{ "Hello World" | truncate(length=8, suffix=">>") }}
 {# Output: Hello >> #}
 
 {# Not truncated if already short enough #}
-{{ truncate(string="Hi", length=10) }}
+{{ "Hi" | truncate(length=10) }}
 {# Output: Hi #}
 ```
 
 #### `word_count(string)`
 
-Count words in a string.
+Count words in a string. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
@@ -4560,16 +5086,21 @@ Count words in a string.
 
 **Example:**
 ```jinja
+{# Function syntax #}
 {{ word_count(string="Hello World") }}
 {# Output: 2 #}
 
-{{ word_count(string="  one   two   three  ") }}
+{# Filter syntax #}
+{{ "Hello World" | word_count }}
+{# Output: 2 #}
+
+{{ "  one   two   three  " | word_count }}
 {# Output: 3 #}
 ```
 
 #### `split_lines(string)`
 
-Split a string into an array of lines.
+Split a string into an array of lines. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
@@ -4578,20 +5109,25 @@ Split a string into an array of lines.
 
 **Example:**
 ```jinja
+{# Function syntax #}
 {% set text = "line1
 line2
 line3" %}
 {{ split_lines(string=text) | tojson }}
 {# Output: ["line1", "line2", "line3"] #}
 
-{% for line in split_lines(string=content) %}
+{# Filter syntax #}
+{{ text | split_lines | tojson }}
+{# Output: ["line1", "line2", "line3"] #}
+
+{% for line in content | split_lines %}
   Line: {{ line }}
 {% endfor %}
 ```
 
 #### `wrap(string, width, indent)`
 
-Word wrap text at a specified width.
+Word wrap text at a specified width. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string to wrap
@@ -4600,15 +5136,20 @@ Word wrap text at a specified width.
 
 **Returns:** The wrapped text with newlines inserted
 
+**Example:**
 ```jinja
+{# Function syntax #}
 {{ wrap(string="The quick brown fox jumps over the lazy dog", width=20) }}
+
+{# Filter syntax #}
+{{ "The quick brown fox jumps over the lazy dog" | wrap(width=20) }}
 {# Output:
 The quick brown fox
 jumps over the lazy
 dog
 #}
 
-{{ wrap(string="Hello World Example", width=10, indent="  ") }}
+{{ "Hello World Example" | wrap(width=10, indent="  ") }}
 {# Output:
 Hello
   World
@@ -4618,7 +5159,7 @@ Hello
 
 #### `center(string, width, char)`
 
-Center text with padding.
+Center text with padding. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
@@ -4627,14 +5168,20 @@ Center text with padding.
 
 **Returns:** The centered string with padding
 
+**Example:**
 ```jinja
+{# Function syntax #}
 {{ center(string="hello", width=11) }}
 {# Output: "   hello   " #}
 
-{{ center(string="hi", width=10, char="-") }}
+{# Filter syntax #}
+{{ "hello" | center(width=11) }}
+{# Output: "   hello   " #}
+
+{{ "hi" | center(width=10, char="-") }}
 {# Output: "----hi----" #}
 
-{{ center(string="test", width=8, char="*") }}
+{{ "test" | center(width=8, char="*") }}
 {# Output: "**test**" #}
 ```
 
@@ -4660,60 +5207,77 @@ Convert to Sentence case (first letter capitalized, rest lowercase).
 
 #### `strip_html(string)`
 
-Remove HTML tags from a string.
+Remove HTML tags from a string. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string with HTML
 
 **Returns:** The string with all HTML tags removed
 
+**Example:**
 ```jinja
+{# Function syntax #}
 {{ strip_html(string="<p>Hello <b>World</b></p>") }}
 {# Output: Hello World #}
 
-{{ strip_html(string="<div class='test'>Content</div>") }}
+{# Filter syntax #}
+{{ "<p>Hello <b>World</b></p>" | strip_html }}
+{# Output: Hello World #}
+
+{{ "<div class='test'>Content</div>" | strip_html }}
 {# Output: Content #}
 
-{{ strip_html(string="<a href='link'>Click here</a>") }}
-{# Output: Click here #}
+{{ html_content | strip_html | normalize_whitespace }}
+{# Chaining with other filters #}
 ```
 
 #### `strip_ansi(string)`
 
-Remove ANSI escape codes from a string.
+Remove ANSI escape codes from a string. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string with ANSI codes
 
 **Returns:** The string with all ANSI escape codes removed
 
+**Example:**
 ```jinja
-{# Remove color codes from terminal output #}
+{# Function syntax #}
 {{ strip_ansi(string="\x1b[31mRed Text\x1b[0m") }}
 {# Output: Red Text #}
 
-{{ strip_ansi(string="\x1b[1;32mBold Green\x1b[0m Normal") }}
-{# Output: Bold Green Normal #}
+{# Filter syntax #}
+{{ "\x1b[31mRed Text\x1b[0m" | strip_ansi }}
+{# Output: Red Text #}
+
+{{ terminal_output | strip_ansi }}
+{# Remove color codes from terminal output #}
 ```
 
 #### `normalize_whitespace(string)`
 
-Normalize whitespace by collapsing multiple spaces/tabs/newlines into a single space.
+Normalize whitespace by collapsing multiple spaces/tabs/newlines into a single space. Supports both function and filter syntax.
 
 **Arguments:**
 - `string` (required): The input string
 
 **Returns:** The string with normalized whitespace (trimmed and collapsed)
 
+**Example:**
 ```jinja
+{# Function syntax #}
 {{ normalize_whitespace(string="  hello   world  ") }}
 {# Output: hello world #}
 
-{{ normalize_whitespace(string="line1\n\n\nline2\t\tline3") }}
+{# Filter syntax #}
+{{ "  hello   world  " | normalize_whitespace }}
+{# Output: hello world #}
+
+{{ "line1\n\n\nline2\t\tline3" | normalize_whitespace }}
 {# Output: line1 line2 line3 #}
 
-{{ normalize_whitespace(string="  multiple   spaces   here  ") }}
-{# Output: multiple spaces here #}
+{# Chaining with other filters #}
+{{ html_content | strip_html | normalize_whitespace | truncate(length=100) }}
 ```
 
 #### `to_constant_case(string)`
@@ -4843,6 +5407,34 @@ Local IP: {{ get_ip_address() }}
 Eth0 IP: {{ get_ip_address(interface="eth0") }}
 ```
 
+#### `get_interfaces()`
+
+Get a list of all network interfaces with their IP addresses.
+
+**Arguments:** None
+
+**Returns:** List of objects with interface information:
+- `name` - Interface name (e.g., "eth0", "en0", "lo")
+- `ip` - IP address assigned to the interface
+- `is_loopback` - Boolean indicating if this is a loopback interface
+
+**Example:**
+```
+{# List all interfaces #}
+{% for iface in get_interfaces() %}
+  {{ iface.name }}: {{ iface.ip }}{% if iface.is_loopback %} (loopback){% endif %}
+{% endfor %}
+
+{# Filter non-loopback interfaces #}
+{% for iface in get_interfaces() | selectattr("is_loopback", "equalto", false) %}
+  {{ iface.name }}: {{ iface.ip }}
+{% endfor %}
+
+{# Find first non-loopback IP #}
+{% set external_iface = get_interfaces() | selectattr("is_loopback", "equalto", false) | first %}
+Bind IP: {{ external_iface.ip }}
+```
+
 #### `resolve_dns(hostname)`
 
 Resolve a hostname to an IP address using DNS.
@@ -4861,27 +5453,37 @@ Local: {{ resolve_dns(hostname="localhost") }}
 {# Output: Local: 127.0.0.1 or ::1 #}
 ```
 
-#### `is_port_available(port)`
+#### `is_port_available(port)` / `{% if port is port_available %}`
 
-Check if a port is available (not in use).
+Check if a port is available (not in use). Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `port` (required) - Port number to check (1-65535)
+
+**Is-Test Syntax:**
+- The value must be an integer between 1 and 65535, or a string that can be parsed as such
 
 **Returns:** Boolean (`true` if available, `false` if in use)
 
-**Example:**
-```
+**Examples:**
+```jinja
+{# Function syntax #}
 {% if is_port_available(port=8080) %}
   Port 8080 is available
 {% else %}
   Port 8080 is already in use
 {% endif %}
 
-{# Dynamic port selection #}
-{% if is_port_available(port=3000) %}
-APP_PORT=3000
-{% elif is_port_available(port=3001) %}
+{# Is-test syntax (preferred for readability) #}
+{% if 8080 is port_available %}
+  Port 8080 is available
+{% endif %}
+
+{# With variables #}
+{% set my_port = 3000 %}
+{% if my_port is port_available %}
+APP_PORT={{ my_port }}
+{% elif 3001 is port_available %}
 APP_PORT=3001
 {% else %}
 APP_PORT=8080
@@ -5119,57 +5721,73 @@ services:
 
 Validate strings against specific formats. Useful for validating user input, configuration values, or data from external sources.
 
-#### `is_email(string)`
+These functions support two syntaxes:
+- **Function syntax:** `{{ is_email(string="...") }}` or `{% if is_email(string=var) %}`
+- **"Is" syntax:** `{% if var is email %}` (more readable for conditionals)
+
+#### `is_email(string)` / `{% if x is email %}`
 
 Validate if a string is a valid email address format.
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid email, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 Email: user@example.com
 Valid: {{ is_email(string="user@example.com") }}
 {# Output: Valid: true #}
 
-Email: invalid-email
-Valid: {{ is_email(string="invalid-email") }}
-{# Output: Valid: false #}
+{# "Is" syntax (preferred for conditionals) #}
+{% if user_email is email %}
+  <p>Valid email address!</p>
+{% else %}
+  <p>Please enter a valid email.</p>
+{% endif %}
+
+{# Negation with "is not" #}
+{% if input is not email %}
+  <p>Invalid email format.</p>
+{% endif %}
 ```
 
-#### `is_url(string)`
+#### `is_url(string)` / `{% if x is url %}`
 
 Validate if a string is a valid URL (supports http, https, ftp, file schemes).
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid URL, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 URL: https://example.com/path
 Valid: {{ is_url(string="https://example.com/path") }}
 {# Output: Valid: true #}
 
-URL: not-a-url
-Valid: {{ is_url(string="not-a-url") }}
-{# Output: Valid: false #}
+{# "Is" syntax #}
+{% if api_endpoint is url %}
+  <a href="{{ api_endpoint }}">API Docs</a>
+{% endif %}
 ```
 
-#### `is_ip(string)`
+#### `is_ip(string)` / `{% if x is ip %}`
 
 Validate if a string is a valid IP address (IPv4 or IPv6).
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid IP, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 IPv4: 192.168.1.1
 Valid: {{ is_ip(string="192.168.1.1") }}
 {# Output: Valid: true #}
@@ -5178,29 +5796,37 @@ IPv6: 2001:db8::1
 Valid: {{ is_ip(string="2001:db8::1") }}
 {# Output: Valid: true #}
 
-Invalid: 256.1.1.1
-Valid: {{ is_ip(string="256.1.1.1") }}
-{# Output: Valid: false #}
+{# "Is" syntax #}
+{% if server_address is ip %}
+  server: {{ server_address }}
+{% else %}
+  # Using hostname, resolve to IP
+  server: {{ resolve_dns(hostname=server_address) }}
+{% endif %}
 ```
 
-#### `is_uuid(string)`
+#### `is_uuid(string)` / `{% if x is uuid %}`
 
 Validate if a string is a valid UUID format.
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid UUID, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 UUID: 550e8400-e29b-41d4-a716-446655440000
 Valid: {{ is_uuid(string="550e8400-e29b-41d4-a716-446655440000") }}
 {# Output: Valid: true #}
 
-Invalid: not-a-uuid
-Valid: {{ is_uuid(string="not-a-uuid") }}
-{# Output: Valid: false #}
+{# "Is" syntax #}
+{% if request_id is uuid %}
+  X-Request-ID: {{ request_id }}
+{% else %}
+  X-Request-ID: {{ uuid() }}
+{% endif %}
 ```
 
 #### `matches_regex(pattern, string)`

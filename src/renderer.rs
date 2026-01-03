@@ -135,7 +135,7 @@ fn render(
         }
     });
 
-    // Register all custom functions
+    // Register all custom functions (includes filter-functions via register_all)
     functions::register_all(&mut env, template_context);
 
     // Use full file path as template name if it's a file, otherwise use "template"

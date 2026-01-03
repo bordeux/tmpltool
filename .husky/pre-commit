@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Skip QA checks for merge commits
+if [ -f .git/MERGE_HEAD ]; then
+  echo "Merge commit detected, skipping cargo make qa"
+  exit 0
+fi
+
+# Run QA checks for regular commits
+cargo make qa

@@ -14,6 +14,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # ============================================
+  # Core Tests & Quality Checks
+  # ============================================
   test:
     name: Test Suite
     runs-on: ${{ matrix.os }}
@@ -65,7 +68,7 @@ jobs:
         run: cargo install cargo-tarpaulin
 
       - name: Generate coverage
-        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
+        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --jobs 4 --skip-clean
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -113,164 +116,30 @@ jobs:
       - name: Test examples
         run: cargo make test-examples
 
-  build-and-test-binary:
-    name: Build & Test Binary (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: tmpltool
-            asset_name: tmpltool-linux-x86_64
-          - os: macos-latest
-            artifact_name: tmpltool
-            asset_name: tmpltool-macos
-          - os: windows-latest
-            artifact_name: tmpltool.exe
-            asset_name: tmpltool-windows.exe
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # ============================================
+  # Build Binaries (all platforms + integration tests)
+  # ============================================
+  build-binaries:
+    name: Build Binaries
+    needs: [test, cargo-make]
+    uses: ./.github/workflows/_build-binaries.yml
+    with:
+      upload-artifacts: true
+      artifact-retention-days: 7
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo build
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build release binary
-        run: cargo build --release --verbose
-
-      - name: Run binary integration tests (Unix)
-        if: runner.os != 'Windows'
-        run: bash tests/integration/test_binary.sh ./target/release/${{ matrix.artifact_name }}
-
-      - name: Run binary integration tests (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: bash tests/integration/test_binary.sh ./target/release/${{ matrix.artifact_name }}
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset_name }}
-          path: target/release/${{ matrix.artifact_name }}
-          if-no-files-found: error
-          retention-days: 7
-
+  # ============================================
+  # Build Packages (DEB, RPM, APK, DMG, MSI)
+  # ============================================
   build-packages:
-    name: Build Packages (DEB/RPM/APK)
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    name: Build Packages
+    needs: [test, cargo-make]
+    uses: ./.github/workflows/_build-packages.yml
+    with:
+      artifact-retention-days: 7
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-musl
-
-      - name: Install musl tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo build
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build release binary (glibc)
-        run: cargo build --release
-
-      - name: Build release binary (musl)
-        run: cargo build --release --target x86_64-unknown-linux-musl
-
-      - name: Install cargo-deb
-        run: cargo install cargo-deb
-
-      - name: Build DEB package
-        run: cargo deb --no-build
-
-      - name: Install cargo-generate-rpm
-        run: cargo install cargo-generate-rpm
-
-      - name: Build RPM package
-        run: cargo generate-rpm
-
-      - name: Build APK package
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          ARCH="x86_64"
-          PKGNAME="tmpltool-${VERSION}-r0-${ARCH}.apk"
-
-          mkdir -p apk_pkg/usr/bin
-          cp target/x86_64-unknown-linux-musl/release/tmpltool apk_pkg/usr/bin/
-          chmod 755 apk_pkg/usr/bin/tmpltool
-
-          cat > apk_pkg/.PKGINFO << EOF
-          pkgname = tmpltool
-          pkgver = ${VERSION}-r0
-          pkgdesc = A fast and simple command-line template rendering tool using MiniJinja templates
-          url = https://github.com/bordeux/tmpltool
-          arch = ${ARCH}
-          license = MIT
-          size = $(stat -c%s target/x86_64-unknown-linux-musl/release/tmpltool)
-          origin = tmpltool
-          maintainer = Chris Bednarczyk <tmpltool@bordeux.net>
-          builddate = $(date +%s)
-          EOF
-
-          cd apk_pkg
-          tar -czf "../${PKGNAME}" .PKGINFO usr
-          cd ..
-
-          mkdir -p target/apk
-          mv "${PKGNAME}" target/apk/
-
-      - name: Upload DEB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tmpltool-deb
-          path: target/debian/*.deb
-          retention-days: 7
-
-      - name: Upload RPM artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tmpltool-rpm
-          path: target/generate-rpm/*.rpm
-          retention-days: 7
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tmpltool-apk
-          path: target/apk/*.apk
-          retention-days: 7
-
+  # ============================================
+  # Docker Build
+  # ============================================
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest

@@ -1,6 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::serialization;
+use tmpltool::filter_functions::FilterFunction;
+use tmpltool::filter_functions::serialization::{ToJson, ToToml, ToYaml};
 
 #[test]
 fn test_to_json_simple_object() {
@@ -10,7 +11,7 @@ fn test_to_json_simple_object() {
         "active": true
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -29,7 +30,7 @@ fn test_to_json_simple_object_pretty() {
         "value": 42
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![
         ("object", Value::from_serialize(&obj)),
         ("pretty", Value::from(true)),
     ]))
@@ -46,7 +47,7 @@ fn test_to_json_array() {
     let arr = vec![1, 2, 3, 4, 5];
 
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
 
     let json_str = result.as_str().unwrap();
     assert_eq!(json_str, "[1,2,3,4,5]");
@@ -65,7 +66,7 @@ fn test_to_json_nested_object() {
         }
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -79,7 +80,7 @@ fn test_to_json_nested_object() {
 
 #[test]
 fn test_to_json_string() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from("hello world"),
     )]))
@@ -91,7 +92,7 @@ fn test_to_json_string() {
 #[test]
 fn test_to_json_number() {
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(42))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(42))])).unwrap();
 
     assert_eq!(result.as_str().unwrap(), "42");
 }
@@ -99,14 +100,14 @@ fn test_to_json_number() {
 #[test]
 fn test_to_json_boolean() {
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(true))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(true))])).unwrap();
 
     assert_eq!(result.as_str().unwrap(), "true");
 }
 
 #[test]
 fn test_to_json_null() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&serde_json::Value::Null),
     )]))
@@ -117,7 +118,7 @@ fn test_to_json_null() {
 
 #[test]
 fn test_to_json_missing_object() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = ToJson::call_as_function(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
 }
 
@@ -129,7 +130,7 @@ fn test_to_yaml_simple_object() {
         "debug": true
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -146,7 +147,7 @@ fn test_to_yaml_array() {
     let arr = vec!["apple", "banana", "cherry"];
 
     let result =
-        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
+        ToYaml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
 
     let yaml_str = result.as_str().unwrap();
     assert!(yaml_str.contains("- apple"));
@@ -168,7 +169,7 @@ fn test_to_yaml_nested_object() {
         }
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -183,7 +184,7 @@ fn test_to_yaml_nested_object() {
 
 #[test]
 fn test_to_yaml_string() {
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from("hello world"),
     )]))
@@ -196,7 +197,7 @@ fn test_to_yaml_string() {
 #[test]
 fn test_to_yaml_number() {
     let result =
-        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(42))])).unwrap();
+        ToYaml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(42))])).unwrap();
 
     let yaml_str = result.as_str().unwrap().trim();
     assert_eq!(yaml_str, "42");
@@ -204,7 +205,7 @@ fn test_to_yaml_number() {
 
 #[test]
 fn test_to_yaml_missing_object() {
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = ToYaml::call_as_function(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
 }
 
@@ -215,7 +216,7 @@ fn test_to_toml_simple_object() {
         "version": "1.0.0"
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -239,7 +240,7 @@ fn test_to_toml_nested_object() {
         }
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -262,7 +263,7 @@ fn test_to_toml_with_numbers() {
         }
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -283,7 +284,7 @@ fn test_to_toml_with_boolean() {
         }
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -303,7 +304,7 @@ fn test_to_toml_array_of_tables() {
         ]
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -322,7 +323,7 @@ fn test_to_toml_simple_array() {
         "ports": [8080, 8081, 8082]
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -334,7 +335,7 @@ fn test_to_toml_simple_array() {
 
 #[test]
 fn test_to_toml_missing_object() {
-    let result = serialization::to_toml_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = ToToml::call_as_function(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
 }
 
@@ -348,7 +349,7 @@ fn test_roundtrip_json_object() {
         "items": [1, 2, 3]
     });
 
-    let json_result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let json_result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&original),
     )]))
@@ -373,7 +374,7 @@ fn test_roundtrip_yaml_object() {
         "port": 8080
     });
 
-    let yaml_result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let yaml_result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&original),
     )]))
@@ -396,7 +397,7 @@ fn test_roundtrip_toml_object() {
         "version": "1.0.0"
     });
 
-    let toml_result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let toml_result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&original),
     )]))
@@ -415,7 +416,7 @@ fn test_roundtrip_toml_object() {
 fn test_to_json_empty_object() {
     let obj = serde_json::json!({});
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -429,7 +430,7 @@ fn test_to_json_empty_array() {
     let arr: Vec<i32> = vec![];
 
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
 
     assert_eq!(result.as_str().unwrap(), "[]");
 }
@@ -438,7 +439,7 @@ fn test_to_json_empty_array() {
 fn test_to_yaml_empty_object() {
     let obj = serde_json::json!({});
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -451,7 +452,7 @@ fn test_to_yaml_empty_object() {
 fn test_to_toml_empty_object() {
     let obj = serde_json::json!({});
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -467,21 +468,21 @@ fn test_to_toml_empty_object() {
 
 #[test]
 fn test_to_json_error_missing_argument() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = ToJson::call_as_function(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
     // Error should be about missing argument from Kwargs::get()
 }
 
 #[test]
 fn test_to_yaml_error_missing_argument() {
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = ToYaml::call_as_function(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
     // Error should be about missing argument from Kwargs::get()
 }
 
 #[test]
 fn test_to_toml_error_missing_argument() {
-    let result = serialization::to_toml_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = ToToml::call_as_function(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
     // Error should be about missing argument from Kwargs::get()
 }
@@ -491,7 +492,7 @@ fn test_to_toml_error_array_root() {
     // TOML does not support arrays at the root level
     let arr = vec![1, 2, 3];
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from(arr))]));
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(arr))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -502,7 +503,7 @@ fn test_to_toml_error_array_root() {
 fn test_to_toml_error_string_root() {
     // TOML does not support strings at the root level
     let result =
-        serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from("hello"))]));
+        ToToml::call_as_function(Kwargs::from_iter(vec![("object", Value::from("hello"))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -512,7 +513,7 @@ fn test_to_toml_error_string_root() {
 #[test]
 fn test_to_toml_error_number_root() {
     // TOML does not support numbers at the root level
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from(42))]));
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(42))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -522,7 +523,7 @@ fn test_to_toml_error_number_root() {
 #[test]
 fn test_to_toml_error_boolean_root() {
     // TOML does not support booleans at the root level
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![("object", Value::from(true))]));
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(true))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -540,7 +541,7 @@ fn test_to_toml_error_nested_mixed_array() {
         ]
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]));
@@ -558,7 +559,7 @@ fn test_to_json_invalid_pretty_type() {
     let obj = serde_json::json!({"test": "value"});
 
     // This should work - the pretty param will just use default if wrong type
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![
         ("object", Value::from_serialize(&obj)),
         ("pretty", Value::from("not a bool")), // Wrong type, should use default (false)
     ]));
@@ -575,7 +576,7 @@ fn test_to_json_with_undefined_in_object() {
         "nullable": null
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -592,7 +593,7 @@ fn test_to_yaml_with_null() {
         "key": null
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -609,7 +610,7 @@ fn test_to_toml_with_null_value() {
         "key": null
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]));
@@ -633,7 +634,7 @@ fn test_to_toml_with_null_value() {
 #[test]
 fn test_to_json_float() {
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(1.23456))]))
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(1.23456))]))
             .unwrap();
 
     let json_str = result.as_str().unwrap();
@@ -643,7 +644,7 @@ fn test_to_json_float() {
 #[test]
 fn test_to_json_negative_number() {
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(-42))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(-42))])).unwrap();
 
     assert_eq!(result.as_str().unwrap(), "-42");
 }
@@ -652,7 +653,7 @@ fn test_to_json_negative_number() {
 fn test_to_json_large_number() {
     let large_num: i64 = 9223372036854775807; // i64::MAX
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(large_num))]))
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(large_num))]))
             .unwrap();
 
     assert_eq!(result.as_str().unwrap(), "9223372036854775807");
@@ -661,7 +662,7 @@ fn test_to_json_large_number() {
 #[test]
 fn test_to_json_zero() {
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(0))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(0))])).unwrap();
 
     assert_eq!(result.as_str().unwrap(), "0");
 }
@@ -669,7 +670,7 @@ fn test_to_json_zero() {
 #[test]
 fn test_to_yaml_float() {
     let result =
-        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(1.23456))]))
+        ToYaml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(1.23456))]))
             .unwrap();
 
     let yaml_str = result.as_str().unwrap().trim();
@@ -679,7 +680,7 @@ fn test_to_yaml_float() {
 #[test]
 fn test_to_yaml_negative_number() {
     let result =
-        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(-100))])).unwrap();
+        ToYaml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(-100))])).unwrap();
 
     let yaml_str = result.as_str().unwrap().trim();
     assert!(yaml_str.contains("-100"));
@@ -688,7 +689,7 @@ fn test_to_yaml_negative_number() {
 #[test]
 fn test_to_yaml_boolean_false() {
     let result =
-        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(false))])).unwrap();
+        ToYaml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(false))])).unwrap();
 
     let yaml_str = result.as_str().unwrap().trim();
     assert_eq!(yaml_str, "false");
@@ -700,7 +701,7 @@ fn test_to_toml_float() {
         "value": 1.23456
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -716,7 +717,7 @@ fn test_to_toml_negative_number() {
         "value": -42
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -731,14 +732,14 @@ fn test_to_toml_negative_number() {
 #[test]
 fn test_to_json_empty_string() {
     let result =
-        serialization::to_json_fn(Kwargs::from_iter(vec![("object", Value::from(""))])).unwrap();
+        ToJson::call_as_function(Kwargs::from_iter(vec![("object", Value::from(""))])).unwrap();
 
     assert_eq!(result.as_str().unwrap(), "\"\"");
 }
 
 #[test]
 fn test_to_json_unicode_string() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from("Hello 世界 🌍"),
     )]))
@@ -751,7 +752,7 @@ fn test_to_json_unicode_string() {
 
 #[test]
 fn test_to_json_special_chars() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from("line1\nline2\ttab\"quote"),
     )]))
@@ -764,7 +765,7 @@ fn test_to_json_special_chars() {
 
 #[test]
 fn test_to_json_backslash() {
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from("path\\to\\file"),
     )]))
@@ -780,7 +781,7 @@ fn test_to_yaml_empty_string() {
         "key": ""
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -796,7 +797,7 @@ fn test_to_yaml_multiline_string() {
         "text": "line1\nline2\nline3"
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -812,7 +813,7 @@ fn test_to_yaml_unicode_string() {
         "greeting": "你好世界"
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -828,7 +829,7 @@ fn test_to_toml_empty_string() {
         "key": ""
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -844,7 +845,7 @@ fn test_to_toml_string_with_quotes() {
         "text": "He said \"hello\""
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -862,7 +863,7 @@ fn test_to_json_deeply_nested() {
         "a": {"b": {"c": {"d": {"e": "deep"}}}}
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -878,7 +879,7 @@ fn test_to_json_deeply_nested_pretty() {
         "a": {"b": {"c": "value"}}
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![
         ("object", Value::from_serialize(&obj)),
         ("pretty", Value::from(true)),
     ]))
@@ -901,7 +902,7 @@ fn test_to_yaml_deeply_nested() {
         }
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -922,7 +923,7 @@ fn test_to_toml_deeply_nested() {
         }
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -938,7 +939,7 @@ fn test_to_toml_deeply_nested() {
 fn test_to_json_nested_arrays() {
     let obj = serde_json::json!([[1, 2], [3, 4], [5, 6]]);
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -955,7 +956,7 @@ fn test_to_json_array_of_objects() {
         {"name": "Bob", "age": 25}
     ]);
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&arr),
     )]))
@@ -972,7 +973,7 @@ fn test_to_yaml_nested_arrays() {
         "matrix": [[1, 2], [3, 4]]
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -986,7 +987,7 @@ fn test_to_yaml_nested_arrays() {
 fn test_to_yaml_mixed_array() {
     let arr = serde_json::json!(["string", 42, true, null]);
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&arr),
     )]))
@@ -1002,7 +1003,7 @@ fn test_to_yaml_empty_array() {
     let arr: Vec<i32> = vec![];
 
     let result =
-        serialization::to_yaml_fn(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
+        ToYaml::call_as_function(Kwargs::from_iter(vec![("object", Value::from(arr))])).unwrap();
 
     let yaml_str = result.as_str().unwrap().trim();
     assert_eq!(yaml_str, "[]");
@@ -1014,7 +1015,7 @@ fn test_to_toml_string_array() {
         "names": ["Alice", "Bob", "Charlie"]
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -1031,7 +1032,7 @@ fn test_to_toml_string_array() {
 fn test_to_json_pretty_false_explicit() {
     let obj = serde_json::json!({"key": "value"});
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![
         ("object", Value::from_serialize(&obj)),
         ("pretty", Value::from(false)),
     ]))
@@ -1046,7 +1047,7 @@ fn test_to_json_pretty_false_explicit() {
 fn test_to_json_pretty_with_array() {
     let arr = serde_json::json!([1, 2, 3, 4, 5]);
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![
         ("object", Value::from_serialize(&arr)),
         ("pretty", Value::from(true)),
     ]))
@@ -1061,7 +1062,7 @@ fn test_to_json_pretty_with_array() {
 fn test_to_json_pretty_empty_object() {
     let obj = serde_json::json!({});
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![
         ("object", Value::from_serialize(&obj)),
         ("pretty", Value::from(true)),
     ]))
@@ -1093,7 +1094,7 @@ fn test_to_json_complex_config() {
         "features": ["auth", "cache", "logging"]
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&config),
     )]))
@@ -1120,7 +1121,7 @@ fn test_to_yaml_complex_config() {
         }
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&config),
     )]))
@@ -1149,7 +1150,7 @@ fn test_to_toml_cargo_like() {
         }
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&config),
     )]))
@@ -1175,7 +1176,7 @@ fn test_to_json_all_primitive_types() {
         "object": {"nested": "value"}
     });
 
-    let result = serialization::to_json_fn(Kwargs::from_iter(vec![(
+    let result = ToJson::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -1201,7 +1202,7 @@ fn test_to_yaml_all_primitive_types() {
         "array": [1, 2, 3]
     });
 
-    let result = serialization::to_yaml_fn(Kwargs::from_iter(vec![(
+    let result = ToYaml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))
@@ -1223,7 +1224,7 @@ fn test_to_toml_all_primitive_types() {
         "array": [1, 2, 3]
     });
 
-    let result = serialization::to_toml_fn(Kwargs::from_iter(vec![(
+    let result = ToToml::call_as_function(Kwargs::from_iter(vec![(
         "object",
         Value::from_serialize(&obj),
     )]))

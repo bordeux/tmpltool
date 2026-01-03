@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product
+        Id="*"
+        Name="tmpltool"
+        Version="$(var.Version)"
+        Manufacturer="Chris Bednarczyk"
+        Language="1033"
+        Codepage="1252"
+        UpgradeCode="E8B9F4A2-3C5D-4E6F-8A1B-2C3D4E5F6A7B">
+
+        <Package
+            Id="*"
+            Keywords="Installer"
+            Description="tmpltool - Template rendering tool"
+            Manufacturer="Chris Bednarczyk"
+            InstallerVersion="500"
+            Languages="1033"
+            Compressed="yes"
+            InstallScope="perUser"
+            Platform="x64" />
+
+        <MajorUpgrade
+            Schedule="afterInstallInitialize"
+            DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit." />
+
+        <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+        <!-- Installation directory structure -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="LocalAppDataFolder">
+                <Directory Id="ProgramsFolder" Name="Programs">
+                    <Directory Id="INSTALLDIR" Name="tmpltool" />
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <!-- Main component with registry KeyPath (required for per-user install) -->
+        <DirectoryRef Id="INSTALLDIR">
+            <Component Id="MainExecutable" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+                <File
+                    Id="tmpltool.exe"
+                    Name="tmpltool.exe"
+                    Source="target\release\tmpltool.exe" />
+
+                <RegistryValue
+                    Root="HKCU"
+                    Key="Software\tmpltool"
+                    Name="InstallPath"
+                    Type="string"
+                    Value="[INSTALLDIR]"
+                    KeyPath="yes" />
+
+                <!-- Add to user PATH -->
+                <Environment
+                    Id="PATH"
+                    Name="PATH"
+                    Value="[INSTALLDIR]"
+                    Permanent="no"
+                    Part="last"
+                    Action="set"
+                    System="no" />
+
+                <!-- Clean up directory on uninstall -->
+                <RemoveFolder Id="RemoveINSTALLDIR" Directory="INSTALLDIR" On="uninstall" />
+                <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+            </Component>
+
+            <Component Id="LicenseFile" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901">
+                <File
+                    Id="LICENSE"
+                    Name="LICENSE"
+                    Source="LICENSE" />
+                <RegistryValue
+                    Root="HKCU"
+                    Key="Software\tmpltool"
+                    Name="LicenseInstalled"
+                    Type="integer"
+                    Value="1"
+                    KeyPath="yes" />
+            </Component>
+
+            <Component Id="ReadmeFile" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
+                <File
+                    Id="README.md"
+                    Name="README.md"
+                    Source="README.md" />
+                <RegistryValue
+                    Root="HKCU"
+                    Key="Software\tmpltool"
+                    Name="ReadmeInstalled"
+                    Type="integer"
+                    Value="1"
+                    KeyPath="yes" />
+            </Component>
+        </DirectoryRef>
+
+        <Feature Id="MainProgram" Title="tmpltool" Description="Template rendering tool" Level="1" ConfigurableDirectory="INSTALLDIR">
+            <ComponentRef Id="MainExecutable" />
+            <ComponentRef Id="LicenseFile" />
+            <ComponentRef Id="ReadmeFile" />
+        </Feature>
+
+        <UIRef Id="WixUI_Minimal" />
+        <WixVariable Id="WixUILicenseRtf" Value="wix\License.rtf" />
+
+        <Property Id="ARPHELPLINK" Value="https://github.com/bordeux/tmpltool" />
+        <Property Id="ARPURLINFOABOUT" Value="https://github.com/bordeux/tmpltool" />
+    </Product>
+</Wix>

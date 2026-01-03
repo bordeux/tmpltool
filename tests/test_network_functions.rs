@@ -3,6 +3,95 @@ use minijinja::value::Kwargs;
 use std::net::IpAddr;
 use tmpltool::functions::network;
 
+// ==================== get_interfaces Tests ====================
+
+#[test]
+fn test_get_interfaces_returns_list() {
+    let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
+    let result = network::get_interfaces_fn(kwargs);
+    assert!(result.is_ok());
+
+    let interfaces = result.unwrap();
+    // Should be iterable (a list)
+    assert!(interfaces.try_iter().is_ok());
+}
+
+#[test]
+fn test_get_interfaces_has_loopback() {
+    let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
+    let result = network::get_interfaces_fn(kwargs).unwrap();
+
+    let mut found_loopback = false;
+    for iface in result.try_iter().unwrap() {
+        let is_loopback = iface.get_attr("is_loopback").unwrap();
+        if is_loopback.is_true() {
+            found_loopback = true;
+            break;
+        }
+    }
+
+    assert!(
+        found_loopback,
+        "Should have at least one loopback interface"
+    );
+}
+
+#[test]
+fn test_get_interfaces_has_required_fields() {
+    let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
+    let result = network::get_interfaces_fn(kwargs).unwrap();
+
+    for iface in result.try_iter().unwrap() {
+        // Each interface should have name, ip, and is_loopback fields
+        let name = iface.get_attr("name");
+        let ip = iface.get_attr("ip");
+        let is_loopback = iface.get_attr("is_loopback");
+
+        assert!(name.is_ok(), "Interface should have 'name' field");
+        assert!(ip.is_ok(), "Interface should have 'ip' field");
+        assert!(
+            is_loopback.is_ok(),
+            "Interface should have 'is_loopback' field"
+        );
+
+        // Name should be a non-empty string
+        let name_str = name.unwrap();
+        assert!(name_str.as_str().is_some(), "Name should be a string");
+        assert!(
+            !name_str.as_str().unwrap().is_empty(),
+            "Name should not be empty"
+        );
+
+        // IP should be a valid IP address
+        let ip_str = ip.unwrap();
+        assert!(ip_str.as_str().is_some(), "IP should be a string");
+        assert!(
+            ip_str.as_str().unwrap().parse::<IpAddr>().is_ok(),
+            "IP should be a valid IP address"
+        );
+    }
+}
+
+#[test]
+fn test_get_interfaces_loopback_has_localhost_ip() {
+    let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
+    let result = network::get_interfaces_fn(kwargs).unwrap();
+
+    for iface in result.try_iter().unwrap() {
+        let is_loopback = iface.get_attr("is_loopback").unwrap();
+        if is_loopback.is_true() {
+            let ip = iface.get_attr("ip").unwrap();
+            let ip_str = ip.as_str().unwrap();
+            // Loopback should be 127.x.x.x or ::1
+            assert!(
+                ip_str.starts_with("127.") || ip_str == "::1",
+                "Loopback interface should have localhost IP, got: {}",
+                ip_str
+            );
+        }
+    }
+}
+
 #[test]
 fn test_get_ip_address_no_interface() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
@@ -26,41 +115,8 @@ fn test_resolve_dns_missing_hostname() {
     assert!(result.is_err());
 }
 
-#[test]
-fn test_is_port_available_valid() {
-    // Test with a likely available high port
-    let result =
-        network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(54321))]));
-    assert!(result.is_ok());
-    // Result should be a boolean
-    let val = result.unwrap();
-    assert!(val.is_true() || !val.is_true());
-}
-
-#[test]
-fn test_is_port_available_invalid_port_low() {
-    let result = network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(0))]));
-    assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("between 1 and 65535")
-    );
-}
-
-#[test]
-fn test_is_port_available_invalid_port_high() {
-    let result =
-        network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(65536))]));
-    assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("between 1 and 65535")
-    );
-}
+// Note: is_port_available tests have been moved to tests/test_is_network.rs
+// as part of the is-functions refactoring.
 
 // ==================== cidr_contains Tests ====================
 

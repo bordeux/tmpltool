@@ -6,6 +6,96 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `tmpltool` is a fast, single-binary command-line template rendering tool built in Rust. It uses MiniJinja (Jinja2-compatible) templates with environment variables and provides extensive custom functions for hash generation, filesystem operations, data parsing, and validation.
 
+## Big Picture - What This Tool Does
+
+### Purpose
+`tmpltool` is a **configuration file generator** that renders Jinja2-style templates by combining:
+- Environment variables
+- File contents (JSON, YAML, TOML)
+- System information (hostname, IP, OS)
+- Generated values (UUIDs, random strings, hashes)
+
+It's designed for **DevOps/SRE workflows** like generating Kubernetes manifests, Docker Compose files, application configs, and deployment scripts.
+
+### Typical Use Cases
+1. **Kubernetes manifests** - Generate YAML with environment-specific values, resource limits, labels
+2. **Docker Compose** - Template service configurations with dynamic ports, hosts, secrets
+3. **Application configs** - Create config files (JSON/YAML/TOML) from environment variables
+4. **Build scripts** - Generate shell scripts with embedded build metadata (git hash, timestamp)
+5. **CI/CD pipelines** - Produce deployment configs that vary by environment
+
+### Function Categories (100+ functions)
+
+| Category | Examples | Description |
+|----------|----------|-------------|
+| **Environment** | `get_env`, `filter_env` | Access and filter environment variables |
+| **Hash & Crypto** | `md5`, `sha256`, `sha512`, `bcrypt`, `hmac_sha256` | Checksums, password hashing, signatures |
+| **Encoding** | `base64_encode/decode`, `hex_encode/decode`, `escape_html/xml/shell` | Data encoding and escaping |
+| **UUID & Random** | `uuid`, `random_string`, `generate_secret` | Generate unique IDs and secure random values |
+| **Date/Time** | `now`, `format_date`, `parse_date`, `date_add`, `date_diff` | Timestamps, formatting, date math |
+| **Filesystem** | `read_file`, `file_exists`, `glob`, `file_size`, `list_dir` | Read files, check existence, find files |
+| **Path Manipulation** | `basename`, `dirname`, `join_path`, `file_extension` | Path operations (no security restrictions) |
+| **Data Parsing** | `parse_json/yaml/toml`, `read_json_file`, `read_yaml_file` | Parse structured data |
+| **Data Serialization** | `to_json`, `to_yaml`, `to_toml` | Convert objects to formatted strings |
+| **Object Manipulation** | `object_merge`, `object_get/set`, `object_keys/values`, `object_pick/omit` | Deep merge, nested access, transformation |
+| **Validation** | `is_email`, `is_url`, `is_ip`, `is_uuid`, `matches_regex` | Validate string formats |
+| **String Manipulation** | `slugify`, `to_snake_case`, `indent`, `truncate`, `regex_replace` | Case conversion, formatting, regex |
+| **Array Functions** | `array_sort_by`, `array_group_by`, `array_unique`, `array_filter_by`, `array_pluck` | Sort, group, filter, transform arrays |
+| **Statistics** | `array_sum`, `array_avg`, `array_median`, `array_min/max` | Numeric calculations on arrays |
+| **Math** | `min`, `max`, `round`, `ceil`, `floor`, `percentage`, `abs` | Mathematical operations |
+| **Logic** | `default`, `coalesce`, `ternary`, `in_range` | Conditional logic helpers |
+| **Predicates** | `array_any`, `array_all`, `array_contains`, `starts_with`, `ends_with` | Boolean checks |
+| **System & Network** | `get_hostname`, `get_ip_address`, `resolve_dns`, `is_port_available`, `get_os` | System info, DNS, network |
+| **CIDR/IP** | `cidr_contains`, `cidr_network`, `cidr_netmask`, `ip_to_int` | IP address and subnet operations |
+| **Kubernetes** | `k8s_resource_request`, `k8s_label_safe`, `k8s_probe`, `k8s_secret_ref` | K8s-specific YAML helpers |
+| **Web/URL** | `parse_url`, `build_url`, `query_string`, `basic_auth` | URL manipulation, HTTP auth |
+| **Command Execution** | `exec`, `exec_raw` | Run shell commands (trust mode only) |
+| **Debugging** | `debug`, `inspect`, `type_of`, `assert`, `warn`, `abort` | Development and error handling |
+
+### Key Design Decisions
+1. **Explicit environment access** - Use `get_env()` instead of auto-exposing all env vars (security)
+2. **Dual syntax for filters** - Most functions work as both `func(arg=x)` and `x | func` (flexibility)
+3. **Dual syntax for is-functions** - All `is_*` functions work as both `is_email(string=x)` and `{% if x is email %}` (readability)
+4. **Security by default** - Filesystem restricted to CWD; use `--trust` for full access
+5. **Output validation** - `--validate json/yaml/toml` ensures valid output format
+6. **Single binary** - No runtime dependencies, easy to deploy in containers
+
+### CLI Quick Reference
+```bash
+# Basic usage
+tmpltool template.tmpl                    # Render to stdout
+tmpltool template.tmpl -o output.txt      # Render to file
+echo '{{ now() }}' | tmpltool             # Pipe template from stdin
+
+# With options
+tmpltool --trust system.tmpl              # Allow filesystem access outside CWD
+tmpltool config.tmpl --validate json      # Validate output is valid JSON
+
+# With environment variables
+DB_HOST=prod-db APP_ENV=production tmpltool config.tmpl
+```
+
+### Template Quick Reference
+```jinja
+{# Environment variables #}
+{{ get_env(name="PORT", default="8080") }}
+{% for var in filter_env(pattern="DB_*") %}
+  {{ var.key }}={{ var.value }}
+{% endfor %}
+
+{# File operations #}
+{% set config = read_json_file(path="config.json") %}
+{{ config.server.host }}
+
+{# Conditionals (use {% set %} first) #}
+{% set debug = get_env(name="DEBUG", default="false") %}
+{% if debug == "true" %}Debug enabled{% endif %}
+
+{# Kubernetes example #}
+resources:
+  {{ k8s_resource_request(cpu="500m", memory="512Mi") | indent(2) }}
+```
+
 ## Common Commands
 
 **Note:** This project uses `cargo-make` for task automation. Install it once with:
@@ -152,10 +242,21 @@ src/
 │   ├── datetime.rs
 │   ├── random.rs
 │   └── uuid_gen.rs
-└── filters/          - Custom template filters
-    ├── mod.rs
-    ├── formatting.rs
-    └── string.rs
+├── is_functions/     - Is-functions with dual syntax (function + "is" test)
+│   ├── mod.rs        - Registration for both function and "is" test syntax
+│   ├── traits.rs     - IsFunction and ContextIsFunction trait definitions
+│   ├── validation.rs - Email, Url, Ip, Uuid validators
+│   ├── datetime.rs   - LeapYear check
+│   ├── network.rs    - PortAvailable check
+│   └── filesystem.rs - File, Dir, Symlink checks (context-aware)
+└── filter_functions/ - Unified filter-functions (dual syntax)
+    ├── mod.rs        - Registration for both function and filter syntax
+    ├── traits.rs     - FilterFunction trait definition
+    ├── string.rs     - String manipulation (slugify, case conversion, etc.)
+    ├── formatting.rs - Formatting (filesizeformat, urlencode)
+    ├── hash.rs       - Hash functions (md5, sha256, etc.)
+    ├── encoding.rs   - Encoding (base64, hex, escape)
+    └── ...
 ```
 
 ### Key Architectural Patterns
@@ -359,17 +460,19 @@ When adding crypto functions:
 
 ## Future Enhancements
 
-See `TODO.md` for comprehensive list of proposed features organized by category:
-- Network & System Functions (hostname, IP, DNS resolution)
-- Math & Calculation Functions (min, max, round, percentage)
-- Enhanced String Manipulation (case conversion, padding)
-- Advanced Date/Time Functions (parsing, timezone conversion)
-- Security & Encoding (base64, bcrypt, HMAC)
-- Container/Orchestration Helpers (Kubernetes label sanitization)
+Most core functionality is now implemented. See `TODO.md` for any remaining proposed features.
 
-When implementing features from TODO.md:
-- Follow existing patterns (modular function files)
-- Add comprehensive tests
-- Document with real-world examples
-- Consider security implications
-- Update README.md with usage examples
+**Already implemented (previously planned):**
+- Network & System Functions: `get_hostname`, `get_ip_address`, `resolve_dns`, `is_port_available`, `get_os`, `get_arch`, CIDR functions
+- Math Functions: `min`, `max`, `round`, `ceil`, `floor`, `percentage`, `abs`
+- String Manipulation: `slugify`, `to_snake_case/camel_case/pascal_case/kebab_case`, `indent`, `pad_left/right`, `truncate`
+- Date/Time: `parse_date`, `date_add`, `date_diff`, `timezone_convert`, `get_year/month/day/hour/minute/second`
+- Encoding: `base64_encode/decode`, `hex_encode/decode`, `bcrypt`, `hmac_sha256`, `escape_html/xml/shell`
+- Kubernetes: `k8s_resource_request`, `k8s_label_safe`, `k8s_probe`, `k8s_secret_ref`, `k8s_configmap_ref`, `k8s_toleration`, `k8s_pod_affinity`
+
+When implementing new features:
+- Follow existing patterns (modular function files in `src/functions/` or `src/filter_functions/`)
+- Add comprehensive tests in `tests/` directory
+- Document with real-world examples in README.md
+- Consider security implications (filesystem access, command execution)
+- Use the dual syntax pattern (function + filter) where appropriate

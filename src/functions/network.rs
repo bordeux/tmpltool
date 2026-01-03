@@ -9,7 +9,7 @@
 
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
-use std::net::{Ipv4Addr, TcpListener, ToSocketAddrs};
+use std::net::{Ipv4Addr, ToSocketAddrs};
 
 /// Get IP address of a network interface or the primary local IP
 ///
@@ -96,6 +96,50 @@ fn get_interface_ip(interface: &str) -> Result<Value, Error> {
     ))
 }
 
+/// Get a list of all network interfaces with their IP addresses
+///
+/// # Returns
+///
+/// Returns a list of objects with interface information:
+/// - `name`: Interface name (e.g., "eth0", "en0", "lo")
+/// - `ip`: IP address assigned to the interface
+/// - `is_loopback`: Whether this is a loopback interface
+///
+/// # Example
+///
+/// ```jinja
+/// {# List all interfaces #}
+/// {% for iface in get_interfaces() %}
+///   {{ iface.name }}: {{ iface.ip }}
+/// {% endfor %}
+///
+/// {# Filter non-loopback interfaces #}
+/// {% for iface in get_interfaces() | selectattr("is_loopback", "equalto", false) %}
+///   {{ iface.name }}: {{ iface.ip }}
+/// {% endfor %}
+/// ```
+pub fn get_interfaces_fn(_kwargs: Kwargs) -> Result<Value, Error> {
+    let ifaces = if_addrs::get_if_addrs().map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to get network interfaces: {}", e),
+        )
+    })?;
+
+    let interfaces: Vec<Value> = ifaces
+        .into_iter()
+        .map(|iface| {
+            let mut map = std::collections::BTreeMap::new();
+            map.insert("name".to_string(), Value::from(iface.name.clone()));
+            map.insert("ip".to_string(), Value::from(iface.ip().to_string()));
+            map.insert("is_loopback".to_string(), Value::from(iface.is_loopback()));
+            Value::from_object(map)
+        })
+        .collect();
+
+    Ok(Value::from(interfaces))
+}
+
 /// Resolve a hostname to an IP address using DNS
 ///
 /// # Arguments
@@ -139,43 +183,10 @@ pub fn resolve_dns_fn(kwargs: Kwargs) -> Result<Value, Error> {
     Ok(Value::from(addrs[0].ip().to_string()))
 }
 
-/// Check if a port is available (not in use)
-///
-/// # Arguments
-///
-/// * `port` (required) - Port number to check (1-65535)
-///
-/// # Returns
-///
-/// Returns true if the port is available, false if it's in use
-///
-/// # Example
-///
-/// ```jinja
-/// {% if is_port_available(port=8080) %}
-///   Port 8080 is available
-/// {% else %}
-///   Port 8080 is in use
-/// {% endif %}
-/// ```
-pub fn is_port_available_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let port: u16 = kwargs.get::<i64>("port").and_then(|p| {
-        if (1..=65535).contains(&p) {
-            Ok(p as u16)
-        } else {
-            Err(Error::new(
-                ErrorKind::InvalidOperation,
-                format!("Port must be between 1 and 65535, got {}", p),
-            ))
-        }
-    })?;
-
-    // Try to bind to the port on all interfaces
-    // If successful, the port is available
-    let is_available = TcpListener::bind(("0.0.0.0", port)).is_ok();
-
-    Ok(Value::from(is_available))
-}
+// Note: is_port_available has been migrated to src/is_functions/network.rs
+// and supports both function syntax and "is" test syntax:
+// - `{{ is_port_available(port=8080) }}`
+// - `{% if 8080 is port_available %}`
 
 /// Parse a CIDR string into network address and prefix length
 fn parse_cidr(cidr: &str) -> Result<(Ipv4Addr, u8), Error> {

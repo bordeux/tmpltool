@@ -3,9 +3,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tmpltool::TemplateContext;
+use tmpltool::filter_functions::FilterFunction;
+use tmpltool::filter_functions::serialization::{ParseJson, ParseToml, ParseYaml};
 use tmpltool::functions::data_parsing::{
-    create_read_json_file_fn, create_read_toml_file_fn, create_read_yaml_file_fn, parse_json_fn,
-    parse_toml_fn, parse_yaml_fn,
+    create_read_json_file_fn, create_read_toml_file_fn, create_read_yaml_file_fn,
 };
 
 // Helper to create kwargs for testing
@@ -19,7 +20,7 @@ fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
 fn test_parse_json_simple_object() {
     let kwargs = create_kwargs(vec![("string", r#"{"name": "John", "age": 30}"#)]);
 
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "John");
     assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
@@ -28,7 +29,7 @@ fn test_parse_json_simple_object() {
 fn test_parse_json_array() {
     let kwargs = create_kwargs(vec![("string", r#"[1, 2, 3, 4, 5]"#)]);
 
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.len(), Some(5));
     assert_eq!(
         result
@@ -53,7 +54,7 @@ fn test_parse_json_nested() {
         r#"{"user": {"name": "Alice", "settings": {"theme": "dark"}}}"#,
     )]);
 
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     let user = result.get_attr("user").unwrap();
     let settings = user.get_attr("settings").unwrap();
     assert_eq!(
@@ -66,7 +67,7 @@ fn test_parse_json_nested() {
 fn test_parse_json_invalid() {
     let kwargs = create_kwargs(vec![("string", r#"{"invalid": json"#)]);
 
-    let result = parse_json_fn(kwargs);
+    let result = ParseJson::call_as_function(kwargs);
     assert!(result.is_err());
     assert!(
         result
@@ -79,7 +80,7 @@ fn test_parse_json_invalid() {
 #[test]
 fn test_parse_json_missing_argument() {
     let kwargs = create_kwargs(vec![]);
-    let result = parse_json_fn(kwargs);
+    let result = ParseJson::call_as_function(kwargs);
     assert!(result.is_err());
 }
 
@@ -89,7 +90,7 @@ fn test_parse_json_missing_argument() {
 fn test_parse_yaml_simple_object() {
     let kwargs = create_kwargs(vec![("string", "name: John\nage: 30")]);
 
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "John");
     assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
@@ -98,7 +99,7 @@ fn test_parse_yaml_simple_object() {
 fn test_parse_yaml_array() {
     let kwargs = create_kwargs(vec![("string", "- apple\n- banana\n- cherry")]);
 
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert_eq!(result.len(), Some(3));
     assert_eq!(
         result
@@ -125,7 +126,7 @@ fn test_parse_yaml_nested() {
         "user:\n  name: Alice\n  settings:\n    theme: dark\n    notifications: true",
     )]);
 
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let user = result.get_attr("user").unwrap();
     let settings = user.get_attr("settings").unwrap();
     assert_eq!(
@@ -142,7 +143,7 @@ fn test_parse_yaml_invalid() {
         "invalid:\n  - yaml\n  missing: indentation",
     )]);
 
-    let result = parse_yaml_fn(kwargs);
+    let result = ParseYaml::call_as_function(kwargs);
     assert!(result.is_err());
     assert!(
         result
@@ -155,7 +156,7 @@ fn test_parse_yaml_invalid() {
 #[test]
 fn test_parse_yaml_missing_argument() {
     let kwargs = create_kwargs(vec![]);
-    let result = parse_yaml_fn(kwargs);
+    let result = ParseYaml::call_as_function(kwargs);
     assert!(result.is_err());
 }
 
@@ -165,7 +166,7 @@ fn test_parse_yaml_missing_argument() {
 fn test_parse_toml_simple() {
     let kwargs = create_kwargs(vec![("string", "name = \"John\"\nage = 30")]);
 
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "John");
     assert_eq!(result.get_attr("age").unwrap().as_usize(), Some(30));
 }
@@ -174,7 +175,7 @@ fn test_parse_toml_simple() {
 fn test_parse_toml_array() {
     let kwargs = create_kwargs(vec![("string", "colors = [\"red\", \"green\", \"blue\"]")]);
 
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let colors = result.get_attr("colors").unwrap();
     assert_eq!(colors.len(), Some(3));
     assert_eq!(
@@ -202,7 +203,7 @@ fn test_parse_toml_table() {
         "[database]\nhost = \"localhost\"\nport = 5432\nenabled = true",
     )]);
 
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let db = result.get_attr("database").unwrap();
     assert_eq!(db.get_attr("host").unwrap().as_str().unwrap(), "localhost");
     assert_eq!(db.get_attr("port").unwrap().as_usize(), Some(5432));
@@ -213,7 +214,7 @@ fn test_parse_toml_table() {
 fn test_parse_toml_invalid() {
     let kwargs = create_kwargs(vec![("string", "invalid toml = [missing quote")]);
 
-    let result = parse_toml_fn(kwargs);
+    let result = ParseToml::call_as_function(kwargs);
     assert!(result.is_err());
     assert!(
         result
@@ -226,7 +227,7 @@ fn test_parse_toml_invalid() {
 #[test]
 fn test_parse_toml_missing_argument() {
     let kwargs = create_kwargs(vec![]);
-    let result = parse_toml_fn(kwargs);
+    let result = ParseToml::call_as_function(kwargs);
     assert!(result.is_err());
 }
 
@@ -510,28 +511,28 @@ fn test_read_toml_file_security_parent_traversal() {
 #[test]
 fn test_parse_json_null() {
     let kwargs = create_kwargs(vec![("string", "null")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert!(result.is_none());
 }
 
 #[test]
 fn test_parse_json_boolean_true() {
     let kwargs = create_kwargs(vec![("string", "true")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert!(result.is_true());
 }
 
 #[test]
 fn test_parse_json_boolean_false() {
     let kwargs = create_kwargs(vec![("string", "false")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert!(!result.is_true());
 }
 
 #[test]
 fn test_parse_json_float() {
     let kwargs = create_kwargs(vec![("string", "1.23456")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&result).unwrap();
     let f = json_val.as_f64().unwrap();
     assert!((f - 1.23456).abs() < 0.0001);
@@ -540,35 +541,35 @@ fn test_parse_json_float() {
 #[test]
 fn test_parse_json_negative_number() {
     let kwargs = create_kwargs(vec![("string", "-42")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.as_i64(), Some(-42));
 }
 
 #[test]
 fn test_parse_json_large_number() {
     let kwargs = create_kwargs(vec![("string", "9223372036854775807")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.as_i64(), Some(9223372036854775807i64));
 }
 
 #[test]
 fn test_parse_json_empty_object() {
     let kwargs = create_kwargs(vec![("string", "{}")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert!(result.is_undefined() || result.len() == Some(0));
 }
 
 #[test]
 fn test_parse_json_empty_array() {
     let kwargs = create_kwargs(vec![("string", "[]")]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.len(), Some(0));
 }
 
 #[test]
 fn test_parse_json_unicode() {
     let kwargs = create_kwargs(vec![("string", r#"{"emoji": "🎉", "chinese": "你好"}"#)]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("emoji").unwrap().as_str().unwrap(), "🎉");
     assert_eq!(
         result.get_attr("chinese").unwrap().as_str().unwrap(),
@@ -579,7 +580,7 @@ fn test_parse_json_unicode() {
 #[test]
 fn test_parse_json_special_chars() {
     let kwargs = create_kwargs(vec![("string", r#"{"text": "line1\nline2\ttab"}"#)]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     let text_val = result.get_attr("text").unwrap();
     let text = text_val.as_str().unwrap();
     assert!(text.contains('\n'));
@@ -592,7 +593,7 @@ fn test_parse_json_deeply_nested() {
         "string",
         r#"{"a": {"b": {"c": {"d": {"e": "deep"}}}}}"#,
     )]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     let deep = result
         .get_attr("a")
         .unwrap()
@@ -610,7 +611,7 @@ fn test_parse_json_deeply_nested() {
 #[test]
 fn test_parse_json_mixed_array() {
     let kwargs = create_kwargs(vec![("string", r#"[1, "two", true, null, 3.14]"#)]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.len(), Some(5));
     assert_eq!(
         result
@@ -644,28 +645,28 @@ fn test_parse_json_mixed_array() {
 #[test]
 fn test_parse_json_empty_string_value() {
     let kwargs = create_kwargs(vec![("string", r#"{"empty": ""}"#)]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("empty").unwrap().as_str().unwrap(), "");
 }
 
 #[test]
 fn test_parse_json_string_primitive() {
     let kwargs = create_kwargs(vec![("string", r#""hello world""#)]);
-    let result = parse_json_fn(kwargs).unwrap();
+    let result = ParseJson::call_as_function(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "hello world");
 }
 
 #[test]
 fn test_parse_json_trailing_comma_error() {
     let kwargs = create_kwargs(vec![("string", r#"{"key": "value",}"#)]);
-    let result = parse_json_fn(kwargs);
+    let result = ParseJson::call_as_function(kwargs);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_parse_json_unquoted_key_error() {
     let kwargs = create_kwargs(vec![("string", r#"{key: "value"}"#)]);
-    let result = parse_json_fn(kwargs);
+    let result = ParseJson::call_as_function(kwargs);
     assert!(result.is_err());
 }
 
@@ -674,14 +675,14 @@ fn test_parse_json_unquoted_key_error() {
 #[test]
 fn test_parse_yaml_null_value() {
     let kwargs = create_kwargs(vec![("string", "value: null")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert!(result.get_attr("value").unwrap().is_none());
 }
 
 #[test]
 fn test_parse_yaml_tilde_null() {
     let kwargs = create_kwargs(vec![("string", "value: ~")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert!(result.get_attr("value").unwrap().is_none());
 }
 
@@ -689,7 +690,7 @@ fn test_parse_yaml_tilde_null() {
 fn test_parse_yaml_boolean_variants() {
     // YAML 1.2 only treats true/false as booleans (not yes/no/on/off)
     let kwargs = create_kwargs(vec![("string", "enabled: true\ndisabled: false")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert!(result.get_attr("enabled").unwrap().is_true());
     assert!(!result.get_attr("disabled").unwrap().is_true());
 }
@@ -697,7 +698,7 @@ fn test_parse_yaml_boolean_variants() {
 #[test]
 fn test_parse_yaml_float() {
     let kwargs = create_kwargs(vec![("string", "value: 1.23456")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let val = result.get_attr("value").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -707,7 +708,7 @@ fn test_parse_yaml_float() {
 #[test]
 fn test_parse_yaml_negative_float() {
     let kwargs = create_kwargs(vec![("string", "temp: -273.15")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let temp_val = result.get_attr("temp").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&temp_val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -717,7 +718,7 @@ fn test_parse_yaml_negative_float() {
 #[test]
 fn test_parse_yaml_scientific_notation() {
     let kwargs = create_kwargs(vec![("string", "large: 1.0e10")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let large_val = result.get_attr("large").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&large_val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -727,7 +728,7 @@ fn test_parse_yaml_scientific_notation() {
 #[test]
 fn test_parse_yaml_number_as_key() {
     let kwargs = create_kwargs(vec![("string", "123: numeric key")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     // Access via string representation of number
     assert_eq!(
         result.get_attr("123").unwrap().as_str().unwrap(),
@@ -738,7 +739,7 @@ fn test_parse_yaml_number_as_key() {
 #[test]
 fn test_parse_yaml_boolean_as_key() {
     let kwargs = create_kwargs(vec![("string", "true: boolean key")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert_eq!(
         result.get_attr("true").unwrap().as_str().unwrap(),
         "boolean key"
@@ -748,7 +749,7 @@ fn test_parse_yaml_boolean_as_key() {
 #[test]
 fn test_parse_yaml_multiline_string() {
     let kwargs = create_kwargs(vec![("string", "text: |\n  line1\n  line2\n  line3")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let text_val = result.get_attr("text").unwrap();
     let text = text_val.as_str().unwrap();
     assert!(text.contains("line1"));
@@ -758,7 +759,7 @@ fn test_parse_yaml_multiline_string() {
 #[test]
 fn test_parse_yaml_folded_string() {
     let kwargs = create_kwargs(vec![("string", "text: >\n  folded\n  text")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let text_val = result.get_attr("text").unwrap();
     let text = text_val.as_str().unwrap();
     assert!(text.contains("folded"));
@@ -767,7 +768,7 @@ fn test_parse_yaml_folded_string() {
 #[test]
 fn test_parse_yaml_unicode() {
     let kwargs = create_kwargs(vec![("string", "emoji: 🚀\njapanese: 日本語")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("emoji").unwrap().as_str().unwrap(), "🚀");
     assert_eq!(
         result.get_attr("japanese").unwrap().as_str().unwrap(),
@@ -778,21 +779,21 @@ fn test_parse_yaml_unicode() {
 #[test]
 fn test_parse_yaml_empty_document() {
     let kwargs = create_kwargs(vec![("string", "")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert!(result.is_none());
 }
 
 #[test]
 fn test_parse_yaml_only_null() {
     let kwargs = create_kwargs(vec![("string", "~")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert!(result.is_none());
 }
 
 #[test]
 fn test_parse_yaml_inline_array() {
     let kwargs = create_kwargs(vec![("string", "items: [1, 2, 3]")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let items = result.get_attr("items").unwrap();
     assert_eq!(items.len(), Some(3));
 }
@@ -800,7 +801,7 @@ fn test_parse_yaml_inline_array() {
 #[test]
 fn test_parse_yaml_inline_object() {
     let kwargs = create_kwargs(vec![("string", "person: {name: John, age: 30}")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     let person = result.get_attr("person").unwrap();
     assert_eq!(person.get_attr("name").unwrap().as_str().unwrap(), "John");
 }
@@ -812,7 +813,7 @@ fn test_parse_yaml_anchor_alias() {
         "string",
         "default_value: &default 100\nfirst: *default\nsecond: *default",
     )]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert_eq!(
         result.get_attr("default_value").unwrap().as_usize(),
         Some(100)
@@ -825,14 +826,14 @@ fn test_parse_yaml_anchor_alias() {
 fn test_parse_yaml_tagged_value() {
     // Tagged values should be converted to their inner value
     let kwargs = create_kwargs(vec![("string", "date: !custom 2024-01-01")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert!(result.get_attr("date").is_ok());
 }
 
 #[test]
 fn test_parse_yaml_large_integer() {
     let kwargs = create_kwargs(vec![("string", "big: 9223372036854775807")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     assert_eq!(
         result.get_attr("big").unwrap().as_i64(),
         Some(9223372036854775807i64)
@@ -842,7 +843,7 @@ fn test_parse_yaml_large_integer() {
 #[test]
 fn test_parse_yaml_unsigned_large() {
     let kwargs = create_kwargs(vec![("string", "unsigned: 18446744073709551615")]);
-    let result = parse_yaml_fn(kwargs).unwrap();
+    let result = ParseYaml::call_as_function(kwargs).unwrap();
     // Large unsigned values are handled
     assert!(result.get_attr("unsigned").is_ok());
 }
@@ -852,7 +853,7 @@ fn test_parse_yaml_unsigned_large() {
 #[test]
 fn test_parse_toml_float() {
     let kwargs = create_kwargs(vec![("string", "value = 1.23456")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let val = result.get_attr("value").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -862,7 +863,7 @@ fn test_parse_toml_float() {
 #[test]
 fn test_parse_toml_negative_float() {
     let kwargs = create_kwargs(vec![("string", "temp = -273.15")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let temp_val = result.get_attr("temp").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&temp_val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -872,7 +873,7 @@ fn test_parse_toml_negative_float() {
 #[test]
 fn test_parse_toml_scientific_notation() {
     let kwargs = create_kwargs(vec![("string", "large = 1.0e10")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let large_val = result.get_attr("large").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&large_val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -882,7 +883,7 @@ fn test_parse_toml_scientific_notation() {
 #[test]
 fn test_parse_toml_datetime() {
     let kwargs = create_kwargs(vec![("string", "date = 2024-01-15T10:30:00Z")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let date_val = result.get_attr("date").unwrap();
     let date = date_val.as_str().unwrap();
     assert!(date.contains("2024"));
@@ -893,7 +894,7 @@ fn test_parse_toml_datetime() {
 #[test]
 fn test_parse_toml_local_date() {
     let kwargs = create_kwargs(vec![("string", "date = 2024-01-15")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let date_val = result.get_attr("date").unwrap();
     let date = date_val.as_str().unwrap();
     assert!(date.contains("2024-01-15"));
@@ -902,7 +903,7 @@ fn test_parse_toml_local_date() {
 #[test]
 fn test_parse_toml_local_time() {
     let kwargs = create_kwargs(vec![("string", "time = 10:30:00")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let time_val = result.get_attr("time").unwrap();
     let time = time_val.as_str().unwrap();
     assert!(time.contains("10:30:00"));
@@ -914,7 +915,7 @@ fn test_parse_toml_nested_tables() {
         "string",
         "[server]\nhost = \"localhost\"\n\n[server.ssl]\nenabled = true\nport = 443",
     )]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let server = result.get_attr("server").unwrap();
     assert_eq!(
         server.get_attr("host").unwrap().as_str().unwrap(),
@@ -931,7 +932,7 @@ fn test_parse_toml_array_of_tables() {
         "string",
         "[[products]]\nname = \"Apple\"\nprice = 1.0\n\n[[products]]\nname = \"Banana\"\nprice = 0.5",
     )]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let products = result.get_attr("products").unwrap();
     assert_eq!(products.len(), Some(2));
     assert_eq!(
@@ -949,7 +950,7 @@ fn test_parse_toml_array_of_tables() {
 #[test]
 fn test_parse_toml_inline_table() {
     let kwargs = create_kwargs(vec![("string", "point = { x = 1, y = 2 }")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let point = result.get_attr("point").unwrap();
     assert_eq!(point.get_attr("x").unwrap().as_usize(), Some(1));
     assert_eq!(point.get_attr("y").unwrap().as_usize(), Some(2));
@@ -964,7 +965,7 @@ line1
 line2
 line3""""#,
     )]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let text_val = result.get_attr("text").unwrap();
     let text = text_val.as_str().unwrap();
     assert!(text.contains("line1"));
@@ -974,7 +975,7 @@ line3""""#,
 #[test]
 fn test_parse_toml_literal_string() {
     let kwargs = create_kwargs(vec![("string", r"path = 'C:\Users\name'")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let path_val = result.get_attr("path").unwrap();
     let path = path_val.as_str().unwrap();
     assert!(path.contains("C:\\Users"));
@@ -983,28 +984,28 @@ fn test_parse_toml_literal_string() {
 #[test]
 fn test_parse_toml_boolean_true() {
     let kwargs = create_kwargs(vec![("string", "enabled = true")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert!(result.get_attr("enabled").unwrap().is_true());
 }
 
 #[test]
 fn test_parse_toml_boolean_false() {
     let kwargs = create_kwargs(vec![("string", "enabled = false")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert!(!result.get_attr("enabled").unwrap().is_true());
 }
 
 #[test]
 fn test_parse_toml_integer_negative() {
     let kwargs = create_kwargs(vec![("string", "value = -42")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("value").unwrap().as_i64(), Some(-42));
 }
 
 #[test]
 fn test_parse_toml_integer_large() {
     let kwargs = create_kwargs(vec![("string", "big = 9223372036854775807")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert_eq!(
         result.get_attr("big").unwrap().as_i64(),
         Some(9223372036854775807i64)
@@ -1018,7 +1019,7 @@ fn test_parse_toml_mixed_array() {
         "string",
         "numbers = [1, 2, 3]\nstrings = [\"a\", \"b\"]",
     )]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     let numbers = result.get_attr("numbers").unwrap();
     let strings = result.get_attr("strings").unwrap();
     assert_eq!(numbers.len(), Some(3));
@@ -1028,14 +1029,14 @@ fn test_parse_toml_mixed_array() {
 #[test]
 fn test_parse_toml_empty_table() {
     let kwargs = create_kwargs(vec![("string", "[empty]")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert!(result.get_attr("empty").is_ok());
 }
 
 #[test]
 fn test_parse_toml_unicode() {
     let kwargs = create_kwargs(vec![("string", "emoji = \"🎉\"\nchinese = \"你好\"")]);
-    let result = parse_toml_fn(kwargs).unwrap();
+    let result = ParseToml::call_as_function(kwargs).unwrap();
     assert_eq!(result.get_attr("emoji").unwrap().as_str().unwrap(), "🎉");
     assert_eq!(
         result.get_attr("chinese").unwrap().as_str().unwrap(),
