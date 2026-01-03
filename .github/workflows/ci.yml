@@ -124,6 +124,7 @@ jobs:
     needs: [test, cargo-make]
     uses: ./.github/workflows/_build-binaries.yml
     with:
+      ref: ${{ github.sha }}
       upload-artifacts: true
       artifact-retention-days: 7
 
@@ -135,6 +136,7 @@ jobs:
     needs: [test, cargo-make]
     uses: ./.github/workflows/_build-packages.yml
     with:
+      ref: ${{ github.sha }}
       artifact-retention-days: 7
 
   # ============================================
