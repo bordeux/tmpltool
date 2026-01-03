@@ -1,3 +1,10 @@
+## 1.3.0 (2026-01-03)
+
+* Merge pull request #30 from bordeux/feature/new-packages-build ([ba1808b](https://github.com/bordeux/tmpltool/commit/ba1808b)), closes [#30](https://github.com/bordeux/tmpltool/issues/30)
+* feat: add dual syntax support for all is-functions ([2d71887](https://github.com/bordeux/tmpltool/commit/2d71887))
+* feat: unified filter-functions architecture and packaging improvements ([db27729](https://github.com/bordeux/tmpltool/commit/db27729))
+* docs: add big picture overview and update future enhancements in CLAUDE.md ([8b63c98](https://github.com/bordeux/tmpltool/commit/8b63c98))
+
 ## <small>1.2.5 (2026-01-02)</small>
 
 * Merge pull request #29 from bordeux/fix/fix-triggers ([4bee433](https://github.com/bordeux/tmpltool/commit/4bee433)), closes [#29](https://github.com/bordeux/tmpltool/issues/29)
