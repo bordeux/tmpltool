@@ -1,3 +1,9 @@
+## <small>1.3.1 (2026-01-03)</small>
+
+* Merge pull request #31 from bordeux/fix/fix-workflow-version-app ([900b11a](https://github.com/bordeux/tmpltool/commit/900b11a)), closes [#31](https://github.com/bordeux/tmpltool/issues/31)
+* chore: skip QA checks in pre-commit when no Rust files changed ([588a834](https://github.com/bordeux/tmpltool/commit/588a834))
+* fix: ensure builds use correct git ref for version ([816b7e1](https://github.com/bordeux/tmpltool/commit/816b7e1))
+
 ## 1.3.0 (2026-01-03)
 
 * Merge pull request #30 from bordeux/feature/new-packages-build ([ba1808b](https://github.com/bordeux/tmpltool/commit/ba1808b)), closes [#30](https://github.com/bordeux/tmpltool/issues/30)
