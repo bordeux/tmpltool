@@ -7,5 +7,14 @@ if [ -f .git/MERGE_HEAD ]; then
   exit 0
 fi
 
-# Run QA checks for regular commits
+# Check if any Rust files are staged for commit
+RUST_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(rs)$|^Cargo\.(toml|lock)$' || true)
+
+if [ -z "$RUST_FILES" ]; then
+  echo "No Rust files changed, skipping cargo make qa"
+  exit 0
+fi
+
+# Run QA checks for commits with Rust changes
+echo "Rust files changed, running cargo make qa..."
 cargo make qa
