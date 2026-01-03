@@ -1,5 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
+use tmpltool::filter_functions::FilterFunction;
+use tmpltool::filter_functions::math::{Abs, Ceil, Floor, Round};
 use tmpltool::functions::math;
 
 // ============================================================================
@@ -159,35 +161,39 @@ fn test_max_error_non_numeric() {
 
 #[test]
 fn test_abs_positive() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from(42))])).unwrap();
+    let result =
+        Abs::call_as_function(Kwargs::from_iter(vec![("number", Value::from(42))])).unwrap();
 
     assert_eq!(result.to_string(), "42");
 }
 
 #[test]
 fn test_abs_negative() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from(-42))])).unwrap();
+    let result =
+        Abs::call_as_function(Kwargs::from_iter(vec![("number", Value::from(-42))])).unwrap();
 
     assert_eq!(result.to_string(), "42");
 }
 
 #[test]
 fn test_abs_zero() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from(0))])).unwrap();
+    let result =
+        Abs::call_as_function(Kwargs::from_iter(vec![("number", Value::from(0))])).unwrap();
 
     assert_eq!(result.to_string(), "0");
 }
 
 #[test]
 fn test_abs_float() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from(-3.25))])).unwrap();
+    let result =
+        Abs::call_as_function(Kwargs::from_iter(vec![("number", Value::from(-3.25))])).unwrap();
 
     assert_eq!(result.to_string(), "3.25");
 }
 
 #[test]
 fn test_abs_error_non_numeric() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from("test"))]));
+    let result = Abs::call_as_function(Kwargs::from_iter(vec![("number", Value::from("test"))]));
 
     assert!(result.is_err());
     assert!(
@@ -200,9 +206,20 @@ fn test_abs_error_non_numeric() {
 
 #[test]
 fn test_abs_missing_param() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
+    let result = Abs::call_as_function(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
 
     assert!(result.is_err());
+}
+
+#[test]
+fn test_abs_filter_syntax() {
+    let result = Abs::call_as_filter(
+        &Value::from(-42),
+        Kwargs::from_iter(Vec::<(&str, Value)>::new()),
+    )
+    .unwrap();
+
+    assert_eq!(result.to_string(), "42");
 }
 
 // ============================================================================
@@ -211,21 +228,23 @@ fn test_abs_missing_param() {
 
 #[test]
 fn test_round_default() {
-    let result = math::round_fn(Kwargs::from_iter(vec![("number", Value::from(3.7))])).unwrap();
+    let result =
+        Round::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.7))])).unwrap();
 
     assert_eq!(result.to_string(), "4");
 }
 
 #[test]
 fn test_round_down() {
-    let result = math::round_fn(Kwargs::from_iter(vec![("number", Value::from(3.4))])).unwrap();
+    let result =
+        Round::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.4))])).unwrap();
 
     assert_eq!(result.to_string(), "3");
 }
 
 #[test]
 fn test_round_two_decimals() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
+    let result = Round::call_as_function(Kwargs::from_iter(vec![
         ("number", Value::from(2.34567)),
         ("decimals", Value::from(2)),
     ]))
@@ -236,7 +255,7 @@ fn test_round_two_decimals() {
 
 #[test]
 fn test_round_four_decimals() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
+    let result = Round::call_as_function(Kwargs::from_iter(vec![
         ("number", Value::from(2.345678)),
         ("decimals", Value::from(4)),
     ]))
@@ -247,7 +266,7 @@ fn test_round_four_decimals() {
 
 #[test]
 fn test_round_zero_decimals_explicit() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
+    let result = Round::call_as_function(Kwargs::from_iter(vec![
         ("number", Value::from(19.999)),
         ("decimals", Value::from(0)),
     ]))
@@ -258,7 +277,7 @@ fn test_round_zero_decimals_explicit() {
 
 #[test]
 fn test_round_negative_number() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
+    let result = Round::call_as_function(Kwargs::from_iter(vec![
         ("number", Value::from(-3.7)),
         ("decimals", Value::from(0)),
     ]))
@@ -269,7 +288,7 @@ fn test_round_negative_number() {
 
 #[test]
 fn test_round_error_negative_decimals() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
+    let result = Round::call_as_function(Kwargs::from_iter(vec![
         ("number", Value::from(2.75)),
         ("decimals", Value::from(-1)),
     ]));
@@ -285,7 +304,7 @@ fn test_round_error_negative_decimals() {
 
 #[test]
 fn test_round_error_non_numeric() {
-    let result = math::round_fn(Kwargs::from_iter(vec![("number", Value::from("test"))]));
+    let result = Round::call_as_function(Kwargs::from_iter(vec![("number", Value::from("test"))]));
 
     assert!(result.is_err());
     assert!(
@@ -294,6 +313,17 @@ fn test_round_error_non_numeric() {
             .to_string()
             .contains("requires a numeric value")
     );
+}
+
+#[test]
+fn test_round_filter_syntax() {
+    let result = Round::call_as_filter(
+        &Value::from(2.34567),
+        Kwargs::from_iter(vec![("decimals", Value::from(2))]),
+    )
+    .unwrap();
+
+    assert_eq!(result.to_string(), "2.35");
 }
 
 // ============================================================================
@@ -302,35 +332,39 @@ fn test_round_error_non_numeric() {
 
 #[test]
 fn test_ceil_basic() {
-    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from(3.1))])).unwrap();
+    let result =
+        Ceil::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.1))])).unwrap();
 
     assert_eq!(result.to_string(), "4");
 }
 
 #[test]
 fn test_ceil_exact() {
-    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from(3.0))])).unwrap();
+    let result =
+        Ceil::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.0))])).unwrap();
 
     assert_eq!(result.to_string(), "3");
 }
 
 #[test]
 fn test_ceil_negative() {
-    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from(-3.9))])).unwrap();
+    let result =
+        Ceil::call_as_function(Kwargs::from_iter(vec![("number", Value::from(-3.9))])).unwrap();
 
     assert_eq!(result.to_string(), "-3");
 }
 
 #[test]
 fn test_ceil_small_fraction() {
-    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from(3.001))])).unwrap();
+    let result =
+        Ceil::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.001))])).unwrap();
 
     assert_eq!(result.to_string(), "4");
 }
 
 #[test]
 fn test_ceil_error_non_numeric() {
-    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from("test"))]));
+    let result = Ceil::call_as_function(Kwargs::from_iter(vec![("number", Value::from("test"))]));
 
     assert!(result.is_err());
     assert!(
@@ -339,6 +373,17 @@ fn test_ceil_error_non_numeric() {
             .to_string()
             .contains("requires a numeric value")
     );
+}
+
+#[test]
+fn test_ceil_filter_syntax() {
+    let result = Ceil::call_as_filter(
+        &Value::from(3.1),
+        Kwargs::from_iter(Vec::<(&str, Value)>::new()),
+    )
+    .unwrap();
+
+    assert_eq!(result.to_string(), "4");
 }
 
 // ============================================================================
@@ -347,35 +392,39 @@ fn test_ceil_error_non_numeric() {
 
 #[test]
 fn test_floor_basic() {
-    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from(3.9))])).unwrap();
+    let result =
+        Floor::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.9))])).unwrap();
 
     assert_eq!(result.to_string(), "3");
 }
 
 #[test]
 fn test_floor_exact() {
-    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from(3.0))])).unwrap();
+    let result =
+        Floor::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.0))])).unwrap();
 
     assert_eq!(result.to_string(), "3");
 }
 
 #[test]
 fn test_floor_negative() {
-    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from(-3.1))])).unwrap();
+    let result =
+        Floor::call_as_function(Kwargs::from_iter(vec![("number", Value::from(-3.1))])).unwrap();
 
     assert_eq!(result.to_string(), "-4");
 }
 
 #[test]
 fn test_floor_small_fraction() {
-    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from(3.999))])).unwrap();
+    let result =
+        Floor::call_as_function(Kwargs::from_iter(vec![("number", Value::from(3.999))])).unwrap();
 
     assert_eq!(result.to_string(), "3");
 }
 
 #[test]
 fn test_floor_error_non_numeric() {
-    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from("test"))]));
+    let result = Floor::call_as_function(Kwargs::from_iter(vec![("number", Value::from("test"))]));
 
     assert!(result.is_err());
     assert!(
@@ -384,6 +433,17 @@ fn test_floor_error_non_numeric() {
             .to_string()
             .contains("requires a numeric value")
     );
+}
+
+#[test]
+fn test_floor_filter_syntax() {
+    let result = Floor::call_as_filter(
+        &Value::from(3.9),
+        Kwargs::from_iter(Vec::<(&str, Value)>::new()),
+    )
+    .unwrap();
+
+    assert_eq!(result.to_string(), "3");
 }
 
 // ============================================================================
@@ -500,4 +560,130 @@ fn test_percentage_missing_params() {
     let result = math::percentage_fn(Kwargs::from_iter(vec![("value", Value::from(25))]));
 
     assert!(result.is_err());
+}
+
+// ============================================================================
+// Additional error case tests for better coverage
+// ============================================================================
+
+#[test]
+fn test_min_error_missing_a() {
+    let result = math::min_fn(Kwargs::from_iter(vec![("b", Value::from(20))]));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_min_error_missing_b() {
+    let result = math::min_fn(Kwargs::from_iter(vec![("a", Value::from(10))]));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_max_error_missing_a() {
+    let result = math::max_fn(Kwargs::from_iter(vec![("b", Value::from(20))]));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_max_error_missing_b() {
+    let result = math::max_fn(Kwargs::from_iter(vec![("a", Value::from(10))]));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_abs_error_missing_number() {
+    let result = math::abs_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_round_error_missing_number() {
+    let result = math::round_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_ceil_error_missing_number() {
+    let result = math::ceil_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_floor_error_missing_number() {
+    let result = math::floor_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_percentage_error_missing_value() {
+    let result = math::percentage_fn(Kwargs::from_iter(vec![("total", Value::from(100))]));
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_min_with_zero() {
+    let result = math::min_fn(Kwargs::from_iter(vec![
+        ("a", Value::from(0)),
+        ("b", Value::from(5)),
+    ]))
+    .unwrap();
+    assert_eq!(result.to_string(), "0");
+}
+
+#[test]
+fn test_max_with_zero() {
+    let result = math::max_fn(Kwargs::from_iter(vec![
+        ("a", Value::from(0)),
+        ("b", Value::from(-5)),
+    ]))
+    .unwrap();
+    assert_eq!(result.to_string(), "0");
+}
+
+#[test]
+fn test_abs_with_zero() {
+    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from(0))])).unwrap();
+    assert_eq!(result.to_string(), "0");
+}
+
+#[test]
+fn test_round_with_zero_decimals() {
+    let result = math::round_fn(Kwargs::from_iter(vec![
+        ("number", Value::from(3.7)),
+        ("decimals", Value::from(0)),
+    ]))
+    .unwrap();
+    assert_eq!(result.to_string(), "4");
+}
+
+#[test]
+fn test_round_with_high_decimals() {
+    let result = math::round_fn(Kwargs::from_iter(vec![
+        ("number", Value::from(3.123456789)),
+        ("decimals", Value::from(6)),
+    ]))
+    .unwrap();
+    assert_eq!(result.to_string(), "3.123457");
+}
+
+#[test]
+fn test_ceil_negative_direct() {
+    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from(-3.1))])).unwrap();
+    assert_eq!(result.to_string(), "-3");
+}
+
+#[test]
+fn test_floor_negative_direct() {
+    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from(-3.1))])).unwrap();
+    assert_eq!(result.to_string(), "-4");
+}
+
+#[test]
+fn test_percentage_very_small() {
+    let result = math::percentage_fn(Kwargs::from_iter(vec![
+        ("value", Value::from(1)),
+        ("total", Value::from(10000)),
+    ]))
+    .unwrap();
+    assert_eq!(result.to_string(), "0.01");
 }

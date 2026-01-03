@@ -1,9 +1,17 @@
+//! Integration tests for hash functions.
+//!
+//! Tests both function syntax ({{ md5(string="...") }}) and
+//! filter syntax ({{ "..." | md5 }}) to ensure backwards compatibility
+//! and that both produce identical results.
+
 mod common;
 
 use common::{cleanup_test_file, get_test_file_path};
 use regex::Regex;
 use std::fs;
 use tmpltool::render_template;
+
+// ============ Function Syntax Tests ============
 
 #[test]
 fn test_md5_function() {
@@ -588,4 +596,184 @@ fn test_random_string_missing_length() {
     );
 
     cleanup_test_file(&template_path);
+}
+
+// ============ Filter Syntax Tests ============
+
+#[test]
+fn test_md5_filter() {
+    let template_content = r#"{{ "hello" | md5 }}"#;
+    let template_path = get_test_file_path("template_md5_filter.txt");
+    let output_path = get_test_file_path("output_md5_filter.txt");
+
+    fs::write(&template_path, template_content).unwrap();
+
+    let result = render_template(
+        Some(template_path.to_str().unwrap()),
+        Some(output_path.to_str().unwrap()),
+        false,
+        None,
+    );
+
+    assert!(
+        result.is_ok(),
+        "MD5 filter rendering failed: {:?}",
+        result.err()
+    );
+
+    let output = fs::read_to_string(&output_path).unwrap();
+    assert_eq!(output, "5d41402abc4b2a76b9719d911017c592");
+
+    cleanup_test_file(&template_path);
+    cleanup_test_file(&output_path);
+}
+
+#[test]
+fn test_sha256_filter() {
+    let template_content = r#"{{ "tmpltool" | sha256 }}"#;
+    let template_path = get_test_file_path("template_sha256_filter.txt");
+    let output_path = get_test_file_path("output_sha256_filter.txt");
+
+    fs::write(&template_path, template_content).unwrap();
+
+    let result = render_template(
+        Some(template_path.to_str().unwrap()),
+        Some(output_path.to_str().unwrap()),
+        false,
+        None,
+    );
+
+    assert!(
+        result.is_ok(),
+        "SHA256 filter rendering failed: {:?}",
+        result.err()
+    );
+
+    let output = fs::read_to_string(&output_path).unwrap();
+    assert_eq!(
+        output,
+        "5eb389e31748154d04ff7be14bec47d2a72d26c8f36ec7feb6236cc860b9fbe2"
+    );
+
+    cleanup_test_file(&template_path);
+    cleanup_test_file(&output_path);
+}
+
+// ============ Both Syntaxes Produce Same Result Tests ============
+
+#[test]
+fn test_md5_both_syntaxes_same_result() {
+    // Function syntax
+    let fn_template = r#"{{ md5(string="test_value") }}"#;
+    let fn_template_path = get_test_file_path("template_md5_fn.txt");
+    let fn_output_path = get_test_file_path("output_md5_fn.txt");
+
+    fs::write(&fn_template_path, fn_template).unwrap();
+    render_template(
+        Some(fn_template_path.to_str().unwrap()),
+        Some(fn_output_path.to_str().unwrap()),
+        false,
+        None,
+    )
+    .unwrap();
+    let fn_output = fs::read_to_string(&fn_output_path).unwrap();
+
+    // Filter syntax
+    let filter_template = r#"{{ "test_value" | md5 }}"#;
+    let filter_template_path = get_test_file_path("template_md5_flt.txt");
+    let filter_output_path = get_test_file_path("output_md5_flt.txt");
+
+    fs::write(&filter_template_path, filter_template).unwrap();
+    render_template(
+        Some(filter_template_path.to_str().unwrap()),
+        Some(filter_output_path.to_str().unwrap()),
+        false,
+        None,
+    )
+    .unwrap();
+    let filter_output = fs::read_to_string(&filter_output_path).unwrap();
+
+    // Both should produce the same result
+    assert_eq!(
+        fn_output, filter_output,
+        "Function and filter syntax should produce identical results"
+    );
+
+    cleanup_test_file(&fn_template_path);
+    cleanup_test_file(&fn_output_path);
+    cleanup_test_file(&filter_template_path);
+    cleanup_test_file(&filter_output_path);
+}
+
+#[test]
+fn test_sha256_both_syntaxes_same_result() {
+    // Function syntax
+    let fn_template = r#"{{ sha256(string="password123") }}"#;
+    let fn_template_path = get_test_file_path("template_sha256_fn.txt");
+    let fn_output_path = get_test_file_path("output_sha256_fn.txt");
+
+    fs::write(&fn_template_path, fn_template).unwrap();
+    render_template(
+        Some(fn_template_path.to_str().unwrap()),
+        Some(fn_output_path.to_str().unwrap()),
+        false,
+        None,
+    )
+    .unwrap();
+    let fn_output = fs::read_to_string(&fn_output_path).unwrap();
+
+    // Filter syntax
+    let filter_template = r#"{{ "password123" | sha256 }}"#;
+    let filter_template_path = get_test_file_path("template_sha256_flt.txt");
+    let filter_output_path = get_test_file_path("output_sha256_flt.txt");
+
+    fs::write(&filter_template_path, filter_template).unwrap();
+    render_template(
+        Some(filter_template_path.to_str().unwrap()),
+        Some(filter_output_path.to_str().unwrap()),
+        false,
+        None,
+    )
+    .unwrap();
+    let filter_output = fs::read_to_string(&filter_output_path).unwrap();
+
+    // Both should produce the same result
+    assert_eq!(
+        fn_output, filter_output,
+        "Function and filter syntax should produce identical results"
+    );
+
+    cleanup_test_file(&fn_template_path);
+    cleanup_test_file(&fn_output_path);
+    cleanup_test_file(&filter_template_path);
+    cleanup_test_file(&filter_output_path);
+}
+
+// ============ Filter Chaining Tests ============
+
+#[test]
+fn test_hash_filter_chaining() {
+    // Chain: "hello" | sha256 | md5
+    let template_content = r#"{{ "hello" | sha256 | md5 }}"#;
+    let template_path = get_test_file_path("template_chain.txt");
+    let output_path = get_test_file_path("output_chain.txt");
+
+    fs::write(&template_path, template_content).unwrap();
+
+    let result = render_template(
+        Some(template_path.to_str().unwrap()),
+        Some(output_path.to_str().unwrap()),
+        false,
+        None,
+    );
+
+    assert!(result.is_ok(), "Hash chaining failed: {:?}", result.err());
+
+    let output = fs::read_to_string(&output_path).unwrap();
+    // sha256("hello") = 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+    // md5 of that sha256 hash
+    assert_eq!(output, "ebde1b934fa81da163dcf4b7d7cfe18e");
+
+    cleanup_test_file(&template_path);
+    cleanup_test_file(&output_path);
 }

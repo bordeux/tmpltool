@@ -4,20 +4,30 @@ use chrono_tz::Tz;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 
-/// Get current timestamp in ISO 8601 format
+/// Get current Unix timestamp, optionally formatted
 ///
-/// Replacement for Tera's built-in now() function
+/// # Arguments
 ///
-/// Returns timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SS.sss+00:00
+/// * `format` (optional) - Format string. If provided, returns formatted string.
+///   If not provided, returns Unix timestamp (seconds since epoch).
+///
+/// Format specifiers: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
 ///
 /// # Example
 ///
 /// ```jinja
-/// {{ now() }}  => "2024-12-31T12:34:56.789+00:00"
+/// {{ now() }}  => 1704067200
+/// {{ format_date(timestamp=now(), format="%Y-%m-%d") }}  => "2024-01-01"
+/// {{ now(format="%Y-%m-%d %H:%M:%S") }}  => "2024-12-31 12:34:56"
 /// ```
-pub fn now_fn() -> Result<Value, Error> {
-    let timestamp = Utc::now().to_rfc3339();
-    Ok(Value::from(timestamp))
+pub fn now_fn(kwargs: Kwargs) -> Result<Value, Error> {
+    let format: Option<String> = kwargs.get("format").ok();
+    let now = Utc::now();
+
+    match format {
+        Some(fmt) => Ok(Value::from(now.format(&fmt).to_string())),
+        None => Ok(Value::from(now.timestamp())),
+    }
 }
 
 /// Format a Unix timestamp with a custom format string

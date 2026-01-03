@@ -27,6 +27,11 @@ description = "Run clippy linter"
 command = "cargo"
 args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
 
+[tasks.lint]
+description = "Run extended lint checks (clippy + dead code detection)"
+command = "cargo"
+args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings", "-W", "unused", "-W", "dead_code", "-W", "unreachable_code", "-W", "unused_imports", "-W", "unused_variables"]
+
 [tasks.clippy-fix]
 description = "Run clippy and automatically fix issues"
 command = "cargo"
@@ -114,8 +119,8 @@ description = "Run CI checks (format, clippy, test)"
 dependencies = ["format-check", "clippy", "test"]
 
 [tasks.qa]
-description = "Run full quality assurance (format, clippy, test)"
-dependencies = ["format", "clippy", "test"]
+description = "Run full quality assurance (format-check, lint, test)"
+dependencies = ["format-check", "lint", "test"]
 
 [tasks.pre-commit]
 description = "Run checks before committing"
@@ -202,6 +207,44 @@ description = "Full build and test suite"
 dependencies = ["clean", "format", "clippy", "test", "build-release", "docs-build"]
 
 # ========================================
+# Package Building Tasks
+# ========================================
+
+[tasks.build-nix]
+description = "Build with Nix flake"
+command = "nix"
+args = ["build"]
+
+[tasks.build-msi]
+description = "Build Windows MSI installer (requires WiX and cargo-wix)"
+install_crate = "cargo-wix"
+command = "cargo"
+args = ["wix", "--nocapture"]
+
+[tasks.build-dmg]
+description = "Build macOS DMG installer"
+dependencies = ["build-release"]
+script_runner = "@shell"
+script = '''
+./scripts/create-dmg.sh
+'''
+
+[tasks.build-deb]
+description = "Build Debian package"
+install_crate = "cargo-deb"
+command = "cargo"
+args = ["deb"]
+
+[tasks.build-rpm]
+description = "Build RPM package"
+install_crate = "cargo-generate-rpm"
+script_runner = "@shell"
+script = '''
+cargo build --release
+cargo generate-rpm
+'''
+
+# ========================================
 # Example Testing Tasks
 # ========================================
 
@@ -254,6 +297,13 @@ echo "  cargo make build-macos-x86_64    - macOS Intel"
 echo "  cargo make build-macos-aarch64   - macOS Apple Silicon"
 echo "  cargo make build-windows-x86_64  - Windows x86_64"
 echo "  cargo make build-all-platforms   - All platforms"
+echo ""
+echo "Package Building:"
+echo "  cargo make build-deb     - Build Debian package"
+echo "  cargo make build-rpm     - Build RPM package"
+echo "  cargo make build-msi     - Build Windows MSI"
+echo "  cargo make build-dmg     - Build macOS DMG"
+echo "  cargo make build-nix     - Build with Nix flake"
 echo ""
 echo "Utilities:"
 echo "  cargo make clean         - Clean build artifacts"

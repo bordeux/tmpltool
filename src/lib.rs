@@ -15,7 +15,7 @@
 
 pub mod cli;
 pub mod context;
-pub mod filters;
+pub mod filter_functions;
 pub mod functions;
 pub mod renderer;
 pub mod validator;

@@ -152,10 +152,14 @@ src/
 │   ├── datetime.rs
 │   ├── random.rs
 │   └── uuid_gen.rs
-└── filters/          - Custom template filters
-    ├── mod.rs
-    ├── formatting.rs
-    └── string.rs
+└── filter_functions/ - Unified filter-functions (dual syntax)
+    ├── mod.rs        - Registration for both function and filter syntax
+    ├── traits.rs     - FilterFunction trait definition
+    ├── string.rs     - String manipulation (slugify, case conversion, etc.)
+    ├── formatting.rs - Formatting (filesizeformat, urlencode)
+    ├── hash.rs       - Hash functions (md5, sha256, etc.)
+    ├── encoding.rs   - Encoding (base64, hex, escape)
+    └── ...
 ```
 
 ### Key Architectural Patterns

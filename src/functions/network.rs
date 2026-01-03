@@ -96,6 +96,50 @@ fn get_interface_ip(interface: &str) -> Result<Value, Error> {
     ))
 }
 
+/// Get a list of all network interfaces with their IP addresses
+///
+/// # Returns
+///
+/// Returns a list of objects with interface information:
+/// - `name`: Interface name (e.g., "eth0", "en0", "lo")
+/// - `ip`: IP address assigned to the interface
+/// - `is_loopback`: Whether this is a loopback interface
+///
+/// # Example
+///
+/// ```jinja
+/// {# List all interfaces #}
+/// {% for iface in get_interfaces() %}
+///   {{ iface.name }}: {{ iface.ip }}
+/// {% endfor %}
+///
+/// {# Filter non-loopback interfaces #}
+/// {% for iface in get_interfaces() | selectattr("is_loopback", "equalto", false) %}
+///   {{ iface.name }}: {{ iface.ip }}
+/// {% endfor %}
+/// ```
+pub fn get_interfaces_fn(_kwargs: Kwargs) -> Result<Value, Error> {
+    let ifaces = if_addrs::get_if_addrs().map_err(|e| {
+        Error::new(
+            ErrorKind::InvalidOperation,
+            format!("Failed to get network interfaces: {}", e),
+        )
+    })?;
+
+    let interfaces: Vec<Value> = ifaces
+        .into_iter()
+        .map(|iface| {
+            let mut map = std::collections::BTreeMap::new();
+            map.insert("name".to_string(), Value::from(iface.name.clone()));
+            map.insert("ip".to_string(), Value::from(iface.ip().to_string()));
+            map.insert("is_loopback".to_string(), Value::from(iface.is_loopback()));
+            Value::from_object(map)
+        })
+        .collect();
+
+    Ok(Value::from(interfaces))
+}
+
 /// Resolve a hostname to an IP address using DNS
 ///
 /// # Arguments
