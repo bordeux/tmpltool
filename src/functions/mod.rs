@@ -116,6 +116,12 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     // Register filter-functions (functions that also work as filters)
     crate::filter_functions::register_all(env);
 
+    // Create Arc for context-aware functions
+    let context_arc = Arc::new(context);
+
+    // Register is-functions (functions that also work as "is" tests)
+    crate::is_functions::register_all(env, context_arc.clone());
+
     // Register built-in function replacements (were built-in in Tera)
     env.add_function("get_env", environment::env_fn);
     env.add_function("now", datetime::now_fn);
@@ -124,11 +130,11 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     // Date/Time functions
     // Note: format_date, get_year, get_month, get_day, get_hour, get_minute, get_second
     // are now registered via filter_functions module
+    // Note: is_leap_year is now registered via is_functions module
     env.add_function("parse_date", datetime::parse_date_fn);
     env.add_function("date_add", datetime::date_add_fn);
     env.add_function("date_diff", datetime::date_diff_fn);
     env.add_function("timezone_convert", datetime::timezone_convert_fn);
-    env.add_function("is_leap_year", datetime::is_leap_year_fn);
 
     // Register custom functions (simple, no context needed)
     env.add_function("filter_env", environment::filter_env_fn);
@@ -137,10 +143,8 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("random_string", random::random_string_fn);
 
     // Validation functions
-    env.add_function("is_email", validation::is_email_fn);
-    env.add_function("is_url", validation::is_url_fn);
-    env.add_function("is_ip", validation::is_ip_fn);
-    env.add_function("is_uuid", validation::is_uuid_fn);
+    // Note: is_email, is_url, is_ip, is_uuid are now registered via is_functions module
+    // (provides both function and "is" test syntax)
     env.add_function("matches_regex", validation::matches_regex_fn);
 
     // System information functions
@@ -153,10 +157,10 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     env.add_function("get_cwd", system::get_cwd_fn);
 
     // Network functions
+    // Note: is_port_available is now registered via is_functions module
     env.add_function("get_ip_address", network::get_ip_address_fn);
     env.add_function("get_interfaces", network::get_interfaces_fn);
     env.add_function("resolve_dns", network::resolve_dns_fn);
-    env.add_function("is_port_available", network::is_port_available_fn);
     env.add_function("cidr_contains", network::cidr_contains_fn);
     env.add_function("cidr_network", network::cidr_network_fn);
     env.add_function("cidr_broadcast", network::cidr_broadcast_fn);
@@ -168,7 +172,6 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     // registered via filter_functions module
 
     // File system functions (need context)
-    let context_arc = Arc::new(context);
     env.add_function(
         "read_file",
         filesystem::create_read_file_fn(context_arc.clone()),
@@ -190,15 +193,7 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
         "file_modified",
         filesystem::create_file_modified_fn(context_arc.clone()),
     );
-    env.add_function(
-        "is_file",
-        filesystem::create_is_file_fn(context_arc.clone()),
-    );
-    env.add_function("is_dir", filesystem::create_is_dir_fn(context_arc.clone()));
-    env.add_function(
-        "is_symlink",
-        filesystem::create_is_symlink_fn(context_arc.clone()),
-    );
+    // Note: is_file, is_dir, is_symlink are now registered via is_functions module
     env.add_function(
         "read_lines",
         filesystem::create_read_lines_fn(context_arc.clone()),

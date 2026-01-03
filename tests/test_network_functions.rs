@@ -115,41 +115,8 @@ fn test_resolve_dns_missing_hostname() {
     assert!(result.is_err());
 }
 
-#[test]
-fn test_is_port_available_valid() {
-    // Test with a likely available high port
-    let result =
-        network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(54321))]));
-    assert!(result.is_ok());
-    // Result should be a boolean
-    let val = result.unwrap();
-    assert!(val.is_true() || !val.is_true());
-}
-
-#[test]
-fn test_is_port_available_invalid_port_low() {
-    let result = network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(0))]));
-    assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("between 1 and 65535")
-    );
-}
-
-#[test]
-fn test_is_port_available_invalid_port_high() {
-    let result =
-        network::is_port_available_fn(Kwargs::from_iter(vec![("port", Value::from(65536))]));
-    assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("between 1 and 65535")
-    );
-}
+// Note: is_port_available tests have been moved to tests/test_is_network.rs
+// as part of the is-functions refactoring.
 
 // ==================== cidr_contains Tests ====================
 

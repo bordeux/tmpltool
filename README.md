@@ -366,6 +366,49 @@ tmpltool uses the [MiniJinja](https://github.com/mitsuhiko/minijinja) template e
 {% endif %}
 ```
 
+### Is Syntax (Validation & Checks)
+
+The `is` syntax provides readable conditionals for validation and type checking. All is-functions support both function syntax and the more readable "is" syntax:
+
+| Test | Function Equivalent | Description |
+|------|---------------------|-------------|
+| `{% if x is email %}` | `is_email(string=x)` | Valid email format |
+| `{% if x is url %}` | `is_url(string=x)` | Valid URL format |
+| `{% if x is ip %}` | `is_ip(string=x)` | Valid IPv4/IPv6 address |
+| `{% if x is uuid %}` | `is_uuid(string=x)` | Valid UUID format |
+| `{% if y is leap_year %}` | `is_leap_year(year=y)` | Year is a leap year |
+| `{% if p is port_available %}` | `is_port_available(port=p)` | Port is free to use |
+| `{% if f is file %}` | `is_file(path=f)` | Path is an existing file |
+| `{% if d is dir %}` | `is_dir(path=d)` | Path is a directory |
+| `{% if s is symlink %}` | `is_symlink(path=s)` | Path is a symbolic link |
+
+**Examples:**
+```jinja
+{# Validate user input #}
+{% if user_email is email %}
+  Valid email: {{ user_email }}
+{% else %}
+  Invalid email format
+{% endif %}
+
+{# Check filesystem #}
+{% if "config.json" is file %}
+  {% set config = read_json_file(path="config.json") %}
+{% endif %}
+
+{# Port availability #}
+{% if 8080 is port_available %}
+  port: 8080
+{% elif 3000 is port_available %}
+  port: 3000
+{% endif %}
+
+{# Negation with "is not" #}
+{% if user_input is not uuid %}
+  Warning: Invalid ID format
+{% endif %}
+```
+
 ### Loops
 
 ```
@@ -1214,24 +1257,34 @@ Convert a timestamp between timezones.
 {{ timezone_convert(timestamp=utc_ts, from_tz="UTC", to_tz="America/New_York") }}
 ```
 
-#### `is_leap_year(year)`
+#### `is_leap_year(year)` / `{% if year is leap_year %}`
 
-Check if a year is a leap year.
+Check if a year is a leap year. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `year` (required) - Year to check (4-digit integer)
+
+**Is-Test Syntax:**
+- The value must be an integer or a string that can be parsed as an integer
 
 **Returns:** Boolean (true if leap year, false otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 {% if is_leap_year(year=2024) %}
 2024 is a leap year
 {% endif %}
 
+{# Is-test syntax (preferred for readability) #}
+{% if 2024 is leap_year %}
+2024 is a leap year
+{% endif %}
+
+{# With variables #}
 {% set years = [2020, 2021, 2022, 2023, 2024] %}
 {% for year in years %}
-{{ year }}: {% if is_leap_year(year=year) %}Leap{% else %}Regular{% endif %}
+{{ year }}: {% if year is leap_year %}Leap{% else %}Regular{% endif %}
 {% endfor %}
 ```
 
@@ -1779,68 +1832,97 @@ Normalize a path by resolving `.` (current directory) and `..` (parent directory
 {# Output: data/files.txt #}
 ```
 
-#### `is_file(path)`
+#### `is_file(path)` / `{% if path is file %}`
 
-Check if a path exists and is a file.
+Check if a path exists and is a file. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `path` (required) - Path to check
+
+**Is-Test Syntax:**
+- The value must be a string representing a file path
 
 **Returns:** Boolean (true if path exists and is a file)
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {% if is_file(path="config.txt") %}
   Config file found!
-{% else %}
-  Config file missing
 {% endif %}
 
-{# Check before reading #}
-{% if is_file(path="README.md") %}
-  {{ read_file(path="README.md") }}
+{# Is-test syntax (preferred for readability) #}
+{% if "config.txt" is file %}
+  Config file found!
+{% endif %}
+
+{# With variables #}
+{% set config_path = "config.json" %}
+{% if config_path is file %}
+  {{ read_file(path=config_path) }}
 {% endif %}
 ```
 
-#### `is_dir(path)`
+#### `is_dir(path)` / `{% if path is dir %}`
 
-Check if a path exists and is a directory.
+Check if a path exists and is a directory. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `path` (required) - Path to check
+
+**Is-Test Syntax:**
+- The value must be a string representing a directory path
 
 **Returns:** Boolean (true if path exists and is a directory)
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {% if is_dir(path="src") %}
   Source directory exists
-{% else %}
-  Source directory not found
 {% endif %}
 
-{# Conditional directory operations #}
-{% if is_dir(path="tests") %}
+{# Is-test syntax (preferred for readability) #}
+{% if "src" is dir %}
+  Source directory exists
+{% endif %}
+
+{# With variables #}
+{% set test_dir = "tests" %}
+{% if test_dir is dir %}
   {% set test_files = glob(pattern="tests/**/*.rs") %}
   Found {{ test_files | length }} test files
 {% endif %}
 ```
 
-#### `is_symlink(path)`
+#### `is_symlink(path)` / `{% if path is symlink %}`
 
-Check if a path is a symbolic link.
+Check if a path is a symbolic link. Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `path` (required) - Path to check
+
+**Is-Test Syntax:**
+- The value must be a string representing a path
 
 **Returns:** Boolean (true if path is a symlink)
 
 **Examples:**
 ```jinja
+{# Function syntax #}
 {% if is_symlink(path="current") %}
   'current' is a symbolic link
-{% else %}
-  'current' is not a symbolic link
+{% endif %}
+
+{# Is-test syntax (preferred for readability) #}
+{% if "current" is symlink %}
+  'current' is a symbolic link
+{% endif %}
+
+{# With variables #}
+{% set link_path = "latest" %}
+{% if link_path is symlink %}
+  Following symlink...
 {% endif %}
 ```
 
@@ -5371,27 +5453,37 @@ Local: {{ resolve_dns(hostname="localhost") }}
 {# Output: Local: 127.0.0.1 or ::1 #}
 ```
 
-#### `is_port_available(port)`
+#### `is_port_available(port)` / `{% if port is port_available %}`
 
-Check if a port is available (not in use).
+Check if a port is available (not in use). Supports both function syntax and "is" test syntax.
 
-**Arguments:**
+**Function Syntax Arguments:**
 - `port` (required) - Port number to check (1-65535)
+
+**Is-Test Syntax:**
+- The value must be an integer between 1 and 65535, or a string that can be parsed as such
 
 **Returns:** Boolean (`true` if available, `false` if in use)
 
-**Example:**
-```
+**Examples:**
+```jinja
+{# Function syntax #}
 {% if is_port_available(port=8080) %}
   Port 8080 is available
 {% else %}
   Port 8080 is already in use
 {% endif %}
 
-{# Dynamic port selection #}
-{% if is_port_available(port=3000) %}
-APP_PORT=3000
-{% elif is_port_available(port=3001) %}
+{# Is-test syntax (preferred for readability) #}
+{% if 8080 is port_available %}
+  Port 8080 is available
+{% endif %}
+
+{# With variables #}
+{% set my_port = 3000 %}
+{% if my_port is port_available %}
+APP_PORT={{ my_port }}
+{% elif 3001 is port_available %}
 APP_PORT=3001
 {% else %}
 APP_PORT=8080
@@ -5629,57 +5721,73 @@ services:
 
 Validate strings against specific formats. Useful for validating user input, configuration values, or data from external sources.
 
-#### `is_email(string)`
+These functions support two syntaxes:
+- **Function syntax:** `{{ is_email(string="...") }}` or `{% if is_email(string=var) %}`
+- **"Is" syntax:** `{% if var is email %}` (more readable for conditionals)
+
+#### `is_email(string)` / `{% if x is email %}`
 
 Validate if a string is a valid email address format.
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid email, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 Email: user@example.com
 Valid: {{ is_email(string="user@example.com") }}
 {# Output: Valid: true #}
 
-Email: invalid-email
-Valid: {{ is_email(string="invalid-email") }}
-{# Output: Valid: false #}
+{# "Is" syntax (preferred for conditionals) #}
+{% if user_email is email %}
+  <p>Valid email address!</p>
+{% else %}
+  <p>Please enter a valid email.</p>
+{% endif %}
+
+{# Negation with "is not" #}
+{% if input is not email %}
+  <p>Invalid email format.</p>
+{% endif %}
 ```
 
-#### `is_url(string)`
+#### `is_url(string)` / `{% if x is url %}`
 
 Validate if a string is a valid URL (supports http, https, ftp, file schemes).
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid URL, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 URL: https://example.com/path
 Valid: {{ is_url(string="https://example.com/path") }}
 {# Output: Valid: true #}
 
-URL: not-a-url
-Valid: {{ is_url(string="not-a-url") }}
-{# Output: Valid: false #}
+{# "Is" syntax #}
+{% if api_endpoint is url %}
+  <a href="{{ api_endpoint }}">API Docs</a>
+{% endif %}
 ```
 
-#### `is_ip(string)`
+#### `is_ip(string)` / `{% if x is ip %}`
 
 Validate if a string is a valid IP address (IPv4 or IPv6).
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid IP, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 IPv4: 192.168.1.1
 Valid: {{ is_ip(string="192.168.1.1") }}
 {# Output: Valid: true #}
@@ -5688,29 +5796,37 @@ IPv6: 2001:db8::1
 Valid: {{ is_ip(string="2001:db8::1") }}
 {# Output: Valid: true #}
 
-Invalid: 256.1.1.1
-Valid: {{ is_ip(string="256.1.1.1") }}
-{# Output: Valid: false #}
+{# "Is" syntax #}
+{% if server_address is ip %}
+  server: {{ server_address }}
+{% else %}
+  # Using hostname, resolve to IP
+  server: {{ resolve_dns(hostname=server_address) }}
+{% endif %}
 ```
 
-#### `is_uuid(string)`
+#### `is_uuid(string)` / `{% if x is uuid %}`
 
 Validate if a string is a valid UUID format.
 
-**Arguments:**
+**Function Arguments:**
 - `string` (required) - String to validate
 
 **Returns:** Boolean (`true` if valid UUID, `false` otherwise)
 
 **Examples:**
-```
+```jinja
+{# Function syntax #}
 UUID: 550e8400-e29b-41d4-a716-446655440000
 Valid: {{ is_uuid(string="550e8400-e29b-41d4-a716-446655440000") }}
 {# Output: Valid: true #}
 
-Invalid: not-a-uuid
-Valid: {{ is_uuid(string="not-a-uuid") }}
-{# Output: Valid: false #}
+{# "Is" syntax #}
+{% if request_id is uuid %}
+  X-Request-ID: {{ request_id }}
+{% else %}
+  X-Request-ID: {{ uuid() }}
+{% endif %}
 ```
 
 #### `matches_regex(pattern, string)`

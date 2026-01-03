@@ -710,9 +710,11 @@ fn test_timezone_convert_invalid_to_tz() {
 mod unit_tests {
     use minijinja::Value;
     use minijinja::value::Kwargs;
+    // Note: is_leap_year has been moved to src/is_functions/datetime.rs
+    // and is tested in tests/test_is_datetime.rs
     use tmpltool::functions::datetime::{
         date_add_fn, date_diff_fn, format_date_fn, get_day_fn, get_hour_fn, get_minute_fn,
-        get_month_fn, get_year_fn, is_leap_year_fn, now_fn, parse_date_fn, timezone_convert_fn,
+        get_month_fn, get_year_fn, now_fn, parse_date_fn, timezone_convert_fn,
     };
 
     const TEST_TIMESTAMP: i64 = 1704067200; // 2024-01-01 00:00:00 UTC
@@ -965,31 +967,5 @@ mod unit_tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_is_leap_year_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![("year", Value::from(2024))]);
-        let result = is_leap_year_fn(kwargs).unwrap();
-        assert!(result.is_true());
-    }
-
-    #[test]
-    fn test_is_leap_year_fn_not_leap() {
-        let kwargs = Kwargs::from_iter(vec![("year", Value::from(2023))]);
-        let result = is_leap_year_fn(kwargs).unwrap();
-        assert!(!result.is_true());
-    }
-
-    #[test]
-    fn test_is_leap_year_fn_century_not_leap() {
-        let kwargs = Kwargs::from_iter(vec![("year", Value::from(1900))]);
-        let result = is_leap_year_fn(kwargs).unwrap();
-        assert!(!result.is_true());
-    }
-
-    #[test]
-    fn test_is_leap_year_fn_century_leap() {
-        let kwargs = Kwargs::from_iter(vec![("year", Value::from(2000))]);
-        let result = is_leap_year_fn(kwargs).unwrap();
-        assert!(result.is_true());
-    }
+    // Note: is_leap_year tests have been moved to tests/test_is_datetime.rs
 }

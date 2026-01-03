@@ -55,9 +55,10 @@ It's designed for **DevOps/SRE workflows** like generating Kubernetes manifests,
 ### Key Design Decisions
 1. **Explicit environment access** - Use `get_env()` instead of auto-exposing all env vars (security)
 2. **Dual syntax for filters** - Most functions work as both `func(arg=x)` and `x | func` (flexibility)
-3. **Security by default** - Filesystem restricted to CWD; use `--trust` for full access
-4. **Output validation** - `--validate json/yaml/toml` ensures valid output format
-5. **Single binary** - No runtime dependencies, easy to deploy in containers
+3. **Dual syntax for is-functions** - All `is_*` functions work as both `is_email(string=x)` and `{% if x is email %}` (readability)
+4. **Security by default** - Filesystem restricted to CWD; use `--trust` for full access
+5. **Output validation** - `--validate json/yaml/toml` ensures valid output format
+6. **Single binary** - No runtime dependencies, easy to deploy in containers
 
 ### CLI Quick Reference
 ```bash
@@ -241,6 +242,13 @@ src/
 │   ├── datetime.rs
 │   ├── random.rs
 │   └── uuid_gen.rs
+├── is_functions/     - Is-functions with dual syntax (function + "is" test)
+│   ├── mod.rs        - Registration for both function and "is" test syntax
+│   ├── traits.rs     - IsFunction and ContextIsFunction trait definitions
+│   ├── validation.rs - Email, Url, Ip, Uuid validators
+│   ├── datetime.rs   - LeapYear check
+│   ├── network.rs    - PortAvailable check
+│   └── filesystem.rs - File, Dir, Symlink checks (context-aware)
 └── filter_functions/ - Unified filter-functions (dual syntax)
     ├── mod.rs        - Registration for both function and filter syntax
     ├── traits.rs     - FilterFunction trait definition

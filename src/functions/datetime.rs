@@ -343,26 +343,7 @@ pub fn timezone_convert_fn(kwargs: Kwargs) -> Result<Value, Error> {
     Ok(Value::from(dt_to.timestamp()))
 }
 
-/// Check if a year is a leap year
-///
-/// # Arguments
-///
-/// * `year` (required) - Year to check
-///
-/// # Example
-///
-/// ```jinja
-/// {{ is_leap_year(year=2024) }}  => true
-/// {{ is_leap_year(year=2023) }}  => false
-/// ```
-pub fn is_leap_year_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let year: i32 = kwargs.get("year")?;
-
-    // Leap year rules:
-    // - Divisible by 4: leap year
-    // - Divisible by 100: not a leap year
-    // - Divisible by 400: leap year
-    let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-
-    Ok(Value::from(is_leap))
-}
+// Note: is_leap_year has been migrated to src/is_functions/datetime.rs
+// and supports both function syntax and "is" test syntax:
+// - `{{ is_leap_year(year=2024) }}`
+// - `{% if 2024 is leap_year %}`

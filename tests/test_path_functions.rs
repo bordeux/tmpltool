@@ -1,6 +1,5 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tmpltool::TemplateContext;
@@ -238,127 +237,8 @@ fn test_normalize_path_complex() {
     assert_eq!(result.as_str().unwrap(), "a/c/d");
 }
 
-// is_file tests
-#[test]
-fn test_is_file_exists() {
-    let context = create_trusted_context();
-    let is_file_fn = filesystem::create_is_file_fn(context);
-
-    let result = is_file_fn(Kwargs::from_iter(vec![("path", Value::from("Cargo.toml"))])).unwrap();
-
-    assert!(result.is_true());
-}
-
-#[test]
-fn test_is_file_directory() {
-    let context = create_trusted_context();
-    let is_file_fn = filesystem::create_is_file_fn(context);
-
-    let result = is_file_fn(Kwargs::from_iter(vec![("path", Value::from("src"))])).unwrap();
-
-    assert!(!result.is_true());
-}
-
-#[test]
-fn test_is_file_not_exists() {
-    let context = create_trusted_context();
-    let is_file_fn = filesystem::create_is_file_fn(context);
-
-    let result = is_file_fn(Kwargs::from_iter(vec![(
-        "path",
-        Value::from("nonexistent.txt"),
-    )]))
-    .unwrap();
-
-    assert!(!result.is_true());
-}
-
-// is_dir tests
-#[test]
-fn test_is_dir_exists() {
-    let context = create_trusted_context();
-    let is_dir_fn = filesystem::create_is_dir_fn(context);
-
-    let result = is_dir_fn(Kwargs::from_iter(vec![("path", Value::from("src"))])).unwrap();
-
-    assert!(result.is_true());
-}
-
-#[test]
-fn test_is_dir_file() {
-    let context = create_trusted_context();
-    let is_dir_fn = filesystem::create_is_dir_fn(context);
-
-    let result = is_dir_fn(Kwargs::from_iter(vec![("path", Value::from("Cargo.toml"))])).unwrap();
-
-    assert!(!result.is_true());
-}
-
-#[test]
-fn test_is_dir_not_exists() {
-    let context = create_trusted_context();
-    let is_dir_fn = filesystem::create_is_dir_fn(context);
-
-    let result = is_dir_fn(Kwargs::from_iter(vec![(
-        "path",
-        Value::from("nonexistent_dir"),
-    )]))
-    .unwrap();
-
-    assert!(!result.is_true());
-}
-
-// is_symlink tests
-#[test]
-#[cfg(unix)]
-fn test_is_symlink_exists() {
-    use std::os::unix::fs::symlink;
-
-    // Create a temporary symlink for testing
-    let target = "Cargo.toml";
-    let link = "test_symlink";
-
-    // Clean up any existing symlink
-    let _ = fs::remove_file(link);
-
-    // Create symlink
-    symlink(target, link).unwrap();
-
-    let context = create_trusted_context();
-    let is_symlink_fn = filesystem::create_is_symlink_fn(context);
-
-    let result = is_symlink_fn(Kwargs::from_iter(vec![("path", Value::from(link))])).unwrap();
-
-    // Clean up
-    fs::remove_file(link).unwrap();
-
-    assert!(result.is_true());
-}
-
-#[test]
-fn test_is_symlink_regular_file() {
-    let context = create_trusted_context();
-    let is_symlink_fn = filesystem::create_is_symlink_fn(context);
-
-    let result =
-        is_symlink_fn(Kwargs::from_iter(vec![("path", Value::from("Cargo.toml"))])).unwrap();
-
-    assert!(!result.is_true());
-}
-
-#[test]
-fn test_is_symlink_not_exists() {
-    let context = create_trusted_context();
-    let is_symlink_fn = filesystem::create_is_symlink_fn(context);
-
-    let result = is_symlink_fn(Kwargs::from_iter(vec![(
-        "path",
-        Value::from("nonexistent"),
-    )]))
-    .unwrap();
-
-    assert!(!result.is_true());
-}
+// Note: is_file, is_dir, and is_symlink tests have been moved to
+// tests/test_is_filesystem.rs as part of the is-functions refactoring.
 
 // read_lines tests
 #[test]
