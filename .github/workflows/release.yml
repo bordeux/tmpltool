@@ -74,6 +74,7 @@ jobs:
     if: needs.semantic-release.outputs.new_release_published == 'true'
     uses: ./.github/workflows/_build-binaries.yml
     with:
+      ref: v${{ needs.semantic-release.outputs.new_release_version }}
       upload-artifacts: true
       artifact-retention-days: 1
 
@@ -86,6 +87,7 @@ jobs:
     if: needs.semantic-release.outputs.new_release_published == 'true'
     uses: ./.github/workflows/_build-packages.yml
     with:
+      ref: v${{ needs.semantic-release.outputs.new_release_version }}
       version: ${{ needs.semantic-release.outputs.new_release_version }}
       artifact-retention-days: 1
 

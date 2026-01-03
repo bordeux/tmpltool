@@ -9,6 +9,10 @@ permissions:
 on:
   workflow_call:
     inputs:
+      ref:
+        description: 'Git ref to checkout (commit SHA or tag)'
+        required: true
+        type: string
       version:
         description: 'Version string for package naming (optional, reads from Cargo.toml if not provided)'
         required: false
@@ -47,6 +51,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -193,6 +199,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -266,6 +274,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
