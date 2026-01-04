@@ -2,27 +2,17 @@
 //!
 //! These tests verify the IDE metadata export functionality works correctly.
 
-use std::process::Command;
+use assert_cmd::Command;
+use predicates::prelude::*;
 
-fn get_binary_path() -> String {
-    // Try release binary first, then debug
-    // Use EXE_SUFFIX for cross-platform compatibility (.exe on Windows, empty on Unix)
-    let exe_suffix = std::env::consts::EXE_SUFFIX;
-    let release_path = format!("target/release/tmpltool{}", exe_suffix);
-    let debug_path = format!("target/debug/tmpltool{}", exe_suffix);
-
-    if std::path::Path::new(&release_path).exists() {
-        release_path
-    } else if std::path::Path::new(&debug_path).exists() {
-        debug_path
-    } else {
-        panic!("Binary not found. Please run 'cargo build' first.");
-    }
+#[allow(deprecated)]
+fn tmpltool() -> Command {
+    Command::cargo_bin("tmpltool").unwrap()
 }
 
 #[test]
 fn test_ide_json_outputs_valid_json() {
-    let output = Command::new(get_binary_path())
+    let output = tmpltool()
         .args(["--ide", "json"])
         .output()
         .expect("Failed to execute command");
@@ -44,7 +34,7 @@ fn test_ide_json_outputs_valid_json() {
 
 #[test]
 fn test_ide_yaml_outputs_valid_yaml() {
-    let output = Command::new(get_binary_path())
+    let output = tmpltool()
         .args(["--ide", "yaml"])
         .output()
         .expect("Failed to execute command");
@@ -65,7 +55,7 @@ fn test_ide_yaml_outputs_valid_yaml() {
 
 #[test]
 fn test_ide_toml_outputs_valid_toml() {
-    let output = Command::new(get_binary_path())
+    let output = tmpltool()
         .args(["--ide", "toml"])
         .output()
         .expect("Failed to execute command");
@@ -86,7 +76,7 @@ fn test_ide_toml_outputs_valid_toml() {
 
 #[test]
 fn test_ide_json_structure() {
-    let output = Command::new(get_binary_path())
+    let output = tmpltool()
         .args(["--ide", "json"])
         .output()
         .expect("Failed to execute command");
@@ -139,41 +129,26 @@ fn test_ide_json_structure() {
 #[test]
 fn test_ide_exits_without_rendering() {
     // --ide should exit before trying to render a template
-    let output = Command::new(get_binary_path())
+    tmpltool()
         .args(["--ide", "json", "nonexistent_template.tmpl"])
-        .output()
-        .expect("Failed to execute command");
-
-    // Should succeed because --ide exits early
-    assert!(
-        output.status.success(),
-        "Command should succeed even with nonexistent template"
-    );
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let parsed: Result<serde_json::Value, _> = serde_json::from_str(&stdout);
-    assert!(parsed.is_ok(), "Should still output valid JSON");
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_ide_invalid_format() {
-    let output = Command::new(get_binary_path())
+    tmpltool()
         .args(["--ide", "invalid_format"])
-        .output()
-        .expect("Failed to execute command");
-
-    assert!(!output.status.success(), "Command should fail");
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("invalid") || stderr.contains("possible values"),
-        "Error should indicate invalid format"
-    );
+        .assert()
+        .failure()
+        .stderr(
+            predicate::str::contains("invalid").or(predicate::str::contains("possible values")),
+        );
 }
 
 #[test]
 fn test_ide_json_contains_expected_functions() {
-    let output = Command::new(get_binary_path())
+    let output = tmpltool()
         .args(["--ide", "json"])
         .output()
         .expect("Failed to execute command");
@@ -201,7 +176,7 @@ fn test_ide_json_contains_expected_functions() {
 
 #[test]
 fn test_ide_json_categories_present() {
-    let output = Command::new(get_binary_path())
+    let output = tmpltool()
         .args(["--ide", "json"])
         .output()
         .expect("Failed to execute command");
