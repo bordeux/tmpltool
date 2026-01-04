@@ -1,3 +1,12 @@
+## 1.4.0 (2026-01-04)
+
+* Merge pull request #32 from bordeux/feature/ide-support ([f5025fb](https://github.com/bordeux/tmpltool/commit/f5025fb)), closes [#32](https://github.com/bordeux/tmpltool/issues/32)
+* fix: add Windows .exe suffix support in CLI tests ([4787e1d](https://github.com/bordeux/tmpltool/commit/4787e1d))
+* fix: make DNS empty hostname test platform-tolerant ([7c5a7eb](https://github.com/bordeux/tmpltool/commit/7c5a7eb))
+* fix: use assert_cmd for CLI integration tests ([e64e312](https://github.com/bordeux/tmpltool/commit/e64e312))
+* docs: add package manager installation instructions ([115ec12](https://github.com/bordeux/tmpltool/commit/115ec12))
+* feat: add --ide flag for IDE metadata export ([17f6a79](https://github.com/bordeux/tmpltool/commit/17f6a79))
+
 ## <small>1.3.1 (2026-01-03)</small>
 
 * Merge pull request #31 from bordeux/fix/fix-workflow-version-app ([900b11a](https://github.com/bordeux/tmpltool/commit/900b11a)), closes [#31](https://github.com/bordeux/tmpltool/issues/31)
