@@ -1,3 +1,9 @@
+## <small>1.4.1 (2026-01-04)</small>
+
+* Merge pull request #33 from bordeux/hotfix/fix-after-1-4-release ([d412a40](https://github.com/bordeux/tmpltool/commit/d412a40)), closes [#33](https://github.com/bordeux/tmpltool/issues/33)
+* fix: restructure release workflow for GitHub release immutability ([81489db](https://github.com/bordeux/tmpltool/commit/81489db))
+* fix: update lock file ([57391be](https://github.com/bordeux/tmpltool/commit/57391be))
+
 ## 1.4.0 (2026-01-04)
 
 * Merge pull request #32 from bordeux/feature/ide-support ([f5025fb](https://github.com/bordeux/tmpltool/commit/f5025fb)), closes [#32](https://github.com/bordeux/tmpltool/issues/32)
