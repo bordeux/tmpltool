@@ -21,9 +21,19 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use serde_json::Map;
+
+/// Common metadata for object argument
+const OBJECT_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "object",
+    arg_type: "object",
+    required: true,
+    default: None,
+    description: "The object to process",
+};
 
 /// Helper to convert Value to serde_json::Value
 fn value_to_json(value: &Value, fn_name: &str) -> Result<serde_json::Value, Error> {
@@ -81,6 +91,18 @@ impl ObjectKeys {
 
 impl FilterFunction for ObjectKeys {
     const NAME: &'static str = "object_keys";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_keys",
+        category: "object",
+        description: "Get object keys as an array",
+        arguments: &[OBJECT_ARG],
+        return_type: "array",
+        examples: &[
+            "{{ object_keys(object=config) }}",
+            "{{ config | object_keys }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let object: Value = kwargs.get("object")?;
@@ -126,6 +148,18 @@ impl ObjectValues {
 
 impl FilterFunction for ObjectValues {
     const NAME: &'static str = "object_values";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_values",
+        category: "object",
+        description: "Get object values as an array",
+        arguments: &[OBJECT_ARG],
+        return_type: "array",
+        examples: &[
+            "{{ object_values(object=config) }}",
+            "{{ config | object_values }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let object: Value = kwargs.get("object")?;
@@ -213,6 +247,27 @@ impl ObjectFlatten {
 
 impl FilterFunction for ObjectFlatten {
     const NAME: &'static str = "object_flatten";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_flatten",
+        category: "object",
+        description: "Flatten nested object to dot notation",
+        arguments: &[
+            OBJECT_ARG,
+            ArgumentMetadata {
+                name: "delimiter",
+                arg_type: "string",
+                required: false,
+                default: Some("."),
+                description: "Delimiter to use between keys",
+            },
+        ],
+        return_type: "object",
+        examples: &[
+            "{{ object_flatten(object=nested) }}",
+            "{{ nested | object_flatten(delimiter=\"_\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let object: Value = kwargs.get("object")?;

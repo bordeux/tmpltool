@@ -1,12 +1,22 @@
-/// File system functions
-///
-/// Provides functions for interacting with the file system:
-/// - read_file: Read file contents
-/// - file_exists: Check if file exists
-/// - list_dir: List directory contents
-/// - glob: List files by pattern
-/// - file_size: Get file size
-/// - file_modified: Get file modification timestamp
+//! File system functions
+//!
+//! Provides functions for interacting with the file system:
+//! - read_file: Read file contents
+//! - file_exists: Check if file exists
+//! - list_dir: List directory contents
+//! - glob: List files by pattern
+//! - file_size: Get file size
+//! - file_modified: Get file modification timestamp
+//! - read_lines: Read lines from a file
+//!
+//! Note: basename, dirname, file_extension, join_path, normalize_path are now in
+//! filter_functions/path.rs with dual function+filter syntax support.
+//!
+//! Note: is_file, is_dir, is_symlink are now in is_functions/filesystem.rs with
+//! dual function+is-test syntax support.
+
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::ContextFunction;
 use crate::TemplateContext;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
@@ -41,14 +51,34 @@ pub fn validate_path_security(path: &str) -> Result<(), Error> {
     Ok(())
 }
 
-/// Create read_file function with context
-pub fn create_read_file_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        // Extract path from kwargs
+/// Read file contents
+pub struct ReadFile;
+
+impl ContextFunction for ReadFile {
+    const NAME: &'static str = "read_file";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "read_file",
+        category: "filesystem",
+        description: "Read file contents as string",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to the file to read",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ read_file(path=\"config.txt\") }}",
+            "{% set content = read_file(path=\"data.json\") %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
-        // Security: Prevent reading absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+
+        // Security check
         if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -59,7 +89,6 @@ pub fn create_read_file_fn(
             ));
         }
 
-        // Resolve path relative to template's base directory
         let resolved_path = context.resolve_path(&path);
 
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
@@ -73,14 +102,30 @@ pub fn create_read_file_fn(
     }
 }
 
-/// Create file_exists function with context
-pub fn create_file_exists_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        // Extract path from kwargs
+/// Check if file exists
+pub struct FileExists;
+
+impl ContextFunction for FileExists {
+    const NAME: &'static str = "file_exists";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "file_exists",
+        category: "filesystem",
+        description: "Check if a file or directory exists",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to check",
+        }],
+        return_type: "boolean",
+        examples: &["{% if file_exists(path=\"config.json\") %}Config found{% endif %}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
-        // Security: Prevent checking absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+
         if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -91,20 +136,35 @@ pub fn create_file_exists_fn(
             ));
         }
 
-        // Resolve path relative to template's base directory
         let resolved_path = context.resolve_path(&path);
         Ok(Value::from(resolved_path.exists()))
     }
 }
 
-/// Create list_dir function with context
-pub fn create_list_dir_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        // Extract path from kwargs
+/// List directory contents
+pub struct ListDir;
+
+impl ContextFunction for ListDir {
+    const NAME: &'static str = "list_dir";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "list_dir",
+        category: "filesystem",
+        description: "List files and directories in a directory",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Directory path to list",
+        }],
+        return_type: "array",
+        examples: &["{% for file in list_dir(path=\".\") %}{{ file }}{% endfor %}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
-        // Security: Prevent listing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+
         if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -115,7 +175,6 @@ pub fn create_list_dir_fn(
             ));
         }
 
-        // Resolve path relative to template's base directory
         let resolved_path = context.resolve_path(&path);
 
         let entries = fs::read_dir(&resolved_path).map_err(|e| {
@@ -144,21 +203,38 @@ pub fn create_list_dir_fn(
             files.push(file_name);
         }
 
-        // Sort for consistent output
         files.sort();
-
         Ok(Value::from_serialize(&files))
     }
 }
 
-/// Create glob function with context
-pub fn create_glob_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        // Extract pattern from kwargs
+/// List files matching a glob pattern
+pub struct Glob;
+
+impl ContextFunction for Glob {
+    const NAME: &'static str = "glob";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "glob",
+        category: "filesystem",
+        description: "List files matching a glob pattern",
+        arguments: &[ArgumentMetadata {
+            name: "pattern",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Glob pattern (e.g., \"*.txt\", \"**/*.json\")",
+        }],
+        return_type: "array",
+        examples: &[
+            "{% for f in glob(pattern=\"*.txt\") %}{{ f }}{% endfor %}",
+            "{{ glob(pattern=\"src/**/*.rs\") | length }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let pattern: String = kwargs.get("pattern")?;
-        // Security: Prevent absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+
         if !context.is_trust_mode() && (pattern.starts_with('/') || pattern.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -169,7 +245,6 @@ pub fn create_glob_fn(
             ));
         }
 
-        // Resolve pattern relative to template's base directory
         let resolved_pattern = context.resolve_path(&pattern);
         let pattern_str = resolved_pattern.to_str().ok_or_else(|| {
             Error::new(
@@ -202,21 +277,38 @@ pub fn create_glob_fn(
             }
         }
 
-        // Sort for consistent output
         files.sort();
-
         Ok(Value::from_serialize(&files))
     }
 }
 
-/// Create file_size function with context
-pub fn create_file_size_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        // Extract path from kwargs
+/// Get file size in bytes
+pub struct FileSize;
+
+impl ContextFunction for FileSize {
+    const NAME: &'static str = "file_size";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "file_size",
+        category: "filesystem",
+        description: "Get file size in bytes",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to the file",
+        }],
+        return_type: "integer",
+        examples: &[
+            "{{ file_size(path=\"data.bin\") }}",
+            "{{ file_size(path=\"large.zip\") | filesizeformat }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
-        // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+
         if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -227,7 +319,6 @@ pub fn create_file_size_fn(
             ));
         }
 
-        // Resolve path relative to template's base directory
         let resolved_path = context.resolve_path(&path);
 
         let metadata = fs::metadata(&resolved_path).map_err(|e| {
@@ -245,14 +336,30 @@ pub fn create_file_size_fn(
     }
 }
 
-/// Create file_modified function with context
-pub fn create_file_modified_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
-        // Extract path from kwargs
+/// Get file modification timestamp
+pub struct FileModified;
+
+impl ContextFunction for FileModified {
+    const NAME: &'static str = "file_modified";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "file_modified",
+        category: "filesystem",
+        description: "Get file modification timestamp (Unix epoch seconds)",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to the file",
+        }],
+        return_type: "integer",
+        examples: &["{{ file_modified(path=\"data.txt\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
-        // Security: Prevent accessing absolute paths or paths with parent directory traversal (unless trust mode is enabled)
+
         if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -263,7 +370,6 @@ pub fn create_file_modified_fn(
             ));
         }
 
-        // Resolve path relative to template's base directory
         let resolved_path = context.resolve_path(&path);
 
         let metadata = fs::metadata(&resolved_path).map_err(|e| {
@@ -284,7 +390,6 @@ pub fn create_file_modified_fn(
             )
         })?;
 
-        // Convert to Unix timestamp (seconds since epoch)
         let duration = modified
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|e| {
@@ -298,213 +403,43 @@ pub fn create_file_modified_fn(
     }
 }
 
-/// Get the filename from a path
-///
-/// # Arguments
-///
-/// * `path` (required) - File path
-///
-/// # Returns
-///
-/// Returns the filename component of the path
-///
-/// # Example
-///
-/// ```jinja
-/// {{ basename(path="/path/to/file.txt") }}  => file.txt
-/// {{ basename(path="folder/document.pdf") }}  => document.pdf
-/// ```
-pub fn basename_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let path: String = kwargs.get("path")?;
-
-    let path_obj = std::path::Path::new(&path);
-    let filename = path_obj.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-    Ok(Value::from(filename))
-}
-
-/// Get the directory component from a path
-///
-/// # Arguments
-///
-/// * `path` (required) - File path
-///
-/// # Returns
-///
-/// Returns the directory component of the path
-///
-/// # Example
-///
-/// ```jinja
-/// {{ dirname(path="/path/to/file.txt") }}  => /path/to
-/// {{ dirname(path="folder/document.pdf") }}  => folder
-/// ```
-pub fn dirname_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let path: String = kwargs.get("path")?;
-
-    let path_obj = std::path::Path::new(&path);
-    let dir = path_obj.parent().and_then(|p| p.to_str()).unwrap_or("");
-
-    Ok(Value::from(dir))
-}
-
-/// Get the file extension from a path
-///
-/// # Arguments
-///
-/// * `path` (required) - File path
-///
-/// # Returns
-///
-/// Returns the file extension (without the dot)
-///
-/// # Example
-///
-/// ```jinja
-/// {{ file_extension(path="document.pdf") }}  => pdf
-/// {{ file_extension(path="/path/to/file.tar.gz") }}  => gz
-/// {{ file_extension(path="noextension") }}  => (empty string)
-/// ```
-pub fn file_extension_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let path: String = kwargs.get("path")?;
-
-    let path_obj = std::path::Path::new(&path);
-    let extension = path_obj.extension().and_then(|e| e.to_str()).unwrap_or("");
-
-    Ok(Value::from(extension))
-}
-
-/// Join path components
-///
-/// # Arguments
-///
-/// * `parts` (required) - Array of path components to join
-///
-/// # Returns
-///
-/// Returns the joined path
-///
-/// # Example
-///
-/// ```jinja
-/// {{ join_path(parts=["path", "to", "file.txt"]) }}  => path/to/file.txt
-/// {{ join_path(parts=["/home", "user", "documents"]) }}  => /home/user/documents
-/// ```
-pub fn join_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let parts: Vec<String> = kwargs.get("parts")?;
-
-    if parts.is_empty() {
-        return Ok(Value::from(""));
-    }
-
-    let mut path_buf = std::path::PathBuf::new();
-    for part in parts {
-        path_buf.push(part);
-    }
-
-    let joined = path_buf.to_str().ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            "Failed to convert path to string".to_string(),
-        )
-    })?;
-
-    // Normalize to forward slashes for cross-platform consistency
-    let normalized = joined.replace('\\', "/");
-
-    Ok(Value::from(normalized))
-}
-
-/// Normalize a path (resolve .. and . components)
-///
-/// # Arguments
-///
-/// * `path` (required) - Path to normalize
-///
-/// # Returns
-///
-/// Returns the normalized path
-///
-/// # Example
-///
-/// ```jinja
-/// {{ normalize_path(path="./foo/../bar") }}  => bar
-/// {{ normalize_path(path="/path/to/../file.txt") }}  => /path/file.txt
-/// ```
-pub fn normalize_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let path: String = kwargs.get("path")?;
-
-    let path_obj = std::path::Path::new(&path);
-
-    // Use components to normalize the path
-    let mut normalized = std::path::PathBuf::new();
-    for component in path_obj.components() {
-        match component {
-            std::path::Component::ParentDir => {
-                normalized.pop();
-            }
-            std::path::Component::CurDir => {
-                // Skip current directory
-            }
-            _ => {
-                normalized.push(component);
-            }
-        }
-    }
-
-    let result = normalized.to_str().ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            "Failed to convert normalized path to string".to_string(),
-        )
-    })?;
-
-    // Normalize to forward slashes for cross-platform consistency
-    let normalized_slashes = result.replace('\\', "/");
-
-    Ok(Value::from(normalized_slashes))
-}
-
-// Note: is_file, is_dir, and is_symlink have been migrated to src/is_functions/filesystem.rs
-// and support both function syntax and "is" test syntax:
-// - `{{ is_file(path="config.txt") }}` / `{% if "config.txt" is file %}`
-// - `{{ is_dir(path="src") }}` / `{% if "src" is dir %}`
-// - `{{ is_symlink(path="link") }}` / `{% if "link" is symlink %}`
-
 /// Read lines from a file
-///
-/// # Arguments
-///
-/// * `path` (required) - Path to file
-/// * `max_lines` (optional) - Number of lines to read (default: 10)
-///   - Positive number: Read first N lines
-///   - Negative number: Read last N lines
-///   - Zero: Read entire file
-///
-/// # Returns
-///
-/// Returns an array of lines (without newline characters)
-///
-/// # Example
-///
-/// ```jinja
-/// {# Read first 5 lines #}
-/// {% set first_lines = read_lines(path="log.txt", max_lines=5) %}
-///
-/// {# Read last 5 lines #}
-/// {% set last_lines = read_lines(path="log.txt", max_lines=-5) %}
-///
-/// {# Read entire file #}
-/// {% set all_lines = read_lines(path="config.txt", max_lines=0) %}
-/// ```
-pub fn create_read_lines_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> + Send + Sync + 'static {
-    move |kwargs: Kwargs| {
+pub struct ReadLines;
+
+impl ContextFunction for ReadLines {
+    const NAME: &'static str = "read_lines";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "read_lines",
+        category: "filesystem",
+        description: "Read lines from a file",
+        arguments: &[
+            ArgumentMetadata {
+                name: "path",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Path to the file",
+            },
+            ArgumentMetadata {
+                name: "max_lines",
+                arg_type: "integer",
+                required: false,
+                default: Some("10"),
+                description: "Number of lines to read (positive=first N, negative=last N, 0=all)",
+            },
+        ],
+        return_type: "array",
+        examples: &[
+            "{{ read_lines(path=\"log.txt\", max_lines=5) }}",
+            "{{ read_lines(path=\"log.txt\", max_lines=-5) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
         let max_lines: i64 = kwargs.get::<i64>("max_lines").ok().unwrap_or(10);
 
-        // Validate max_lines range
         if max_lines.abs() > 10000 {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -515,7 +450,6 @@ pub fn create_read_lines_fn(
             ));
         }
 
-        // Security: Prevent reading absolute paths or paths with parent directory traversal (unless trust mode is enabled)
         if !context.is_trust_mode() && (path.starts_with('/') || path.contains("..")) {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -526,10 +460,8 @@ pub fn create_read_lines_fn(
             ));
         }
 
-        // Resolve path relative to template's base directory
         let resolved_path = context.resolve_path(&path);
 
-        // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -537,25 +469,20 @@ pub fn create_read_lines_fn(
             )
         })?;
 
-        // Collect all lines
         let all_lines: Vec<&str> = content.lines().collect();
 
-        // Select lines based on max_lines
         let lines: Vec<Value> = if max_lines == 0 {
-            // Read entire file
             all_lines
                 .iter()
                 .map(|line| Value::from(line.to_string()))
                 .collect()
         } else if max_lines > 0 {
-            // Read first N lines
             all_lines
                 .iter()
                 .take(max_lines as usize)
                 .map(|line| Value::from(line.to_string()))
                 .collect()
         } else {
-            // Read last N lines (max_lines is negative)
             let n = (-max_lines) as usize;
             let start_index = all_lines.len().saturating_sub(n);
             all_lines

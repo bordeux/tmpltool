@@ -21,8 +21,18 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
+
+/// Common metadata for value argument
+const VALUE_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "value",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string value to sanitize",
+};
 
 /// Helper to extract string from Value
 fn extract_string(value: &Value, fn_name: &str) -> Result<String, Error> {
@@ -109,6 +119,18 @@ impl K8sLabelSafe {
 
 impl FilterFunction for K8sLabelSafe {
     const NAME: &'static str = "k8s_label_safe";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "k8s_label_safe",
+        category: "kubernetes",
+        description: "Sanitize string to be Kubernetes label-safe (max 63 chars, alphanumeric/dashes/underscores/dots)",
+        arguments: &[VALUE_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ k8s_label_safe(value=\"My App (v2.0)\") }}",
+            "{{ app_name | k8s_label_safe }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let value: String = kwargs.get("value")?;
@@ -190,6 +212,18 @@ impl K8sDnsLabelSafe {
 
 impl FilterFunction for K8sDnsLabelSafe {
     const NAME: &'static str = "k8s_dns_label_safe";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "k8s_dns_label_safe",
+        category: "kubernetes",
+        description: "Format DNS-safe label (lowercase, alphanumeric and dashes only, max 63 chars)",
+        arguments: &[VALUE_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ k8s_dns_label_safe(value=\"My Service Name\") }}",
+            "{{ service_name | k8s_dns_label_safe }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let value: String = kwargs.get("value")?;
@@ -253,6 +287,18 @@ impl K8sAnnotationSafe {
 
 impl FilterFunction for K8sAnnotationSafe {
     const NAME: &'static str = "k8s_annotation_safe";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "k8s_annotation_safe",
+        category: "kubernetes",
+        description: "Sanitize string to be Kubernetes annotation-safe (replaces newlines/control chars)",
+        arguments: &[VALUE_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ k8s_annotation_safe(value=\"Description with\\nnewlines\") }}",
+            "{{ description | k8s_annotation_safe }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let value: String = kwargs.get("value")?;

@@ -1,5 +1,6 @@
 use minijinja::value::Kwargs;
-use tmpltool::functions::random::random_string_fn;
+use tmpltool::functions::Function;
+use tmpltool::functions::random::RandomString;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, minijinja::Value)>) -> Kwargs {
@@ -16,7 +17,7 @@ const CHARSET_HEX: &str = "0123456789abcdef";
 fn test_random_string_basic() {
     let kwargs = create_kwargs(vec![("length", minijinja::Value::from(16))]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 16);
@@ -32,7 +33,7 @@ fn test_random_string_alphanumeric() {
         ("charset", minijinja::Value::from("alphanumeric")),
     ]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 20);
@@ -48,7 +49,7 @@ fn test_random_string_lowercase() {
         ("charset", minijinja::Value::from("lowercase")),
     ]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 10);
@@ -64,7 +65,7 @@ fn test_random_string_uppercase() {
         ("charset", minijinja::Value::from("uppercase")),
     ]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 10);
@@ -80,7 +81,7 @@ fn test_random_string_numeric() {
         ("charset", minijinja::Value::from("numeric")),
     ]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 8);
@@ -96,7 +97,7 @@ fn test_random_string_hex() {
         ("charset", minijinja::Value::from("hex")),
     ]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 12);
@@ -112,7 +113,7 @@ fn test_random_string_custom_charset() {
         ("charset", minijinja::Value::from("abc123")),
     ]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     let random_str = result.as_str().unwrap();
 
     assert_eq!(random_str.len(), 15);
@@ -125,14 +126,14 @@ fn test_random_string_custom_charset() {
 fn test_random_string_empty_length() {
     let kwargs = create_kwargs(vec![("length", minijinja::Value::from(0))]);
 
-    let result = random_string_fn(kwargs).unwrap();
+    let result = RandomString::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 }
 
 #[test]
 fn test_random_string_no_length() {
     let kwargs = create_kwargs(vec![]);
-    let result = random_string_fn(kwargs);
+    let result = RandomString::call(kwargs);
     assert!(result.is_err());
 }
 
@@ -140,7 +141,7 @@ fn test_random_string_no_length() {
 fn test_random_string_too_long() {
     let kwargs = create_kwargs(vec![("length", minijinja::Value::from(10001))]);
 
-    let result = random_string_fn(kwargs);
+    let result = RandomString::call(kwargs);
     assert!(result.is_err());
 }
 
@@ -149,8 +150,8 @@ fn test_random_string_uniqueness() {
     let kwargs1 = create_kwargs(vec![("length", minijinja::Value::from(20))]);
     let kwargs2 = create_kwargs(vec![("length", minijinja::Value::from(20))]);
 
-    let result1 = random_string_fn(kwargs1).unwrap();
-    let result2 = random_string_fn(kwargs2).unwrap();
+    let result1 = RandomString::call(kwargs1).unwrap();
+    let result2 = RandomString::call(kwargs2).unwrap();
 
     // Two random strings should be different (with very high probability)
     assert_ne!(result1.as_str().unwrap(), result2.as_str().unwrap());

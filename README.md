@@ -38,6 +38,7 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
   - [Web & URL Functions](#web--url-functions)
   - [Logic Functions](#logic-functions)
   - [Debugging & Development Functions](#debugging--development-functions)
+- [IDE Integration](#ide-integration)
 - [Advanced Examples](#advanced-examples)
 - [Error Handling](#error-handling)
 - [Development](#development)
@@ -50,18 +51,8 @@ A fast and simple command-line template rendering tool using [MiniJinja](https:/
 Get started in 30 seconds:
 
 ```bash
-# Download binary for your platform from releases
-# https://github.com/bordeux/tmpltool/releases
-
-# Or use Docker to copy the binary (recommended for CI/CD):
-# Create a Dockerfile to extract the binary
-cat > Dockerfile << 'EOF'
-FROM alpine:latest
-COPY --from=ghcr.io/bordeux/tmpltool:latest /tmpltool /usr/local/bin/tmpltool
-EOF
-
-docker build -t myapp .
-# Now tmpltool is available in your image at /usr/local/bin/tmpltool
+# Install tmpltool (works on macOS, Linux, and more)
+curl -fsSL https://raw.githubusercontent.com/bordeux/repo/master/install.sh | sh -s -- tmpltool
 
 # Create and render template
 echo 'Hello {{ get_env(name="USER", default="World") }}!' > greeting.tmpl
@@ -93,6 +84,61 @@ tmpltool greeting.tmpl
 - **Docker-Friendly**: Extract binary from Docker image (multi-arch support)
 
 ## Installation
+
+### Universal Installer (Recommended)
+
+The easiest way to install tmpltool on any supported platform:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bordeux/repo/master/install.sh | sh -s -- tmpltool
+```
+
+This script automatically detects your OS and installs using the appropriate package manager.
+
+### macOS (Homebrew)
+
+```bash
+brew tap bordeux/tap
+brew install tmpltool
+```
+
+### Debian/Ubuntu (APT)
+
+```bash
+# Add repository and install
+curl -fsSL https://raw.githubusercontent.com/bordeux/repo/master/install.sh | sh
+sudo apt update
+sudo apt install tmpltool
+```
+
+Or manually:
+
+```bash
+# Add GPG key
+curl -fsSL https://bordeux.github.io/apt-repo/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/bordeux-archive-keyring.gpg
+
+# Add repository
+echo "deb [signed-by=/usr/share/keyrings/bordeux-archive-keyring.gpg] https://bordeux.github.io/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/bordeux.list
+
+# Install
+sudo apt update
+sudo apt install tmpltool
+```
+
+### Fedora/RHEL/CentOS (RPM)
+
+```bash
+# Add repository and install
+curl -fsSL https://raw.githubusercontent.com/bordeux/repo/master/install.sh | sh
+sudo dnf install tmpltool  # or yum on older systems
+```
+
+Or manually:
+
+```bash
+sudo curl -fsSL https://bordeux.github.io/rpm-repo/bordeux.repo -o /etc/yum.repos.d/bordeux.repo
+sudo dnf install tmpltool
+```
 
 ### From GitHub Releases
 
@@ -179,6 +225,10 @@ cat template.txt | tmpltool [OPTIONS]
   - Validates the rendered output conforms to the specified format
   - Exits with error code 1 if validation fails
   - No output on success, error message only on validation failure
+- `--ide <FORMAT>` - Output function metadata for IDE integration (json, yaml, or toml)
+  - Prints all available functions with descriptions, arguments, return types, and examples
+  - Exits immediately after printing metadata (does not render templates)
+  - Useful for building IDE plugins, autocomplete, and documentation generators
 
 ### Input/Output Patterns
 
@@ -6158,6 +6208,85 @@ application:
 - ✅ **Type Safety**: Check value types with `type_of()` before operations
 - ✅ **Graceful Degradation**: Use `warn()` for non-critical issues
 - ✅ **Fail Fast**: Use `abort()` for critical failures requiring immediate attention
+
+## IDE Integration
+
+The `--ide` flag outputs comprehensive metadata about all available functions, making it easy to build IDE plugins, autocomplete systems, and documentation generators.
+
+### Output Formats
+
+```bash
+# JSON output (array of function metadata)
+tmpltool --ide json > functions.json
+
+# YAML output (list of function metadata)
+tmpltool --ide yaml > functions.yaml
+
+# TOML output (wrapped in [[functions]] array)
+tmpltool --ide toml > functions.toml
+```
+
+### Metadata Structure
+
+Each function includes:
+
+| Field | Description |
+|-------|-------------|
+| `name` | Function name (e.g., `get_env`, `md5`) |
+| `category` | Category grouping (e.g., `environment`, `hash`, `string`) |
+| `description` | What the function does |
+| `arguments` | Array of argument definitions with name, type, required flag, default value, and description |
+| `return_type` | Type of value returned |
+| `examples` | Usage examples showing both function and filter syntax where applicable |
+| `syntax.function` | Whether callable as `func(arg=value)` |
+| `syntax.filter` | Whether callable as `value \| filter` |
+| `syntax.is_test` | Whether usable in `{% if value is test %}` |
+
+### Example Output (JSON)
+
+```json
+[
+  {
+    "name": "get_env",
+    "category": "environment",
+    "description": "Get environment variable with optional default value",
+    "arguments": [
+      {
+        "name": "name",
+        "arg_type": "string",
+        "required": true,
+        "default": null,
+        "description": "Environment variable name"
+      },
+      {
+        "name": "default",
+        "arg_type": "string",
+        "required": false,
+        "default": null,
+        "description": "Default value if variable is not set"
+      }
+    ],
+    "return_type": "string",
+    "examples": [
+      "{{ get_env(name=\"HOME\") }}",
+      "{{ get_env(name=\"PORT\", default=\"8080\") }}"
+    ],
+    "syntax": {
+      "function": true,
+      "filter": false,
+      "is_test": false
+    }
+  }
+]
+```
+
+### Use Cases
+
+- **IDE Plugins**: Provide autocomplete suggestions with argument hints and documentation
+- **Language Servers**: Power hover documentation and signature help
+- **Documentation Generators**: Automatically generate function reference documentation
+- **Validation Tools**: Verify template function usage against available functions
+- **CI/CD Integration**: Generate function lists for pipeline documentation
 
 ## Advanced Examples
 

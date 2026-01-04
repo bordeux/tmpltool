@@ -42,7 +42,100 @@ pub mod url;
 
 pub use traits::FilterFunction;
 
+use crate::functions::metadata::FunctionMetadata;
 use minijinja::Environment;
+
+/// Get all metadata from filter-functions
+pub fn get_all_metadata() -> Vec<&'static FunctionMetadata> {
+    vec![
+        // Hash functions
+        &hash::Md5::METADATA,
+        &hash::Sha1::METADATA,
+        &hash::Sha256::METADATA,
+        &hash::Sha512::METADATA,
+        // Encoding functions
+        &encoding::Base64Encode::METADATA,
+        &encoding::Base64Decode::METADATA,
+        &encoding::HexEncode::METADATA,
+        &encoding::HexDecode::METADATA,
+        &encoding::EscapeHtml::METADATA,
+        &encoding::EscapeXml::METADATA,
+        &encoding::EscapeShell::METADATA,
+        // Serialization functions
+        &serialization::ToJson::METADATA,
+        &serialization::ToYaml::METADATA,
+        &serialization::ToToml::METADATA,
+        &serialization::ParseJson::METADATA,
+        &serialization::ParseYaml::METADATA,
+        &serialization::ParseToml::METADATA,
+        // Math functions
+        &math::Abs::METADATA,
+        &math::Round::METADATA,
+        &math::Ceil::METADATA,
+        &math::Floor::METADATA,
+        // String functions
+        &string::RegexReplace::METADATA,
+        &string::Substring::METADATA,
+        &string::Truncate::METADATA,
+        &string::WordCount::METADATA,
+        &string::SplitLines::METADATA,
+        &string::Wrap::METADATA,
+        &string::Center::METADATA,
+        &string::StripHtml::METADATA,
+        &string::StripAnsi::METADATA,
+        &string::NormalizeWhitespace::METADATA,
+        &string::Slugify::METADATA,
+        &string::Indent::METADATA,
+        &string::Dedent::METADATA,
+        &string::Quote::METADATA,
+        &string::EscapeQuotes::METADATA,
+        &string::ToSnakeCase::METADATA,
+        &string::ToCamelCase::METADATA,
+        &string::ToPascalCase::METADATA,
+        &string::ToKebabCase::METADATA,
+        &string::PadLeft::METADATA,
+        &string::PadRight::METADATA,
+        &string::Repeat::METADATA,
+        &string::Reverse::METADATA,
+        // Array functions
+        &array::ArraySum::METADATA,
+        &array::ArrayAvg::METADATA,
+        &array::ArrayMedian::METADATA,
+        &array::ArrayMin::METADATA,
+        &array::ArrayMax::METADATA,
+        &array::ArrayUnique::METADATA,
+        &array::ArrayFlatten::METADATA,
+        // DateTime functions
+        &datetime::FormatDate::METADATA,
+        &datetime::GetYear::METADATA,
+        &datetime::GetMonth::METADATA,
+        &datetime::GetDay::METADATA,
+        &datetime::GetHour::METADATA,
+        &datetime::GetMinute::METADATA,
+        &datetime::GetSecond::METADATA,
+        // Path functions
+        &path::Basename::METADATA,
+        &path::Dirname::METADATA,
+        &path::FileExtension::METADATA,
+        &path::JoinPath::METADATA,
+        &path::NormalizePath::METADATA,
+        // URL functions
+        &url::UrlEncode::METADATA,
+        &url::UrlDecode::METADATA,
+        &url::ParseUrl::METADATA,
+        // Object functions
+        &object::ObjectKeys::METADATA,
+        &object::ObjectValues::METADATA,
+        &object::ObjectFlatten::METADATA,
+        // Kubernetes functions
+        &kubernetes::K8sLabelSafe::METADATA,
+        &kubernetes::K8sDnsLabelSafe::METADATA,
+        &kubernetes::K8sAnnotationSafe::METADATA,
+        // Formatting functions
+        &formatting::Filesizeformat::METADATA,
+        &formatting::Urlencode::METADATA,
+    ]
+}
 
 /// Register all filter-functions with the MiniJinja environment.
 ///

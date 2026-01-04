@@ -5,9 +5,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use tmpltool::TemplateContext;
+use tmpltool::functions::ContextFunction;
 use tmpltool::functions::filesystem::{
-    create_file_exists_fn, create_file_modified_fn, create_file_size_fn, create_glob_fn,
-    create_list_dir_fn, create_read_file_fn,
+    FileExists, FileModified, FileSize, Glob, ListDir, ReadFile,
 };
 
 // Global counter for unique test directories
@@ -44,10 +44,10 @@ fn test_read_file_basic() {
     let path = create_test_file(&test_dir, "test.txt", "Hello, World!");
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file = create_read_file_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = read_file(kwargs).unwrap();
+    let result = ReadFile::call(context.clone(), kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "Hello, World!");
 
     cleanup_test_dir(&test_dir);
@@ -60,10 +60,10 @@ fn test_read_file_multiline() {
     let path = create_test_file(&test_dir, "multiline.txt", content);
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file = create_read_file_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = read_file(kwargs).unwrap();
+    let result = ReadFile::call(context.clone(), kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), content);
 
     cleanup_test_dir(&test_dir);
@@ -72,30 +72,30 @@ fn test_read_file_multiline() {
 #[test]
 fn test_read_file_missing_argument() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file = create_read_file_fn(context);
+
     let kwargs = create_kwargs(vec![]);
 
-    let result = read_file(kwargs);
+    let result = ReadFile::call(context.clone(), kwargs);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_read_file_nonexistent() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file = create_read_file_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "test_data/nonexistent.txt")]);
 
-    let result = read_file(kwargs);
+    let result = ReadFile::call(context.clone(), kwargs);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_read_file_security_absolute_path() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file = create_read_file_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "/etc/passwd")]);
 
-    let result = read_file(kwargs);
+    let result = ReadFile::call(context.clone(), kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -103,10 +103,10 @@ fn test_read_file_security_absolute_path() {
 #[test]
 fn test_read_file_security_parent_directory() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file = create_read_file_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "../../../etc/passwd")]);
 
-    let result = read_file(kwargs);
+    let result = ReadFile::call(context.clone(), kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -117,10 +117,10 @@ fn test_file_exists_true() {
     let path = create_test_file(&test_dir, "exists.txt", "content");
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_exists = create_file_exists_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = file_exists(kwargs).unwrap();
+    let result = FileExists::call(context.clone(), kwargs).unwrap();
     assert!(result.is_true());
 
     cleanup_test_dir(&test_dir);
@@ -131,21 +131,21 @@ fn test_file_exists_false() {
     let test_dir = get_test_dir();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_exists = create_file_exists_fn(context);
+
     let path = format!("{}/nonexistent.txt", test_dir);
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = file_exists(kwargs).unwrap();
+    let result = FileExists::call(context.clone(), kwargs).unwrap();
     assert!(!result.is_true());
 }
 
 #[test]
 fn test_file_exists_security() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_exists = create_file_exists_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "/etc/passwd")]);
 
-    let result = file_exists(kwargs);
+    let result = FileExists::call(context.clone(), kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -159,10 +159,10 @@ fn test_list_dir_basic() {
     create_test_file(&test_dir, "file3.txt", "content3");
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let list_dir = create_list_dir_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &test_dir)]);
 
-    let result = list_dir(kwargs).unwrap();
+    let result = ListDir::call(context.clone(), kwargs).unwrap();
 
     assert_eq!(result.len(), Some(3));
     assert_eq!(
@@ -199,10 +199,10 @@ fn test_list_dir_empty() {
     fs::create_dir_all(&test_dir).unwrap();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let list_dir = create_list_dir_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &test_dir)]);
 
-    let result = list_dir(kwargs).unwrap();
+    let result = ListDir::call(context.clone(), kwargs).unwrap();
 
     assert_eq!(result.len(), Some(0));
 
@@ -214,20 +214,20 @@ fn test_list_dir_nonexistent() {
     let test_dir = get_test_dir();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let list_dir = create_list_dir_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &test_dir)]);
 
-    let result = list_dir(kwargs);
+    let result = ListDir::call(context.clone(), kwargs);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_list_dir_security() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let list_dir = create_list_dir_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "/etc")]);
 
-    let result = list_dir(kwargs);
+    let result = ListDir::call(context.clone(), kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -241,11 +241,10 @@ fn test_glob_basic() {
     create_test_file(&test_dir, "file1.md", "content3");
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let glob_files = create_glob_fn(context);
     let pattern = format!("{}/*.txt", test_dir);
     let kwargs = create_kwargs(vec![("pattern", &pattern)]);
 
-    let result = glob_files(kwargs).unwrap();
+    let result = Glob::call(context, kwargs).unwrap();
 
     assert_eq!(result.len(), Some(2));
     assert!(
@@ -273,11 +272,10 @@ fn test_glob_no_matches() {
     let test_dir = get_test_dir();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let glob_files = create_glob_fn(context);
     let pattern = format!("{}/*.xyz", test_dir);
     let kwargs = create_kwargs(vec![("pattern", &pattern)]);
 
-    let result = glob_files(kwargs).unwrap();
+    let result = Glob::call(context, kwargs).unwrap();
 
     assert_eq!(result.len(), Some(0));
 }
@@ -285,10 +283,9 @@ fn test_glob_no_matches() {
 #[test]
 fn test_glob_security() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let glob_files = create_glob_fn(context);
     let kwargs = create_kwargs(vec![("pattern", "/etc/*")]);
 
-    let result = glob_files(kwargs);
+    let result = Glob::call(context, kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -300,10 +297,10 @@ fn test_file_size_basic() {
     let path = create_test_file(&test_dir, "size_test.txt", content);
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_size = create_file_size_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = file_size(kwargs).unwrap();
+    let result = FileSize::call(context.clone(), kwargs).unwrap();
     assert_eq!(result.as_usize().unwrap(), 13);
 
     cleanup_test_dir(&test_dir);
@@ -315,10 +312,10 @@ fn test_file_size_empty() {
     let path = create_test_file(&test_dir, "empty.txt", "");
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_size = create_file_size_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = file_size(kwargs).unwrap();
+    let result = FileSize::call(context.clone(), kwargs).unwrap();
     assert_eq!(result.as_usize().unwrap(), 0);
 
     cleanup_test_dir(&test_dir);
@@ -327,20 +324,20 @@ fn test_file_size_empty() {
 #[test]
 fn test_file_size_nonexistent() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_size = create_file_size_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "test_data/nonexistent.txt")]);
 
-    let result = file_size(kwargs);
+    let result = FileSize::call(context.clone(), kwargs);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_file_size_security() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_size = create_file_size_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "/etc/passwd")]);
 
-    let result = file_size(kwargs);
+    let result = FileSize::call(context.clone(), kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -354,10 +351,10 @@ fn test_file_modified_basic() {
     std::thread::sleep(std::time::Duration::from_millis(10));
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_modified = create_file_modified_fn(context);
+
     let kwargs = create_kwargs(vec![("path", &path)]);
 
-    let result = file_modified(kwargs).unwrap();
+    let result = FileModified::call(context.clone(), kwargs).unwrap();
     let timestamp = result.as_usize().unwrap() as u64;
 
     // Timestamp should be recent (within last minute)
@@ -376,20 +373,20 @@ fn test_file_modified_basic() {
 #[test]
 fn test_file_modified_nonexistent() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_modified = create_file_modified_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "test_data/nonexistent.txt")]);
 
-    let result = file_modified(kwargs);
+    let result = FileModified::call(context.clone(), kwargs);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_file_modified_security() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_modified = create_file_modified_fn(context);
+
     let kwargs = create_kwargs(vec![("path", "/etc/passwd")]);
 
-    let result = file_modified(kwargs);
+    let result = FileModified::call(context.clone(), kwargs);
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("Security"));
 }
@@ -402,8 +399,8 @@ fn test_read_file_trust_mode_allows_absolute_path() {
 
     // Without trust mode, should fail
     let context_no_trust = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_file_no_trust = create_read_file_fn(context_no_trust);
-    let result_no_trust = read_file_no_trust(kwargs.clone());
+
+    let result_no_trust = ReadFile::call(context_no_trust, kwargs);
     assert!(result_no_trust.is_err());
     assert!(
         result_no_trust
@@ -415,9 +412,9 @@ fn test_read_file_trust_mode_allows_absolute_path() {
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let read_file_trust = create_read_file_fn(context_trust);
+
     let kwargs_trust = create_kwargs(vec![("path", "/etc/hosts")]);
-    let result_trust = read_file_trust(kwargs_trust);
+    let result_trust = ReadFile::call(context_trust, kwargs_trust);
     // Result might succeed or fail depending on file existence/permissions, but should not be a security error
     if let Err(e) = result_trust {
         assert!(!e.to_string().contains("Security"));
@@ -430,8 +427,7 @@ fn test_file_exists_trust_mode_allows_absolute_path() {
 
     // Without trust mode, should fail
     let context_no_trust = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_exists_no_trust = create_file_exists_fn(context_no_trust);
-    let result_no_trust = file_exists_no_trust(kwargs.clone());
+    let result_no_trust = FileExists::call(context_no_trust, kwargs);
     assert!(result_no_trust.is_err());
     assert!(
         result_no_trust
@@ -443,9 +439,8 @@ fn test_file_exists_trust_mode_allows_absolute_path() {
 
     // With trust mode, should succeed
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let file_exists_trust = create_file_exists_fn(context_trust);
     let kwargs_trust = create_kwargs(vec![("path", "/etc")]);
-    let result_trust = file_exists_trust(kwargs_trust);
+    let result_trust = FileExists::call(context_trust, kwargs_trust);
     assert!(result_trust.is_ok());
     // /etc should exist on Unix systems
     #[cfg(unix)]
@@ -463,8 +458,7 @@ fn test_list_dir_trust_mode_allows_parent_directory() {
 
     // Without trust mode, should fail
     let context_no_trust = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let list_dir_no_trust = create_list_dir_fn(context_no_trust);
-    let result_no_trust = list_dir_no_trust(kwargs.clone());
+    let result_no_trust = ListDir::call(context_no_trust, kwargs);
     assert!(result_no_trust.is_err());
     assert!(
         result_no_trust
@@ -476,9 +470,8 @@ fn test_list_dir_trust_mode_allows_parent_directory() {
 
     // With trust mode, should succeed
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let list_dir_trust = create_list_dir_fn(context_trust);
     let kwargs_trust = create_kwargs(vec![("path", &path)]);
-    let result_trust = list_dir_trust(kwargs_trust);
+    let result_trust = ListDir::call(context_trust, kwargs_trust);
     assert!(result_trust.is_ok());
 
     cleanup_test_dir(&test_dir);
@@ -490,8 +483,7 @@ fn test_glob_trust_mode_allows_absolute_path() {
 
     // Without trust mode, should fail
     let context_no_trust = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let glob_files_no_trust = create_glob_fn(context_no_trust);
-    let result_no_trust = glob_files_no_trust(kwargs.clone());
+    let result_no_trust = Glob::call(context_no_trust, kwargs);
     assert!(result_no_trust.is_err());
     assert!(
         result_no_trust
@@ -503,9 +495,8 @@ fn test_glob_trust_mode_allows_absolute_path() {
 
     // With trust mode, should succeed
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let glob_files_trust = create_glob_fn(context_trust);
     let kwargs_trust = create_kwargs(vec![("pattern", "/etc/host*")]);
-    let result_trust = glob_files_trust(kwargs_trust);
+    let result_trust = Glob::call(context_trust, kwargs_trust);
     assert!(result_trust.is_ok());
 }
 
@@ -515,8 +506,7 @@ fn test_file_size_trust_mode_allows_absolute_path() {
 
     // Without trust mode, should fail
     let context_no_trust = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_size_no_trust = create_file_size_fn(context_no_trust);
-    let result_no_trust = file_size_no_trust(kwargs.clone());
+    let result_no_trust = FileSize::call(context_no_trust, kwargs);
     assert!(result_no_trust.is_err());
     assert!(
         result_no_trust
@@ -528,9 +518,8 @@ fn test_file_size_trust_mode_allows_absolute_path() {
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let file_size_trust = create_file_size_fn(context_trust);
     let kwargs_trust = create_kwargs(vec![("path", "/etc/hosts")]);
-    let result_trust = file_size_trust(kwargs_trust);
+    let result_trust = FileSize::call(context_trust, kwargs_trust);
     if let Err(e) = result_trust {
         assert!(!e.to_string().contains("Security"));
     }
@@ -542,8 +531,7 @@ fn test_file_modified_trust_mode_allows_absolute_path() {
 
     // Without trust mode, should fail
     let context_no_trust = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let file_modified_no_trust = create_file_modified_fn(context_no_trust);
-    let result_no_trust = file_modified_no_trust(kwargs.clone());
+    let result_no_trust = FileModified::call(context_no_trust, kwargs);
     assert!(result_no_trust.is_err());
     assert!(
         result_no_trust
@@ -555,9 +543,8 @@ fn test_file_modified_trust_mode_allows_absolute_path() {
 
     // With trust mode, should succeed (or fail with file not found, but not security error)
     let context_trust = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let file_modified_trust = create_file_modified_fn(context_trust);
     let kwargs_trust = create_kwargs(vec![("path", "/etc/hosts")]);
-    let result_trust = file_modified_trust(kwargs_trust);
+    let result_trust = FileModified::call(context_trust, kwargs_trust);
     if let Err(e) = result_trust {
         assert!(!e.to_string().contains("Security"));
     }

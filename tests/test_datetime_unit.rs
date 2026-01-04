@@ -1,6 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::datetime::now_fn;
+use tmpltool::functions::Function;
+use tmpltool::functions::datetime::Now;
 
 fn empty_kwargs() -> Kwargs {
     Kwargs::from_iter(Vec::<(&str, Value)>::new())
@@ -14,7 +15,7 @@ fn kwargs_with_format(format: &str) -> Kwargs {
 
 #[test]
 fn test_now_fn_returns_timestamp() {
-    let result = now_fn(empty_kwargs()).unwrap();
+    let result = Now::call(empty_kwargs()).unwrap();
     let timestamp = result.as_i64().unwrap();
 
     // Should be a reasonable Unix timestamp (after 2020-01-01)
@@ -31,7 +32,7 @@ fn test_now_fn_returns_timestamp() {
 
 #[test]
 fn test_now_fn_returns_integer() {
-    let result = now_fn(empty_kwargs()).unwrap();
+    let result = Now::call(empty_kwargs()).unwrap();
 
     // Should be an integer, not a string
     assert!(result.as_i64().is_some(), "now() should return an integer");
@@ -43,12 +44,12 @@ fn test_now_fn_returns_integer() {
 
 #[test]
 fn test_now_fn_monotonic() {
-    let result1 = now_fn(empty_kwargs()).unwrap();
+    let result1 = Now::call(empty_kwargs()).unwrap();
     let ts1 = result1.as_i64().unwrap();
 
     std::thread::sleep(std::time::Duration::from_secs(1));
 
-    let result2 = now_fn(empty_kwargs()).unwrap();
+    let result2 = Now::call(empty_kwargs()).unwrap();
     let ts2 = result2.as_i64().unwrap();
 
     assert!(
@@ -63,7 +64,7 @@ fn test_now_fn_monotonic() {
 
 #[test]
 fn test_now_fn_with_format_date_only() {
-    let result = now_fn(kwargs_with_format("%Y-%m-%d")).unwrap();
+    let result = Now::call(kwargs_with_format("%Y-%m-%d")).unwrap();
     let formatted = result.as_str().unwrap();
 
     // Should match YYYY-MM-DD pattern
@@ -81,7 +82,7 @@ fn test_now_fn_with_format_date_only() {
 
 #[test]
 fn test_now_fn_with_format_datetime() {
-    let result = now_fn(kwargs_with_format("%Y-%m-%d %H:%M:%S")).unwrap();
+    let result = Now::call(kwargs_with_format("%Y-%m-%d %H:%M:%S")).unwrap();
     let formatted = result.as_str().unwrap();
 
     // Should match YYYY-MM-DD HH:MM:SS pattern (19 chars)
@@ -95,7 +96,7 @@ fn test_now_fn_with_format_datetime() {
 
 #[test]
 fn test_now_fn_with_format_time_only() {
-    let result = now_fn(kwargs_with_format("%H:%M:%S")).unwrap();
+    let result = Now::call(kwargs_with_format("%H:%M:%S")).unwrap();
     let formatted = result.as_str().unwrap();
 
     // Should match HH:MM:SS pattern (8 chars)
@@ -105,7 +106,7 @@ fn test_now_fn_with_format_time_only() {
 
 #[test]
 fn test_now_fn_with_format_year_only() {
-    let result = now_fn(kwargs_with_format("%Y")).unwrap();
+    let result = Now::call(kwargs_with_format("%Y")).unwrap();
     let formatted = result.as_str().unwrap();
 
     assert_eq!(formatted.len(), 4, "Year should be 4 digits");
@@ -119,7 +120,7 @@ fn test_now_fn_with_format_year_only() {
 
 #[test]
 fn test_now_fn_with_format_returns_string() {
-    let result = now_fn(kwargs_with_format("%Y-%m-%d")).unwrap();
+    let result = Now::call(kwargs_with_format("%Y-%m-%d")).unwrap();
 
     // With format, should return a string
     assert!(
@@ -130,7 +131,7 @@ fn test_now_fn_with_format_returns_string() {
 
 #[test]
 fn test_now_fn_with_custom_format() {
-    let result = now_fn(kwargs_with_format("%d/%m/%Y")).unwrap();
+    let result = Now::call(kwargs_with_format("%d/%m/%Y")).unwrap();
     let formatted = result.as_str().unwrap();
 
     // Should match DD/MM/YYYY pattern

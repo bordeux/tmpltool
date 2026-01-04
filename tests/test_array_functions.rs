@@ -1,6 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::array;
+use tmpltool::functions::Function;
+use tmpltool::functions::array::{ArrayChunk, ArrayCount, ArrayZip};
 
 // ============================================================================
 // Array Count Tests
@@ -8,7 +9,7 @@ use tmpltool::functions::array;
 
 #[test]
 fn test_array_count_basic() {
-    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+    let result = ArrayCount::call(Kwargs::from_iter(vec![(
         "array",
         Value::from(vec!["apple", "banana", "cherry"]),
     )]))
@@ -20,8 +21,7 @@ fn test_array_count_basic() {
 #[test]
 fn test_array_count_empty() {
     let empty: Vec<i32> = vec![];
-    let result =
-        array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(empty))])).unwrap();
+    let result = ArrayCount::call(Kwargs::from_iter(vec![("array", Value::from(empty))])).unwrap();
 
     assert_eq!(result, Value::from(0));
 }
@@ -29,7 +29,7 @@ fn test_array_count_empty() {
 #[test]
 fn test_array_count_single() {
     let result =
-        array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(vec![42]))])).unwrap();
+        ArrayCount::call(Kwargs::from_iter(vec![("array", Value::from(vec![42]))])).unwrap();
 
     assert_eq!(result, Value::from(1));
 }
@@ -37,15 +37,14 @@ fn test_array_count_single() {
 #[test]
 fn test_array_count_large() {
     let large: Vec<i32> = (1..=100).collect();
-    let result =
-        array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(large))])).unwrap();
+    let result = ArrayCount::call(Kwargs::from_iter(vec![("array", Value::from(large))])).unwrap();
 
     assert_eq!(result, Value::from(100));
 }
 
 #[test]
 fn test_array_count_error_not_array() {
-    let result = array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from("test"))]));
+    let result = ArrayCount::call(Kwargs::from_iter(vec![("array", Value::from("test"))]));
 
     assert!(result.is_err());
     assert!(
@@ -58,7 +57,7 @@ fn test_array_count_error_not_array() {
 
 #[test]
 fn test_array_count_missing_array() {
-    let result = array::array_count_fn(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
+    let result = ArrayCount::call(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
 
     assert!(result.is_err());
 }
@@ -69,7 +68,7 @@ fn test_array_count_missing_array() {
 
 #[test]
 fn test_array_chunk_even_division() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3, 4, 5, 6])),
         ("size", Value::from(2)),
     ]))
@@ -84,7 +83,7 @@ fn test_array_chunk_even_division() {
 
 #[test]
 fn test_array_chunk_uneven_division() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3, 4, 5])),
         ("size", Value::from(2)),
     ]))
@@ -99,7 +98,7 @@ fn test_array_chunk_uneven_division() {
 
 #[test]
 fn test_array_chunk_size_one() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("size", Value::from(1)),
     ]))
@@ -114,7 +113,7 @@ fn test_array_chunk_size_one() {
 
 #[test]
 fn test_array_chunk_size_larger_than_array() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("size", Value::from(10)),
     ]))
@@ -130,7 +129,7 @@ fn test_array_chunk_size_larger_than_array() {
 #[test]
 fn test_array_chunk_empty_array() {
     let empty: Vec<i32> = vec![];
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(empty)),
         ("size", Value::from(2)),
     ]))
@@ -145,7 +144,7 @@ fn test_array_chunk_empty_array() {
 
 #[test]
 fn test_array_chunk_strings() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec!["a", "b", "c", "d", "e", "f"])),
         ("size", Value::from(3)),
     ]))
@@ -160,7 +159,7 @@ fn test_array_chunk_strings() {
 
 #[test]
 fn test_array_chunk_error_zero_size() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("size", Value::from(0)),
     ]));
@@ -171,7 +170,7 @@ fn test_array_chunk_error_zero_size() {
 
 #[test]
 fn test_array_chunk_error_not_array() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from("test")),
         ("size", Value::from(2)),
     ]));
@@ -187,14 +186,14 @@ fn test_array_chunk_error_not_array() {
 
 #[test]
 fn test_array_chunk_missing_array() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![("size", Value::from(2))]));
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![("size", Value::from(2))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_array_chunk_missing_size() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![(
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![(
         "array",
         Value::from(vec![1, 2, 3]),
     )]));
@@ -208,7 +207,7 @@ fn test_array_chunk_missing_size() {
 
 #[test]
 fn test_array_zip_equal_length() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(vec![1, 2, 3])),
         ("array2", Value::from(vec!["a", "b", "c"])),
     ]))
@@ -227,7 +226,7 @@ fn test_array_zip_equal_length() {
 
 #[test]
 fn test_array_zip_first_longer() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(vec![1, 2, 3, 4])),
         ("array2", Value::from(vec!["a", "b"])),
     ]))
@@ -245,7 +244,7 @@ fn test_array_zip_first_longer() {
 
 #[test]
 fn test_array_zip_second_longer() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(vec![1, 2])),
         ("array2", Value::from(vec!["a", "b", "c", "d"])),
     ]))
@@ -265,7 +264,7 @@ fn test_array_zip_second_longer() {
 fn test_array_zip_empty_arrays() {
     let empty1: Vec<i32> = vec![];
     let empty2: Vec<String> = vec![];
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(empty1)),
         ("array2", Value::from(empty2)),
     ]))
@@ -281,7 +280,7 @@ fn test_array_zip_empty_arrays() {
 #[test]
 fn test_array_zip_first_empty() {
     let empty: Vec<i32> = vec![];
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(empty)),
         ("array2", Value::from(vec!["a", "b", "c"])),
     ]))
@@ -297,7 +296,7 @@ fn test_array_zip_first_empty() {
 #[test]
 fn test_array_zip_second_empty() {
     let empty: Vec<String> = vec![];
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(vec![1, 2, 3])),
         ("array2", Value::from(empty)),
     ]))
@@ -312,7 +311,7 @@ fn test_array_zip_second_empty() {
 
 #[test]
 fn test_array_zip_single_elements() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(vec![42])),
         ("array2", Value::from(vec!["test"])),
     ]))
@@ -327,7 +326,7 @@ fn test_array_zip_single_elements() {
 
 #[test]
 fn test_array_zip_error_first_not_array() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from("test")),
         ("array2", Value::from(vec![1, 2, 3])),
     ]));
@@ -343,7 +342,7 @@ fn test_array_zip_error_first_not_array() {
 
 #[test]
 fn test_array_zip_error_second_not_array() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(vec![1, 2, 3])),
         ("array2", Value::from(42)),
     ]));
@@ -359,7 +358,7 @@ fn test_array_zip_error_second_not_array() {
 
 #[test]
 fn test_array_zip_missing_array1() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![(
+    let result = ArrayZip::call(Kwargs::from_iter(vec![(
         "array2",
         Value::from(vec![1, 2, 3]),
     )]));
@@ -369,7 +368,7 @@ fn test_array_zip_missing_array1() {
 
 #[test]
 fn test_array_zip_missing_array2() {
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![(
+    let result = ArrayZip::call(Kwargs::from_iter(vec![(
         "array1",
         Value::from(vec![1, 2, 3]),
     )]));
@@ -384,7 +383,7 @@ fn test_array_zip_missing_array2() {
 #[test]
 fn test_array_count_with_nulls() {
     let arr = serde_json::json!([1, null, 3, null, 5]);
-    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+    let result = ArrayCount::call(Kwargs::from_iter(vec![(
         "array",
         Value::from_serialize(&arr),
     )]))
@@ -396,7 +395,7 @@ fn test_array_count_with_nulls() {
 #[test]
 fn test_array_count_nested_arrays() {
     let arr = serde_json::json!([[1, 2], [3, 4], [5]]);
-    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+    let result = ArrayCount::call(Kwargs::from_iter(vec![(
         "array",
         Value::from_serialize(&arr),
     )]))
@@ -408,7 +407,7 @@ fn test_array_count_nested_arrays() {
 #[test]
 fn test_array_count_objects() {
     let arr = serde_json::json!([{"a": 1}, {"b": 2}]);
-    let result = array::array_count_fn(Kwargs::from_iter(vec![(
+    let result = ArrayCount::call(Kwargs::from_iter(vec![(
         "array",
         Value::from_serialize(&arr),
     )]))
@@ -419,7 +418,7 @@ fn test_array_count_objects() {
 
 #[test]
 fn test_array_count_number_not_array() {
-    let result = array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(42))]));
+    let result = ArrayCount::call(Kwargs::from_iter(vec![("array", Value::from(42))]));
 
     assert!(result.is_err());
     assert!(
@@ -432,7 +431,7 @@ fn test_array_count_number_not_array() {
 
 #[test]
 fn test_array_count_bool_not_array() {
-    let result = array::array_count_fn(Kwargs::from_iter(vec![("array", Value::from(true))]));
+    let result = ArrayCount::call(Kwargs::from_iter(vec![("array", Value::from(true))]));
 
     assert!(result.is_err());
 }
@@ -444,7 +443,7 @@ fn test_array_count_bool_not_array() {
 #[test]
 fn test_array_chunk_with_nulls() {
     let arr = serde_json::json!([1, null, 3, null, 5]);
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from_serialize(&arr)),
         ("size", Value::from(2)),
     ]))
@@ -460,7 +459,7 @@ fn test_array_chunk_with_nulls() {
 #[test]
 fn test_array_chunk_with_objects() {
     let arr = serde_json::json!([{"a": 1}, {"b": 2}, {"c": 3}]);
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from_serialize(&arr)),
         ("size", Value::from(2)),
     ]))
@@ -472,7 +471,7 @@ fn test_array_chunk_with_objects() {
 
 #[test]
 fn test_array_chunk_single_element() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![42])),
         ("size", Value::from(5)),
     ]))
@@ -487,7 +486,7 @@ fn test_array_chunk_single_element() {
 
 #[test]
 fn test_array_chunk_exact_multiple() {
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3, 4, 5, 6, 7, 8, 9])),
         ("size", Value::from(3)),
     ]))
@@ -503,7 +502,7 @@ fn test_array_chunk_exact_multiple() {
 #[test]
 fn test_array_chunk_negative_size_error() {
     // Negative size should fail since size is usize (will error on parse)
-    let result = array::array_chunk_fn(Kwargs::from_iter(vec![
+    let result = ArrayChunk::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("size", Value::from(-1_i64)),
     ]));
@@ -520,7 +519,7 @@ fn test_array_zip_with_objects() {
     let arr1 = serde_json::json!([{"a": 1}, {"a": 2}]);
     let arr2 = serde_json::json!([{"b": 3}, {"b": 4}]);
 
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from_serialize(&arr1)),
         ("array2", Value::from_serialize(&arr2)),
     ]))
@@ -535,7 +534,7 @@ fn test_array_zip_with_nulls() {
     let arr1 = serde_json::json!([1, null, 3]);
     let arr2 = serde_json::json!(["a", "b", "c"]);
 
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from_serialize(&arr1)),
         ("array2", Value::from_serialize(&arr2)),
     ]))
@@ -550,7 +549,7 @@ fn test_array_zip_large_arrays() {
     let arr1: Vec<i32> = (1..=100).collect();
     let arr2: Vec<i32> = (101..=200).collect();
 
-    let result = array::array_zip_fn(Kwargs::from_iter(vec![
+    let result = ArrayZip::call(Kwargs::from_iter(vec![
         ("array1", Value::from(arr1)),
         ("array2", Value::from(arr2)),
     ]))

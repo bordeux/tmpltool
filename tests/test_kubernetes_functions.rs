@@ -1,6 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::kubernetes;
+use tmpltool::functions::Function;
+use tmpltool::functions::kubernetes::K8sResourceRequest;
 
 // ============================================================================
 // k8s_resource_request Tests
@@ -8,7 +9,7 @@ use tmpltool::functions::kubernetes;
 
 #[test]
 fn test_k8s_resource_request_strings() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from("512Mi")),
     ]))
@@ -22,7 +23,7 @@ fn test_k8s_resource_request_strings() {
 
 #[test]
 fn test_k8s_resource_request_numeric_cpu() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(0.5)),
         ("memory", Value::from("512Mi")),
     ]))
@@ -34,7 +35,7 @@ fn test_k8s_resource_request_numeric_cpu() {
 
 #[test]
 fn test_k8s_resource_request_numeric_cpu_whole() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(2)),
         ("memory", Value::from("1Gi")),
     ]))
@@ -46,7 +47,7 @@ fn test_k8s_resource_request_numeric_cpu_whole() {
 
 #[test]
 fn test_k8s_resource_request_numeric_memory_mi() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from(512)),
     ]))
@@ -58,7 +59,7 @@ fn test_k8s_resource_request_numeric_memory_mi() {
 
 #[test]
 fn test_k8s_resource_request_numeric_memory_gi() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("1000m")),
         ("memory", Value::from(1024)),
     ]))
@@ -70,7 +71,7 @@ fn test_k8s_resource_request_numeric_memory_gi() {
 
 #[test]
 fn test_k8s_resource_request_numeric_memory_gi_fractional() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from(2560)),
     ]))
@@ -82,7 +83,7 @@ fn test_k8s_resource_request_numeric_memory_gi_fractional() {
 
 #[test]
 fn test_k8s_resource_request_both_numeric() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(1.5)),
         ("memory", Value::from(2048)),
     ]))
@@ -95,7 +96,7 @@ fn test_k8s_resource_request_both_numeric() {
 
 #[test]
 fn test_k8s_resource_request_yaml_format() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from("512Mi")),
     ]))
@@ -111,7 +112,7 @@ fn test_k8s_resource_request_yaml_format() {
 
 #[test]
 fn test_k8s_resource_request_error_invalid_cpu() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(vec![1, 2, 3])),
         ("memory", Value::from("512Mi")),
     ]));
@@ -121,7 +122,7 @@ fn test_k8s_resource_request_error_invalid_cpu() {
 
 #[test]
 fn test_k8s_resource_request_error_invalid_memory() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from(true)),
     ]));
@@ -131,226 +132,14 @@ fn test_k8s_resource_request_error_invalid_memory() {
 
 #[test]
 fn test_k8s_resource_request_missing_params() {
-    let result =
-        kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![("cpu", Value::from("500m"))]));
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![("cpu", Value::from("500m"))]));
 
     assert!(result.is_err());
 }
 
-// ============================================================================
-// k8s_label_safe Tests
-// ============================================================================
-
-#[test]
-fn test_k8s_label_safe_simple() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("my-app"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "my-app");
-}
-
-#[test]
-fn test_k8s_label_safe_uppercase() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("MyApp"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "myapp");
-}
-
-#[test]
-fn test_k8s_label_safe_spaces() {
-    let result = kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("My App Name"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-app-name");
-}
-
-#[test]
-fn test_k8s_label_safe_special_chars() {
-    let result = kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("My App (v2.0)!"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-app-v2.0");
-}
-
-#[test]
-fn test_k8s_label_safe_leading_trailing() {
-    let result = kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("--my-app--"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-app");
-}
-
-#[test]
-fn test_k8s_label_safe_underscores_dots() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("my_app.v1"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "my_app.v1");
-}
-
-#[test]
-fn test_k8s_label_safe_multiple_dashes() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("my---app"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "my-app");
-}
-
-#[test]
-fn test_k8s_label_safe_long_string() {
-    let long_str =
-        "this-is-a-very-long-label-name-that-exceeds-the-kubernetes-maximum-label-length-limit";
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from(long_str))]))
-            .unwrap();
-
-    let output = result.to_string();
-    assert!(output.len() <= 63);
-    assert!(output.chars().last().unwrap().is_ascii_alphanumeric());
-}
-
-#[test]
-fn test_k8s_label_safe_empty_result() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("!!!"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "default");
-}
-
-#[test]
-fn test_k8s_label_safe_missing_param() {
-    let result = kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
-
-    assert!(result.is_err());
-}
-
-// ============================================================================
-// k8s_dns_label_safe Tests
-// ============================================================================
-
-#[test]
-fn test_k8s_dns_label_safe_simple() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("my-service"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-service");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_uppercase() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("MyService"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "myservice");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_spaces() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("My Service Name"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-service-name");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_no_underscores() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("my_service"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-service");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_no_dots() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("my.service.v1"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-service-v1");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_multiple_dashes() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("my---service"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-service");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_leading_trailing_dashes() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("--my-service--"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "my-service");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_long_string() {
-    let long_str =
-        "this-is-a-very-long-dns-label-that-exceeds-the-kubernetes-maximum-dns-label-length-limit";
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from(long_str),
-    )]))
-    .unwrap();
-
-    let output = result.to_string();
-    assert!(output.len() <= 63);
-    assert!(!output.ends_with('-'));
-}
-
-#[test]
-fn test_k8s_dns_label_safe_empty_result() {
-    let result =
-        kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("!!!"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "default");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_missing_param() {
-    let result =
-        kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
-
-    assert!(result.is_err());
-}
+// Note: k8s_label_safe_fn and k8s_dns_label_safe_fn tests removed - these functions
+// are now in filter_functions/kubernetes.rs with dual function+filter syntax support.
+// See tests/test_filters_integration.rs for integration tests of these filters.
 
 // ============================================================================
 // Additional Edge Case Tests for Coverage Improvement
@@ -361,7 +150,7 @@ fn test_k8s_dns_label_safe_missing_param() {
 #[test]
 fn test_k8s_resource_request_fractional_mi() {
     // Memory value with fractional Mi (less than 1024)
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from(256.5)),
     ]))
@@ -373,7 +162,7 @@ fn test_k8s_resource_request_fractional_mi() {
 
 #[test]
 fn test_k8s_resource_request_small_cpu() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(0.1)),
         ("memory", Value::from("128Mi")),
     ]))
@@ -385,7 +174,7 @@ fn test_k8s_resource_request_small_cpu() {
 
 #[test]
 fn test_k8s_resource_request_integer_cpu() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(4)),
         ("memory", Value::from("4Gi")),
     ]))
@@ -397,7 +186,7 @@ fn test_k8s_resource_request_integer_cpu() {
 
 #[test]
 fn test_k8s_resource_request_whole_gi_memory() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("1000m")),
         ("memory", Value::from(2048)), // 2Gi in Mi
     ]))
@@ -407,106 +196,11 @@ fn test_k8s_resource_request_whole_gi_memory() {
     assert!(output.contains("memory: \"2Gi\""));
 }
 
-// --- k8s_label_safe edge cases for truncation ---
-
-#[test]
-fn test_k8s_label_safe_truncation_with_trailing_dash() {
-    // Create a string that when truncated to 63 chars ends with a dash
-    let long_str = "a".repeat(60) + "---end";
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from(long_str))]))
-            .unwrap();
-
-    let output = result.to_string();
-    assert!(output.len() <= 63);
-    // Should not end with a dash after truncation
-    assert!(output.chars().last().unwrap().is_ascii_alphanumeric());
-}
-
-#[test]
-fn test_k8s_label_safe_only_dashes() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("---"))]))
-            .unwrap();
-
-    // Empty after sanitization should return "default"
-    assert_eq!(result.to_string(), "default");
-}
-
-#[test]
-fn test_k8s_label_safe_only_underscores() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("___"))]))
-            .unwrap();
-
-    // Underscores are valid but leading/trailing non-alphanumeric removed
-    assert_eq!(result.to_string(), "default");
-}
-
-#[test]
-fn test_k8s_label_safe_only_dots() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from("..."))]))
-            .unwrap();
-
-    // Dots are valid but leading/trailing non-alphanumeric removed
-    assert_eq!(result.to_string(), "default");
-}
-
-#[test]
-fn test_k8s_label_safe_mixed_special_only() {
-    let result =
-        kubernetes::k8s_label_safe_fn(Kwargs::from_iter(vec![("value", Value::from(".-_.-"))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "default");
-}
-
-// --- k8s_dns_label_safe edge cases for truncation ---
-
-#[test]
-fn test_k8s_dns_label_safe_truncation_with_trailing_dash() {
-    let long_str = "a".repeat(60) + "---";
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from(long_str),
-    )]))
-    .unwrap();
-
-    let output = result.to_string();
-    assert!(output.len() <= 63);
-    assert!(!output.ends_with('-'));
-}
-
-#[test]
-fn test_k8s_dns_label_safe_only_invalid_chars() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("@#$%^&"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "default");
-}
-
-#[test]
-fn test_k8s_dns_label_safe_unicode() {
-    let result = kubernetes::k8s_dns_label_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("サービス"),
-    )]))
-    .unwrap();
-
-    // Non-ASCII chars get replaced with dashes, then trimmed
-    // Result should be "default" since all chars are invalid
-    assert_eq!(result.to_string(), "default");
-}
-
 // --- k8s_resource_request error handling ---
 
 #[test]
 fn test_k8s_resource_request_null_cpu() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from(())),
         ("memory", Value::from("512Mi")),
     ]));
@@ -516,7 +210,7 @@ fn test_k8s_resource_request_null_cpu() {
 
 #[test]
 fn test_k8s_resource_request_null_memory() {
-    let result = kubernetes::k8s_resource_request_fn(Kwargs::from_iter(vec![
+    let result = K8sResourceRequest::call(Kwargs::from_iter(vec![
         ("cpu", Value::from("500m")),
         ("memory", Value::from(())),
     ]));

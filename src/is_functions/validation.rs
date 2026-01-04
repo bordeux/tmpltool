@@ -21,10 +21,20 @@
 //! {% if user_input is email %}valid{% endif %}
 //! ```
 
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use crate::is_functions::IsFunction;
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, Value};
 use regex::Regex;
+
+/// Common metadata for string argument
+const STRING_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "string",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string to validate",
+};
 
 /// Email validation is-function
 ///
@@ -58,6 +68,18 @@ impl Email {
 impl IsFunction for Email {
     const FUNCTION_NAME: &'static str = "is_email";
     const IS_NAME: &'static str = "email";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_email",
+        category: "validation",
+        description: "Validate email address format",
+        arguments: &[STRING_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_email(string=\"user@example.com\") }}",
+            "{% if email_var is email %}valid{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -101,6 +123,18 @@ impl Url {
 impl IsFunction for Url {
     const FUNCTION_NAME: &'static str = "is_url";
     const IS_NAME: &'static str = "url";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_url",
+        category: "validation",
+        description: "Validate URL format (supports http, https, ftp, file schemes)",
+        arguments: &[STRING_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_url(string=\"https://example.com\") }}",
+            "{% if url_var is url %}valid{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -141,6 +175,18 @@ impl Ip {
 impl IsFunction for Ip {
     const FUNCTION_NAME: &'static str = "is_ip";
     const IS_NAME: &'static str = "ip";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_ip",
+        category: "validation",
+        description: "Validate IP address format (IPv4 or IPv6)",
+        arguments: &[STRING_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_ip(string=\"192.168.1.1\") }}",
+            "{% if ip_var is ip %}valid{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -184,6 +230,18 @@ impl Uuid {
 impl IsFunction for Uuid {
     const FUNCTION_NAME: &'static str = "is_uuid";
     const IS_NAME: &'static str = "uuid";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_uuid",
+        category: "validation",
+        description: "Validate UUID format (all versions)",
+        arguments: &[STRING_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_uuid(string=\"550e8400-e29b-41d4-a716-446655440000\") }}",
+            "{% if uuid_var is uuid %}valid{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;

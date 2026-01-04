@@ -7,6 +7,8 @@
 //! - `exec(command)` - Simple execution, returns stdout, throws on error
 //! - `exec_raw(command)` - Full control, returns object with exit code, stdout, stderr
 
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::ContextFunction;
 use crate::TemplateContext;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
@@ -14,38 +16,40 @@ use std::collections::HashMap;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 
-/// Execute an external command and return stdout
-///
-/// This is the simple version that returns stdout directly and throws an error
-/// if the command fails (non-zero exit code).
-///
-/// **SECURITY WARNING:** This function can execute arbitrary commands and is only
-/// available in trust mode (`--trust` flag).
-///
-/// # Arguments
-///
-/// * `command` (required) - Command to execute (full command line, will be executed via shell)
-/// * `timeout` (optional) - Timeout in seconds (default: 30, max: 300)
-///
-/// # Returns
-///
-/// Returns stdout as a string. Throws an error if exit code is non-zero.
-///
-/// # Example
-///
-/// ```jinja
-/// {# Simple usage - get output directly #}
-/// Hostname: {{ exec(command="hostname") }}
-///
-/// {# Use in variable #}
-/// {% set files = exec(command="ls /tmp") %}
-/// {{ files }}
-///
-/// {# This will throw an error #}
-/// {{ exec(command="ls /nonexistent") }}  {# Error: Command failed (exit 2): ... #}
-/// ```
-pub fn create_exec_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<Value, Error> {
-    move |kwargs: Kwargs| {
+/// Execute command and return stdout (throws on error)
+pub struct Exec;
+
+impl ContextFunction for Exec {
+    const NAME: &'static str = "exec";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "exec",
+        category: "exec",
+        description: "Execute command and return stdout (throws on non-zero exit)",
+        arguments: &[
+            ArgumentMetadata {
+                name: "command",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Command to execute (via shell)",
+            },
+            ArgumentMetadata {
+                name: "timeout",
+                arg_type: "integer",
+                required: false,
+                default: Some("30"),
+                description: "Timeout in seconds (max: 300)",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ exec(command=\"hostname\") }}",
+            "{% set files = exec(command=\"ls /tmp\") %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         // Security check: exec is only available in trust mode
         if !context.is_trust_mode() {
             return Err(Error::new(
@@ -57,7 +61,6 @@ pub fn create_exec_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
         let command: String = kwargs.get("command")?;
         let timeout_secs: u64 = kwargs.get("timeout").unwrap_or(30);
 
-        // Validate timeout
         if timeout_secs > 300 {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -65,15 +68,12 @@ pub fn create_exec_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
             ));
         }
 
-        // Execute command and get result
         let result = execute_command(&command, timeout_secs)?;
 
-        // Extract values from result object
         let exit_code = result.get_attr("exit_code").unwrap().as_i64().unwrap();
         let stdout = result.get_attr("stdout").unwrap().to_string();
         let stderr = result.get_attr("stderr").unwrap().to_string();
 
-        // Throw error if command failed
         if exit_code != 0 {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -84,58 +84,43 @@ pub fn create_exec_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Resul
             ));
         }
 
-        // Return stdout as string
         Ok(Value::from(stdout))
     }
 }
 
-/// Execute an external command and return full result object
-///
-/// This is the advanced version that returns an object with exit code, stdout,
-/// and stderr. It never throws based on exit code - you control error handling.
-///
-/// **SECURITY WARNING:** This function can execute arbitrary commands and is only
-/// available in trust mode (`--trust` flag).
-///
-/// # Arguments
-///
-/// * `command` (required) - Command to execute (full command line, will be executed via shell)
-/// * `timeout` (optional) - Timeout in seconds (default: 30, max: 300)
-///
-/// # Returns
-///
-/// Returns an object with the following fields:
-/// - `exit_code` - Exit code of the command (integer, 0 = success)
-/// - `stdout` - Standard output as string (UTF-8)
-/// - `stderr` - Standard error as string (UTF-8)
-/// - `success` - Boolean, true if exit_code == 0
-///
-/// # Example
-///
-/// ```jinja
-/// {# Full control over result #}
-/// {% set result = exec_raw(command="ls -la /tmp") %}
-/// {% if result.success %}
-/// Files:
-/// {{ result.stdout }}
-/// {% else %}
-/// Error (exit {{ result.exit_code }}): {{ result.stderr }}
-/// {% endif %}
-///
-/// {# Handle expected non-zero exit (e.g., grep) #}
-/// {% set result = exec_raw(command="grep foo /etc/hosts") %}
-/// {% if result.exit_code == 0 %}
-/// Found: {{ result.stdout }}
-/// {% elif result.exit_code == 1 %}
-/// Not found
-/// {% else %}
-/// Error: {{ result.stderr }}
-/// {% endif %}
-/// ```
-pub fn create_exec_raw_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(Kwargs) -> Result<Value, Error> {
-    move |kwargs: Kwargs| {
+/// Execute command and return full result object
+pub struct ExecRaw;
+
+impl ContextFunction for ExecRaw {
+    const NAME: &'static str = "exec_raw";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "exec_raw",
+        category: "exec",
+        description: "Execute command and return full result object with exit_code, stdout, stderr",
+        arguments: &[
+            ArgumentMetadata {
+                name: "command",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Command to execute (via shell)",
+            },
+            ArgumentMetadata {
+                name: "timeout",
+                arg_type: "integer",
+                required: false,
+                default: Some("30"),
+                description: "Timeout in seconds (max: 300)",
+            },
+        ],
+        return_type: "object",
+        examples: &[
+            "{% set r = exec_raw(command=\"ls\") %}{% if r.success %}{{ r.stdout }}{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         // Security check: exec_raw is only available in trust mode
         if !context.is_trust_mode() {
             return Err(Error::new(
@@ -147,7 +132,6 @@ pub fn create_exec_raw_fn(
         let command: String = kwargs.get("command")?;
         let timeout_secs: u64 = kwargs.get("timeout").unwrap_or(30);
 
-        // Validate timeout
         if timeout_secs > 300 {
             return Err(Error::new(
                 ErrorKind::InvalidOperation,
@@ -155,21 +139,18 @@ pub fn create_exec_raw_fn(
             ));
         }
 
-        // Execute command and return full result
         execute_command(&command, timeout_secs)
     }
 }
 
 /// Execute a command with timeout and return structured result
 fn execute_command(command: &str, timeout_secs: u64) -> Result<Value, Error> {
-    // Determine shell based on OS
     #[cfg(target_os = "windows")]
     let (shell, shell_arg) = ("cmd", "/C");
 
     #[cfg(not(target_os = "windows"))]
     let (shell, shell_arg) = ("sh", "-c");
 
-    // Spawn command
     let output = Command::new(shell)
         .arg(shell_arg)
         .arg(command)
@@ -183,22 +164,16 @@ fn execute_command(command: &str, timeout_secs: u64) -> Result<Value, Error> {
             )
         })?;
 
-    // Note: We're using .output() which waits for completion, so timeout
-    // isn't enforced in this simple implementation. For production use,
-    // you'd want to use std::process::Child with a separate timeout mechanism
-    // or the `wait-timeout` crate.
-    //
-    // For now, we document the timeout parameter but don't enforce it.
-    // This can be improved in a future PR.
-    let _ = timeout_secs; // Suppress unused variable warning
+    // Note: timeout_secs is documented but not enforced in this simple implementation.
+    // For production use, you'd want to use std::process::Child with a separate
+    // timeout mechanism or the `wait-timeout` crate.
+    let _ = timeout_secs;
 
-    // Convert output to UTF-8 strings
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     let exit_code = output.status.code().unwrap_or(-1);
     let success = output.status.success();
 
-    // Build result object
     let mut result = HashMap::new();
     result.insert("exit_code".to_string(), Value::from(exit_code));
     result.insert("stdout".to_string(), Value::from(stdout));

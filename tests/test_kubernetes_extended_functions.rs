@@ -1,6 +1,10 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::kubernetes;
+use tmpltool::functions::Function;
+use tmpltool::functions::kubernetes::{
+    HelmTpl, K8sBytesToQuantity, K8sPodAffinity, K8sProbe, K8sQuantityToBytes, K8sSelector,
+    K8sToleration,
+};
 
 // ============================================================================
 // helm_tpl Tests
@@ -8,7 +12,7 @@ use tmpltool::functions::kubernetes;
 
 #[test]
 fn test_helm_tpl_simple() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("Hello {{ .name }}!")),
         (
             "values",
@@ -22,7 +26,7 @@ fn test_helm_tpl_simple() {
 
 #[test]
 fn test_helm_tpl_nested_values() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         (
             "template",
             Value::from("{{ .app.name }}-{{ .app.version }}"),
@@ -41,7 +45,7 @@ fn test_helm_tpl_nested_values() {
 
 #[test]
 fn test_helm_tpl_no_placeholders() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("static-text")),
         ("values", Value::from_serialize(serde_json::json!({}))),
     ]))
@@ -52,7 +56,7 @@ fn test_helm_tpl_no_placeholders() {
 
 #[test]
 fn test_helm_tpl_multiple_placeholders() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         (
             "template",
             Value::from("{{ .Release.Name }}-{{ .Chart.Name }}"),
@@ -72,7 +76,7 @@ fn test_helm_tpl_multiple_placeholders() {
 
 #[test]
 fn test_helm_tpl_missing_value() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("{{ .missing }}")),
         ("values", Value::from_serialize(serde_json::json!({}))),
     ]))
@@ -84,7 +88,7 @@ fn test_helm_tpl_missing_value() {
 
 #[test]
 fn test_helm_tpl_missing_template() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![(
+    let result = HelmTpl::call(Kwargs::from_iter(vec![(
         "values",
         Value::from_serialize(serde_json::json!({})),
     )]));
@@ -92,72 +96,7 @@ fn test_helm_tpl_missing_template() {
     assert!(result.is_err());
 }
 
-// ============================================================================
-// k8s_annotation_safe Tests
-// ============================================================================
-
-#[test]
-fn test_k8s_annotation_safe_simple() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("simple annotation"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "simple annotation");
-}
-
-#[test]
-fn test_k8s_annotation_safe_newlines() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("line1\nline2\nline3"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "line1 line2 line3");
-}
-
-#[test]
-fn test_k8s_annotation_safe_tabs() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("col1\tcol2\tcol3"),
-    )]))
-    .unwrap();
-
-    assert_eq!(result.to_string(), "col1 col2 col3");
-}
-
-#[test]
-fn test_k8s_annotation_safe_mixed_control_chars() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("text\r\nwith\tvarious\rcontrol"),
-    )]))
-    .unwrap();
-
-    // Control chars should be replaced with spaces
-    assert!(!result.to_string().contains('\n'));
-    assert!(!result.to_string().contains('\t'));
-    assert!(!result.to_string().contains('\r'));
-}
-
-#[test]
-fn test_k8s_annotation_safe_empty() {
-    let result =
-        kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![("value", Value::from(""))]))
-            .unwrap();
-
-    assert_eq!(result.to_string(), "");
-}
-
-#[test]
-fn test_k8s_annotation_safe_missing_param() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
-
-    assert!(result.is_err());
-}
+// Note: k8s_annotation_safe tests removed - function now in filter_functions/kubernetes.rs
 
 // ============================================================================
 // k8s_quantity_to_bytes Tests
@@ -165,84 +104,69 @@ fn test_k8s_annotation_safe_missing_param() {
 
 #[test]
 fn test_k8s_quantity_to_bytes_gi() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1Gi"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1Gi"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(1073741824)); // 1024^3
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_mi() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("512Mi"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("512Mi"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(536870912)); // 512 * 1024^2
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_ki() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("100Ki"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("100Ki"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(102400)); // 100 * 1024
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_decimal_g() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1G"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1G"))])).unwrap();
 
     assert_eq!(result.as_i64(), Some(1000000000)); // 1000^3
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_decimal_m() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("500M"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("500M"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(500000000)); // 500 * 1000^2
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_millicores() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("500m"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("500m"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(500)); // millicores
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_plain_number() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1024"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1024"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(1024));
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_invalid() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
+    let result = K8sQuantityToBytes::call(Kwargs::from_iter(vec![(
         "quantity",
         Value::from("invalid"),
     )]));
@@ -252,8 +176,7 @@ fn test_k8s_quantity_to_bytes_invalid() {
 
 #[test]
 fn test_k8s_quantity_to_bytes_missing_param() {
-    let result =
-        kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = K8sQuantityToBytes::call(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
 
     assert!(result.is_err());
 }
@@ -264,7 +187,7 @@ fn test_k8s_quantity_to_bytes_missing_param() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_gi() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1073741824_i64)), // 1 Gi
     ]))
     .unwrap();
@@ -274,7 +197,7 @@ fn test_k8s_bytes_to_quantity_gi() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_mi() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(536870912_i64)), // 512 Mi
     ]))
     .unwrap();
@@ -284,7 +207,7 @@ fn test_k8s_bytes_to_quantity_mi() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_ki() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(102400_i64)), // 100 Ki
     ]))
     .unwrap();
@@ -294,7 +217,7 @@ fn test_k8s_bytes_to_quantity_ki() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_unit() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1073741824_i64)), // 1 Gi
         ("unit", Value::from("Mi")),
     ]))
@@ -305,11 +228,8 @@ fn test_k8s_bytes_to_quantity_forced_unit() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_small() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
-        "bytes",
-        Value::from(100_i64),
-    )]))
-    .unwrap();
+    let result =
+        K8sBytesToQuantity::call(Kwargs::from_iter(vec![("bytes", Value::from(100_i64))])).unwrap();
 
     // Small values should remain as plain bytes
     let output = result.to_string();
@@ -318,19 +238,15 @@ fn test_k8s_bytes_to_quantity_small() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_zero() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
-        "bytes",
-        Value::from(0_i64),
-    )]))
-    .unwrap();
+    let result =
+        K8sBytesToQuantity::call(Kwargs::from_iter(vec![("bytes", Value::from(0_i64))])).unwrap();
 
     assert_eq!(result.to_string(), "0");
 }
 
 #[test]
 fn test_k8s_bytes_to_quantity_missing_param() {
-    let result =
-        kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
 
     assert!(result.is_err());
 }
@@ -341,7 +257,7 @@ fn test_k8s_bytes_to_quantity_missing_param() {
 
 #[test]
 fn test_k8s_selector_simple() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(vec![(
+    let result = K8sSelector::call(Kwargs::from_iter(vec![(
         "labels",
         Value::from_serialize(serde_json::json!({"app": "nginx"})),
     )]))
@@ -352,7 +268,7 @@ fn test_k8s_selector_simple() {
 
 #[test]
 fn test_k8s_selector_multiple() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(vec![(
+    let result = K8sSelector::call(Kwargs::from_iter(vec![(
         "labels",
         Value::from_serialize(serde_json::json!({
             "app": "nginx",
@@ -370,7 +286,7 @@ fn test_k8s_selector_multiple() {
 
 #[test]
 fn test_k8s_selector_empty() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(vec![(
+    let result = K8sSelector::call(Kwargs::from_iter(vec![(
         "labels",
         Value::from_serialize(serde_json::json!({})),
     )]))
@@ -381,7 +297,7 @@ fn test_k8s_selector_empty() {
 
 #[test]
 fn test_k8s_selector_missing_param() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = K8sSelector::call(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
 
     assert!(result.is_err());
 }
@@ -392,7 +308,7 @@ fn test_k8s_selector_missing_param() {
 
 #[test]
 fn test_k8s_pod_affinity_required_in() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("In")),
         (
@@ -413,7 +329,7 @@ fn test_k8s_pod_affinity_required_in() {
 
 #[test]
 fn test_k8s_pod_affinity_preferred() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("In")),
         ("values", Value::from_serialize(serde_json::json!(["web"]))),
@@ -428,7 +344,7 @@ fn test_k8s_pod_affinity_preferred() {
 
 #[test]
 fn test_k8s_pod_affinity_exists() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("Exists")),
     ]))
@@ -440,7 +356,7 @@ fn test_k8s_pod_affinity_exists() {
 
 #[test]
 fn test_k8s_pod_affinity_custom_topology() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("In")),
         ("values", Value::from_serialize(serde_json::json!(["web"]))),
@@ -454,8 +370,7 @@ fn test_k8s_pod_affinity_custom_topology() {
 
 #[test]
 fn test_k8s_pod_affinity_missing_key() {
-    let result =
-        kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![("operator", Value::from("In"))]));
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![("operator", Value::from("In"))]));
 
     assert!(result.is_err());
 }
@@ -466,7 +381,7 @@ fn test_k8s_pod_affinity_missing_key() {
 
 #[test]
 fn test_k8s_toleration_equal() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("dedicated")),
         ("value", Value::from("gpu")),
         ("effect", Value::from("NoSchedule")),
@@ -482,7 +397,7 @@ fn test_k8s_toleration_equal() {
 
 #[test]
 fn test_k8s_toleration_exists() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("node.kubernetes.io/not-ready")),
         ("operator", Value::from("Exists")),
         ("effect", Value::from("NoExecute")),
@@ -498,7 +413,7 @@ fn test_k8s_toleration_exists() {
 
 #[test]
 fn test_k8s_toleration_no_effect() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("special")),
         ("value", Value::from("true")),
     ]))
@@ -513,8 +428,7 @@ fn test_k8s_toleration_no_effect() {
 fn test_k8s_toleration_no_key() {
     // Key is optional - this creates a wildcard toleration
     let result =
-        kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![("operator", Value::from("Exists"))]))
-            .unwrap();
+        K8sToleration::call(Kwargs::from_iter(vec![("operator", Value::from("Exists"))])).unwrap();
 
     let output = result.to_string();
     assert!(output.contains("operator: Exists"));
@@ -526,7 +440,7 @@ fn test_k8s_toleration_no_key() {
 
 #[test]
 fn test_k8s_probe_http() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("path", Value::from("/health")),
         ("port", Value::from(8080)),
@@ -542,7 +456,7 @@ fn test_k8s_probe_http() {
 
 #[test]
 fn test_k8s_probe_tcp() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("tcp")),
         ("port", Value::from(5432)),
     ]))
@@ -555,7 +469,7 @@ fn test_k8s_probe_tcp() {
 
 #[test]
 fn test_k8s_probe_exec() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("exec")),
         (
             "command",
@@ -573,7 +487,7 @@ fn test_k8s_probe_exec() {
 
 #[test]
 fn test_k8s_probe_custom_timings() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("path", Value::from("/healthz")),
         ("port", Value::from(8080)),
@@ -593,7 +507,7 @@ fn test_k8s_probe_custom_timings() {
 
 #[test]
 fn test_k8s_probe_default_values() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("path", Value::from("/healthz")),
         ("port", Value::from(8080)),
@@ -610,16 +524,14 @@ fn test_k8s_probe_default_values() {
 
 #[test]
 fn test_k8s_probe_missing_type() {
-    let result =
-        kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![("path", Value::from("/health"))]));
+    let result = K8sProbe::call(Kwargs::from_iter(vec![("path", Value::from("/health"))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_k8s_probe_invalid_type() {
-    let result =
-        kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![("type", Value::from("invalid"))]));
+    let result = K8sProbe::call(Kwargs::from_iter(vec![("type", Value::from("invalid"))]));
 
     assert!(result.is_err());
 }
@@ -632,7 +544,7 @@ fn test_k8s_probe_invalid_type() {
 
 #[test]
 fn test_helm_tpl_with_boolean_value() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("enabled: {{ .enabled }}")),
         (
             "values",
@@ -646,7 +558,7 @@ fn test_helm_tpl_with_boolean_value() {
 
 #[test]
 fn test_helm_tpl_with_array_value() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("items: {{ .items }}")),
         (
             "values",
@@ -662,7 +574,7 @@ fn test_helm_tpl_with_array_value() {
 
 #[test]
 fn test_helm_tpl_with_number_value() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("replicas: {{ .replicas }}")),
         (
             "values",
@@ -676,7 +588,7 @@ fn test_helm_tpl_with_number_value() {
 
 #[test]
 fn test_helm_tpl_deeply_nested() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("{{ .a.b.c.d }}")),
         (
             "values",
@@ -692,7 +604,7 @@ fn test_helm_tpl_deeply_nested() {
 
 #[test]
 fn test_helm_tpl_partial_path_missing() {
-    let result = kubernetes::helm_tpl_fn(Kwargs::from_iter(vec![
+    let result = HelmTpl::call(Kwargs::from_iter(vec![
         ("template", Value::from("{{ .a.b.missing }}")),
         (
             "values",
@@ -705,79 +617,34 @@ fn test_helm_tpl_partial_path_missing() {
     assert_eq!(result.to_string(), "");
 }
 
-// --- k8s_annotation_safe additional tests ---
-
-#[test]
-fn test_k8s_annotation_safe_truncation() {
-    // Create a string longer than 65536 characters
-    let long_value = "x".repeat(70000);
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from(long_value),
-    )]))
-    .unwrap();
-
-    // Should be truncated to 65536
-    assert_eq!(result.to_string().len(), 65536);
-}
-
-#[test]
-fn test_k8s_annotation_safe_special_chars() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("Special chars: <>&\"'"),
-    )]))
-    .unwrap();
-
-    // Special chars should be preserved (not replaced)
-    assert!(result.to_string().contains("<"));
-    assert!(result.to_string().contains("&"));
-}
-
-#[test]
-fn test_k8s_annotation_safe_carriage_return() {
-    let result = kubernetes::k8s_annotation_safe_fn(Kwargs::from_iter(vec![(
-        "value",
-        Value::from("line1\r\nline2"),
-    )]))
-    .unwrap();
-
-    // CR and LF should be replaced with spaces
-    assert!(!result.to_string().contains('\r'));
-    assert!(!result.to_string().contains('\n'));
-}
+// --- k8s_annotation_safe additional tests removed ---
+// Function now in filter_functions/kubernetes.rs
 
 // --- k8s_quantity_to_bytes additional tests ---
 
 #[test]
 fn test_k8s_quantity_to_bytes_ti() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1Ti"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1Ti"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(1024_i64 * 1024 * 1024 * 1024)); // 1 TiB
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_pi() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1Pi"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1Pi"))]))
+            .unwrap();
 
     assert_eq!(result.as_i64(), Some(1024_i64 * 1024 * 1024 * 1024 * 1024)); // 1 PiB
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_ei() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1Ei"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1Ei"))]))
+            .unwrap();
 
     assert_eq!(
         result.as_i64(),
@@ -787,55 +654,40 @@ fn test_k8s_quantity_to_bytes_ei() {
 
 #[test]
 fn test_k8s_quantity_to_bytes_lowercase_k() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1k"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1k"))])).unwrap();
 
     assert_eq!(result.as_i64(), Some(1000)); // 1000 bytes
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_uppercase_k() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1K"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1K"))])).unwrap();
 
     assert_eq!(result.as_i64(), Some(1000)); // 1000 bytes
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_decimal_t() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1T"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1T"))])).unwrap();
 
     assert_eq!(result.as_i64(), Some(1000_i64 * 1000 * 1000 * 1000)); // 1 TB
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_decimal_p() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1P"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1P"))])).unwrap();
 
     assert_eq!(result.as_i64(), Some(1000_i64 * 1000 * 1000 * 1000 * 1000)); // 1 PB
 }
 
 #[test]
 fn test_k8s_quantity_to_bytes_decimal_e() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1E"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1E"))])).unwrap();
 
     assert_eq!(
         result.as_i64(),
@@ -845,11 +697,9 @@ fn test_k8s_quantity_to_bytes_decimal_e() {
 
 #[test]
 fn test_k8s_quantity_to_bytes_float() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("1.5Gi"),
-    )]))
-    .unwrap();
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("1.5Gi"))]))
+            .unwrap();
 
     // 1.5 * 1024^3 = 1610612736
     assert_eq!(result.as_i64(), Some(1610612736));
@@ -857,10 +707,8 @@ fn test_k8s_quantity_to_bytes_float() {
 
 #[test]
 fn test_k8s_quantity_to_bytes_unknown_suffix() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("100Xi"),
-    )]));
+    let result =
+        K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("100Xi"))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -869,10 +717,7 @@ fn test_k8s_quantity_to_bytes_unknown_suffix() {
 
 #[test]
 fn test_k8s_quantity_to_bytes_empty_number() {
-    let result = kubernetes::k8s_quantity_to_bytes_fn(Kwargs::from_iter(vec![(
-        "quantity",
-        Value::from("Gi"),
-    )]));
+    let result = K8sQuantityToBytes::call(Kwargs::from_iter(vec![("quantity", Value::from("Gi"))]));
 
     assert!(result.is_err());
 }
@@ -881,10 +726,7 @@ fn test_k8s_quantity_to_bytes_empty_number() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_negative_error() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
-        "bytes",
-        Value::from(-1_i64),
-    )]));
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![("bytes", Value::from(-1_i64))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -893,7 +735,7 @@ fn test_k8s_bytes_to_quantity_negative_error() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_invalid_unit() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1024_i64)),
         ("unit", Value::from("Xi")),
     ]));
@@ -906,11 +748,9 @@ fn test_k8s_bytes_to_quantity_invalid_unit() {
 #[test]
 fn test_k8s_bytes_to_quantity_ti_range() {
     let ti_bytes = 1024_i64 * 1024 * 1024 * 1024; // 1 TiB
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
-        "bytes",
-        Value::from(ti_bytes),
-    )]))
-    .unwrap();
+    let result =
+        K8sBytesToQuantity::call(Kwargs::from_iter(vec![("bytes", Value::from(ti_bytes))]))
+            .unwrap();
 
     assert_eq!(result.to_string(), "1Ti");
 }
@@ -918,7 +758,7 @@ fn test_k8s_bytes_to_quantity_ti_range() {
 #[test]
 fn test_k8s_bytes_to_quantity_forced_ti() {
     let ti_bytes = 2_i64 * 1024 * 1024 * 1024 * 1024; // 2 TiB
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(ti_bytes)),
         ("unit", Value::from("Ti")),
     ]))
@@ -930,7 +770,7 @@ fn test_k8s_bytes_to_quantity_forced_ti() {
 #[test]
 fn test_k8s_bytes_to_quantity_forced_pi() {
     let pi_bytes = 1024_i64 * 1024 * 1024 * 1024 * 1024; // 1 PiB
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(pi_bytes)),
         ("unit", Value::from("Pi")),
     ]))
@@ -942,7 +782,7 @@ fn test_k8s_bytes_to_quantity_forced_pi() {
 #[test]
 fn test_k8s_bytes_to_quantity_forced_ei() {
     let ei_bytes = 1024_i64 * 1024 * 1024 * 1024 * 1024 * 1024; // 1 EiB
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(ei_bytes)),
         ("unit", Value::from("Ei")),
     ]))
@@ -953,7 +793,7 @@ fn test_k8s_bytes_to_quantity_forced_ei() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_decimal_k() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000_i64)),
         ("unit", Value::from("K")),
     ]))
@@ -964,7 +804,7 @@ fn test_k8s_bytes_to_quantity_forced_decimal_k() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_decimal_m() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000000_i64)),
         ("unit", Value::from("M")),
     ]))
@@ -975,7 +815,7 @@ fn test_k8s_bytes_to_quantity_forced_decimal_m() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_decimal_g() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000000000_i64)),
         ("unit", Value::from("G")),
     ]))
@@ -986,7 +826,7 @@ fn test_k8s_bytes_to_quantity_forced_decimal_g() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_decimal_t() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000000000000_i64)),
         ("unit", Value::from("T")),
     ]))
@@ -997,7 +837,7 @@ fn test_k8s_bytes_to_quantity_forced_decimal_t() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_decimal_p() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000000000000000_i64)),
         ("unit", Value::from("P")),
     ]))
@@ -1008,7 +848,7 @@ fn test_k8s_bytes_to_quantity_forced_decimal_p() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_forced_decimal_e() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000000000000000000_i64)),
         ("unit", Value::from("E")),
     ]))
@@ -1019,7 +859,7 @@ fn test_k8s_bytes_to_quantity_forced_decimal_e() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_mode() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1000000000_i64)), // 1 GB
         ("binary", Value::from(false)),
     ]))
@@ -1030,7 +870,7 @@ fn test_k8s_bytes_to_quantity_decimal_mode() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_mode_m() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(500000000_i64)), // 500 MB
         ("binary", Value::from(false)),
     ]))
@@ -1041,7 +881,7 @@ fn test_k8s_bytes_to_quantity_decimal_mode_m() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_mode_k() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(5000_i64)), // 5 KB
         ("binary", Value::from(false)),
     ]))
@@ -1052,7 +892,7 @@ fn test_k8s_bytes_to_quantity_decimal_mode_k() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_mode_t() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(2000000000000_i64)), // 2 TB
         ("binary", Value::from(false)),
     ]))
@@ -1063,7 +903,7 @@ fn test_k8s_bytes_to_quantity_decimal_mode_t() {
 
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_mode_small() {
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(500_i64)), // 500 bytes
         ("binary", Value::from(false)),
     ]))
@@ -1075,7 +915,7 @@ fn test_k8s_bytes_to_quantity_decimal_mode_small() {
 #[test]
 fn test_k8s_bytes_to_quantity_fractional_gi() {
     // 1.5 * 1024^3 = 1610612736
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![(
         "bytes",
         Value::from(1610612736_i64),
     )]))
@@ -1087,11 +927,9 @@ fn test_k8s_bytes_to_quantity_fractional_gi() {
 #[test]
 fn test_k8s_bytes_to_quantity_fractional_mi() {
     // 1.5 * 1024^2 = 1572864
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
-        "bytes",
-        Value::from(1572864_i64),
-    )]))
-    .unwrap();
+    let result =
+        K8sBytesToQuantity::call(Kwargs::from_iter(vec![("bytes", Value::from(1572864_i64))]))
+            .unwrap();
 
     assert_eq!(result.to_string(), "1.50Mi");
 }
@@ -1099,11 +937,9 @@ fn test_k8s_bytes_to_quantity_fractional_mi() {
 #[test]
 fn test_k8s_bytes_to_quantity_fractional_ki() {
     // 1.5 * 1024 = 1536
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
-        "bytes",
-        Value::from(1536_i64),
-    )]))
-    .unwrap();
+    let result =
+        K8sBytesToQuantity::call(Kwargs::from_iter(vec![("bytes", Value::from(1536_i64))]))
+            .unwrap();
 
     assert_eq!(result.to_string(), "1.50Ki");
 }
@@ -1111,7 +947,7 @@ fn test_k8s_bytes_to_quantity_fractional_ki() {
 #[test]
 fn test_k8s_bytes_to_quantity_fractional_ti() {
     // 1.5 * 1024^4 = 1649267441664
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![(
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![(
         "bytes",
         Value::from(1649267441664_i64),
     )]))
@@ -1123,7 +959,7 @@ fn test_k8s_bytes_to_quantity_fractional_ti() {
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_fractional_g() {
     // 1.5 * 1000^3 = 1500000000
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1500000000_i64)),
         ("binary", Value::from(false)),
     ]))
@@ -1135,7 +971,7 @@ fn test_k8s_bytes_to_quantity_decimal_fractional_g() {
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_fractional_m() {
     // 1.5 * 1000^2 = 1500000
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1500000_i64)),
         ("binary", Value::from(false)),
     ]))
@@ -1147,7 +983,7 @@ fn test_k8s_bytes_to_quantity_decimal_fractional_m() {
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_fractional_k() {
     // 1.5 * 1000 = 1500
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1500_i64)),
         ("binary", Value::from(false)),
     ]))
@@ -1159,7 +995,7 @@ fn test_k8s_bytes_to_quantity_decimal_fractional_k() {
 #[test]
 fn test_k8s_bytes_to_quantity_decimal_fractional_t() {
     // 1.5 * 1000^4 = 1500000000000
-    let result = kubernetes::k8s_bytes_to_quantity_fn(Kwargs::from_iter(vec![
+    let result = K8sBytesToQuantity::call(Kwargs::from_iter(vec![
         ("bytes", Value::from(1500000000000_i64)),
         ("binary", Value::from(false)),
     ]))
@@ -1172,7 +1008,7 @@ fn test_k8s_bytes_to_quantity_decimal_fractional_t() {
 
 #[test]
 fn test_k8s_selector_numeric_value() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(vec![(
+    let result = K8sSelector::call(Kwargs::from_iter(vec![(
         "labels",
         Value::from_serialize(serde_json::json!({"version": 1})),
     )]))
@@ -1183,7 +1019,7 @@ fn test_k8s_selector_numeric_value() {
 
 #[test]
 fn test_k8s_selector_boolean_value() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(vec![(
+    let result = K8sSelector::call(Kwargs::from_iter(vec![(
         "labels",
         Value::from_serialize(serde_json::json!({"enabled": true})),
     )]))
@@ -1194,7 +1030,7 @@ fn test_k8s_selector_boolean_value() {
 
 #[test]
 fn test_k8s_selector_not_object() {
-    let result = kubernetes::k8s_selector_fn(Kwargs::from_iter(vec![(
+    let result = K8sSelector::call(Kwargs::from_iter(vec![(
         "labels",
         Value::from_serialize(serde_json::json!("not-an-object")),
     )]));
@@ -1206,7 +1042,7 @@ fn test_k8s_selector_not_object() {
 
 #[test]
 fn test_k8s_pod_affinity_invalid_operator() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("Invalid")),
     ]));
@@ -1218,7 +1054,7 @@ fn test_k8s_pod_affinity_invalid_operator() {
 
 #[test]
 fn test_k8s_pod_affinity_notin() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("NotIn")),
         (
@@ -1236,7 +1072,7 @@ fn test_k8s_pod_affinity_notin() {
 #[test]
 fn test_k8s_pod_affinity_notin_empty_values() {
     // NotIn without values is allowed - generates affinity with empty values list
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("NotIn")),
     ]))
@@ -1248,7 +1084,7 @@ fn test_k8s_pod_affinity_notin_empty_values() {
 
 #[test]
 fn test_k8s_pod_affinity_doesnotexist() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("DoesNotExist")),
     ]))
@@ -1260,7 +1096,7 @@ fn test_k8s_pod_affinity_doesnotexist() {
 
 #[test]
 fn test_k8s_pod_affinity_custom_weight() {
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("Exists")),
         ("weight", Value::from(50)),
@@ -1274,7 +1110,7 @@ fn test_k8s_pod_affinity_custom_weight() {
 #[test]
 fn test_k8s_pod_affinity_in_empty_values() {
     // In without values is allowed - generates affinity with empty values list
-    let result = kubernetes::k8s_pod_affinity_fn(Kwargs::from_iter(vec![
+    let result = K8sPodAffinity::call(Kwargs::from_iter(vec![
         ("key", Value::from("app")),
         ("operator", Value::from("In")),
     ]))
@@ -1288,7 +1124,7 @@ fn test_k8s_pod_affinity_in_empty_values() {
 
 #[test]
 fn test_k8s_toleration_invalid_operator() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("dedicated")),
         ("operator", Value::from("Invalid")),
     ]));
@@ -1300,7 +1136,7 @@ fn test_k8s_toleration_invalid_operator() {
 
 #[test]
 fn test_k8s_toleration_invalid_effect() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("dedicated")),
         ("value", Value::from("true")),
         ("effect", Value::from("InvalidEffect")),
@@ -1313,7 +1149,7 @@ fn test_k8s_toleration_invalid_effect() {
 
 #[test]
 fn test_k8s_toleration_with_seconds() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("node.kubernetes.io/unreachable")),
         ("operator", Value::from("Exists")),
         ("effect", Value::from("NoExecute")),
@@ -1327,7 +1163,7 @@ fn test_k8s_toleration_with_seconds() {
 
 #[test]
 fn test_k8s_toleration_prefer_no_schedule() {
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("workload")),
         ("value", Value::from("high")),
         ("effect", Value::from("PreferNoSchedule")),
@@ -1341,7 +1177,7 @@ fn test_k8s_toleration_prefer_no_schedule() {
 #[test]
 fn test_k8s_toleration_exists_with_value_ignored() {
     // When operator is Exists, value should be ignored
-    let result = kubernetes::k8s_toleration_fn(Kwargs::from_iter(vec![
+    let result = K8sToleration::call(Kwargs::from_iter(vec![
         ("key", Value::from("dedicated")),
         ("operator", Value::from("Exists")),
         ("value", Value::from("this-should-be-ignored")),
@@ -1358,7 +1194,7 @@ fn test_k8s_toleration_exists_with_value_ignored() {
 
 #[test]
 fn test_k8s_probe_http_missing_path() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("port", Value::from(8080)),
     ]));
@@ -1370,7 +1206,7 @@ fn test_k8s_probe_http_missing_path() {
 
 #[test]
 fn test_k8s_probe_http_missing_port() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("path", Value::from("/health")),
     ]));
@@ -1382,7 +1218,7 @@ fn test_k8s_probe_http_missing_port() {
 
 #[test]
 fn test_k8s_probe_tcp_missing_port() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![("type", Value::from("tcp"))]));
+    let result = K8sProbe::call(Kwargs::from_iter(vec![("type", Value::from("tcp"))]));
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -1392,7 +1228,7 @@ fn test_k8s_probe_tcp_missing_port() {
 #[test]
 fn test_k8s_probe_exec_empty_command() {
     // exec without command still generates valid probe structure
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![("type", Value::from("exec"))]));
+    let result = K8sProbe::call(Kwargs::from_iter(vec![("type", Value::from("exec"))]));
 
     // The implementation requires command, so this should error
     // If it doesn't error, just verify the output format
@@ -1404,7 +1240,7 @@ fn test_k8s_probe_exec_empty_command() {
 
 #[test]
 fn test_k8s_probe_success_threshold() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("path", Value::from("/ready")),
         ("port", Value::from(8080)),
@@ -1418,7 +1254,7 @@ fn test_k8s_probe_success_threshold() {
 
 #[test]
 fn test_k8s_probe_all_timings() {
-    let result = kubernetes::k8s_probe_fn(Kwargs::from_iter(vec![
+    let result = K8sProbe::call(Kwargs::from_iter(vec![
         ("type", Value::from("http")),
         ("path", Value::from("/healthz")),
         ("port", Value::from(8080)),

@@ -59,6 +59,7 @@ It's designed for **DevOps/SRE workflows** like generating Kubernetes manifests,
 4. **Security by default** - Filesystem restricted to CWD; use `--trust` for full access
 5. **Output validation** - `--validate json/yaml/toml` ensures valid output format
 6. **Single binary** - No runtime dependencies, easy to deploy in containers
+7. **IDE integration** - `--ide-json` outputs all function metadata (83 functions) for editor autocomplete/docs
 
 ### CLI Quick Reference
 ```bash
@@ -70,6 +71,7 @@ echo '{{ now() }}' | tmpltool             # Pipe template from stdin
 # With options
 tmpltool --trust system.tmpl              # Allow filesystem access outside CWD
 tmpltool config.tmpl --validate json      # Validate output is valid JSON
+tmpltool --ide-json                       # Output function metadata as JSON (for IDE integration)
 
 # With environment variables
 DB_HOST=prod-db APP_ENV=production tmpltool config.tmpl
@@ -234,6 +236,7 @@ src/
 ├── renderer.rs       - Core template rendering logic (MiniJinja setup)
 ├── functions/        - Custom template functions (modular)
 │   ├── mod.rs        - Function registration with MiniJinja
+│   ├── metadata.rs   - FunctionMetadata types for IDE integration
 │   ├── environment.rs
 │   ├── hash.rs
 │   ├── filesystem.rs
@@ -288,26 +291,113 @@ main.rs → render_template() → read_template() → render() → write_output(
                               Template parsing + rendering with context
 ```
 
+**5. Trait-Based Metadata System**
+- All filter/is-functions implement traits with required `METADATA` constant
+- `FilterFunction` trait: dual function + filter syntax (e.g., `md5`)
+- `IsFunction` / `ContextIsFunction` traits: dual function + is-test syntax (e.g., `is_email`)
+- Metadata includes: name, category, description, arguments, return type, examples, syntax variants
+- `--ide-json` collects metadata from all traits via `get_all_metadata()` in lib.rs
+- Ensures documentation stays in sync with implementation (single source of truth)
+
 ### Adding New Functions
 
-When adding new template functions:
+Functions use a trait-based system with **required metadata** for IDE integration. When implementing traits (`FilterFunction`, `IsFunction`, `ContextIsFunction`), you MUST provide a `METADATA` constant.
 
-1. **Create function file** in `src/functions/` (e.g., `network.rs`)
-2. **Implement function** using MiniJinja patterns:
-   ```rust
-   use minijinja::value::Kwargs;
-   use minijinja::{Error, Value};
+**For filter functions (dual function + filter syntax):**
 
-   pub fn my_function(kwargs: Kwargs) -> Result<Value, Error> {
-       let arg: String = kwargs.get("arg_name")?;
-       // Implementation
-       Ok(Value::from(result))
-   }
-   ```
-3. **Add module declaration** in `src/functions/mod.rs`: `pub mod network;`
-4. **Register function** in `register_all()`: `env.add_function("my_function", network::my_function);`
-5. **Write tests** in `tests/test_my_function.rs`. IMPORTANT: always in tests folder write tests. src folder should be clean from the tests.
-6. **Document** in README.md with examples
+Add to `src/filter_functions/` and implement `FilterFunction` trait:
+```rust
+use crate::filter_functions::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use minijinja::value::Kwargs;
+use minijinja::{Error, Value};
+
+pub struct MyFilter;
+
+impl FilterFunction for MyFilter {
+    const NAME: &'static str = "my_filter";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "my_filter",
+        category: "string",
+        description: "Description of what this does",
+        arguments: &[ArgumentMetadata {
+            name: "string",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Input string",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ my_filter(string=\"hello\") }}",
+            "{{ \"hello\" | my_filter }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
+
+    fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
+        let input: String = kwargs.get("string")?;
+        Ok(Value::from(input.to_uppercase()))
+    }
+
+    fn call_as_filter(value: &Value, _kwargs: Kwargs) -> Result<Value, Error> {
+        let input = value.as_str().unwrap_or_default();
+        Ok(Value::from(input.to_uppercase()))
+    }
+}
+```
+
+Then register in `src/filter_functions/mod.rs`:
+```rust
+MyFilter::register(env);
+```
+
+And add to `get_all_metadata()`:
+```rust
+&my_module::MyFilter::METADATA,
+```
+
+**For is-functions (dual function + is-test syntax):**
+
+Add to `src/is_functions/` and implement `IsFunction` or `ContextIsFunction` trait:
+```rust
+use crate::is_functions::IsFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+
+pub struct MyCheck;
+
+impl IsFunction for MyCheck {
+    const FUNCTION_NAME: &'static str = "is_my_check";
+    const IS_NAME: &'static str = "my_check";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_my_check",
+        category: "validation",
+        description: "Check if value passes my_check",
+        arguments: &[...],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_my_check(string=\"test\") }}",
+            "{% if \"test\" is my_check %}...{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
+
+    fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> { ... }
+    fn call_as_is(value: &Value) -> bool { ... }
+}
+```
+
+**For standalone functions in `src/functions/`:**
+
+These still use direct function registration:
+```rust
+pub fn my_function(kwargs: Kwargs) -> Result<Value, Error> {
+    let arg: String = kwargs.get("arg_name")?;
+    Ok(Value::from(result))
+}
+```
+
+Register in `register_all()`: `env.add_function("my_function", my_module::my_function);`
 
 **For context-aware functions (filesystem access):**
 ```rust
@@ -318,11 +408,12 @@ pub fn create_my_fn(context: Arc<TemplateContext>) -> impl Fn(Kwargs) -> Result<
     move |kwargs: Kwargs| {
         let path: String = kwargs.get("path")?;
         let resolved = context.validate_and_resolve_path(&path)?;
-        // Use resolved path
         Ok(Value::from(result))
     }
 }
 ```
+
+**Testing:** Write tests in `tests/test_my_function.rs` (never in src folder)
 
 ### Testing Philosophy
 
@@ -365,6 +456,8 @@ cargo make all
 - `style:`, `test:`, `chore:`, `ci:` - No version bump
 
 Husky pre-commit hooks validate commit message format.
+
+**Important:** Do not include Claude model references (e.g., "Co-Authored-By: Claude") in commit messages. Keep commits clean and professional.
 
 ### Debugging Template Rendering
 

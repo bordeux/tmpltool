@@ -9,7 +9,8 @@ use tmpltool::filter_functions::FilterFunction;
 use tmpltool::filter_functions::encoding::{
     Base64Decode, Base64Encode, EscapeHtml, EscapeShell, EscapeXml, HexDecode, HexEncode,
 };
-use tmpltool::functions::encoding;
+use tmpltool::functions::Function;
+use tmpltool::functions::encoding::{Bcrypt, GenerateSecret, HmacSha256};
 
 // Helper to test both function and filter syntax produce the same result
 fn assert_both_syntaxes_equal(env: &Environment, function_template: &str, filter_template: &str) {
@@ -456,7 +457,7 @@ fn test_encoding_chaining() {
 
 #[test]
 fn test_bcrypt_basic() {
-    let result = encoding::bcrypt_fn(Kwargs::from_iter(vec![(
+    let result = Bcrypt::call(Kwargs::from_iter(vec![(
         "password",
         Value::from("mypassword"),
     )]))
@@ -471,7 +472,7 @@ fn test_bcrypt_basic() {
 
 #[test]
 fn test_bcrypt_with_rounds() {
-    let result = encoding::bcrypt_fn(Kwargs::from_iter(vec![
+    let result = Bcrypt::call(Kwargs::from_iter(vec![
         ("password", Value::from("test")),
         ("rounds", Value::from(10)),
     ]))
@@ -482,7 +483,7 @@ fn test_bcrypt_with_rounds() {
 
 #[test]
 fn test_bcrypt_invalid_rounds_low() {
-    let result = encoding::bcrypt_fn(Kwargs::from_iter(vec![
+    let result = Bcrypt::call(Kwargs::from_iter(vec![
         ("password", Value::from("test")),
         ("rounds", Value::from(3)),
     ]));
@@ -492,7 +493,7 @@ fn test_bcrypt_invalid_rounds_low() {
 
 #[test]
 fn test_bcrypt_invalid_rounds_high() {
-    let result = encoding::bcrypt_fn(Kwargs::from_iter(vec![
+    let result = Bcrypt::call(Kwargs::from_iter(vec![
         ("password", Value::from("test")),
         ("rounds", Value::from(32)),
     ]));
@@ -503,10 +504,8 @@ fn test_bcrypt_invalid_rounds_high() {
 #[test]
 fn test_bcrypt_uniqueness() {
     // Same password should generate different hashes (due to random salt)
-    let hash1 =
-        encoding::bcrypt_fn(Kwargs::from_iter(vec![("password", Value::from("test"))])).unwrap();
-    let hash2 =
-        encoding::bcrypt_fn(Kwargs::from_iter(vec![("password", Value::from("test"))])).unwrap();
+    let hash1 = Bcrypt::call(Kwargs::from_iter(vec![("password", Value::from("test"))])).unwrap();
+    let hash2 = Bcrypt::call(Kwargs::from_iter(vec![("password", Value::from("test"))])).unwrap();
 
     assert_ne!(hash1.as_str().unwrap(), hash2.as_str().unwrap());
 }
@@ -516,7 +515,7 @@ fn test_bcrypt_uniqueness() {
 #[test]
 fn test_generate_secret_alphanumeric() {
     let result =
-        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
+        GenerateSecret::call(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
     let secret = result.as_str().unwrap();
 
     assert_eq!(secret.len(), 32);
@@ -526,7 +525,7 @@ fn test_generate_secret_alphanumeric() {
 
 #[test]
 fn test_generate_secret_hex() {
-    let result = encoding::generate_secret_fn(Kwargs::from_iter(vec![
+    let result = GenerateSecret::call(Kwargs::from_iter(vec![
         ("length", Value::from(16)),
         ("charset", Value::from("hex")),
     ]))
@@ -540,7 +539,7 @@ fn test_generate_secret_hex() {
 
 #[test]
 fn test_generate_secret_base64() {
-    let result = encoding::generate_secret_fn(Kwargs::from_iter(vec![
+    let result = GenerateSecret::call(Kwargs::from_iter(vec![
         ("length", Value::from(24)),
         ("charset", Value::from("base64")),
     ]))
@@ -552,7 +551,7 @@ fn test_generate_secret_base64() {
 
 #[test]
 fn test_generate_secret_invalid_length_zero() {
-    let result = encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(0))]));
+    let result = GenerateSecret::call(Kwargs::from_iter(vec![("length", Value::from(0))]));
     assert!(result.is_err());
     assert!(
         result
@@ -564,8 +563,7 @@ fn test_generate_secret_invalid_length_zero() {
 
 #[test]
 fn test_generate_secret_invalid_length_large() {
-    let result =
-        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(2000))]));
+    let result = GenerateSecret::call(Kwargs::from_iter(vec![("length", Value::from(2000))]));
     assert!(result.is_err());
     assert!(
         result
@@ -577,7 +575,7 @@ fn test_generate_secret_invalid_length_large() {
 
 #[test]
 fn test_generate_secret_invalid_charset() {
-    let result = encoding::generate_secret_fn(Kwargs::from_iter(vec![
+    let result = GenerateSecret::call(Kwargs::from_iter(vec![
         ("length", Value::from(16)),
         ("charset", Value::from("invalid")),
     ]));
@@ -588,9 +586,9 @@ fn test_generate_secret_invalid_charset() {
 #[test]
 fn test_generate_secret_uniqueness() {
     let secret1 =
-        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
+        GenerateSecret::call(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
     let secret2 =
-        encoding::generate_secret_fn(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
+        GenerateSecret::call(Kwargs::from_iter(vec![("length", Value::from(32))])).unwrap();
 
     assert_ne!(secret1.as_str().unwrap(), secret2.as_str().unwrap());
 }
@@ -599,7 +597,7 @@ fn test_generate_secret_uniqueness() {
 
 #[test]
 fn test_hmac_sha256_basic() {
-    let result = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret")),
         ("message", Value::from("hello")),
     ]))
@@ -611,13 +609,13 @@ fn test_hmac_sha256_basic() {
 
 #[test]
 fn test_hmac_sha256_deterministic() {
-    let result1 = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result1 = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret")),
         ("message", Value::from("hello")),
     ]))
     .unwrap();
 
-    let result2 = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result2 = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret")),
         ("message", Value::from("hello")),
     ]))
@@ -629,13 +627,13 @@ fn test_hmac_sha256_deterministic() {
 
 #[test]
 fn test_hmac_sha256_different_keys() {
-    let result1 = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result1 = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret1")),
         ("message", Value::from("hello")),
     ]))
     .unwrap();
 
-    let result2 = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result2 = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret2")),
         ("message", Value::from("hello")),
     ]))
@@ -647,13 +645,13 @@ fn test_hmac_sha256_different_keys() {
 
 #[test]
 fn test_hmac_sha256_different_messages() {
-    let result1 = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result1 = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret")),
         ("message", Value::from("hello")),
     ]))
     .unwrap();
 
-    let result2 = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![
+    let result2 = HmacSha256::call(Kwargs::from_iter(vec![
         ("key", Value::from("secret")),
         ("message", Value::from("world")),
     ]))
@@ -663,124 +661,25 @@ fn test_hmac_sha256_different_messages() {
     assert_ne!(result1.as_str().unwrap(), result2.as_str().unwrap());
 }
 
-// ============ Additional Direct Function Tests ============
-
-#[test]
-fn test_base64_encode_fn_direct() {
-    let result = encoding::base64_encode_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("Hello World"),
-    )]))
-    .unwrap();
-    assert_eq!(result.as_str().unwrap(), "SGVsbG8gV29ybGQ=");
-}
-
-#[test]
-fn test_base64_decode_fn_direct() {
-    let result = encoding::base64_decode_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("SGVsbG8gV29ybGQ="),
-    )]))
-    .unwrap();
-    assert_eq!(result.as_str().unwrap(), "Hello World");
-}
-
-#[test]
-fn test_base64_decode_fn_invalid() {
-    let result = encoding::base64_decode_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("not-valid-base64!!"),
-    )]));
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Failed to decode"));
-}
-
-#[test]
-fn test_hex_encode_fn_direct() {
-    let result =
-        encoding::hex_encode_fn(Kwargs::from_iter(vec![("string", Value::from("Hello"))])).unwrap();
-    assert_eq!(result.as_str().unwrap(), "48656c6c6f");
-}
-
-#[test]
-fn test_hex_decode_fn_direct() {
-    let result = encoding::hex_decode_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("48656c6c6f"),
-    )]))
-    .unwrap();
-    assert_eq!(result.as_str().unwrap(), "Hello");
-}
-
-#[test]
-fn test_hex_decode_fn_invalid() {
-    let result = encoding::hex_decode_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("not-valid-hex!"),
-    )]));
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Failed to decode"));
-}
-
-#[test]
-fn test_escape_html_fn_direct() {
-    let result = encoding::escape_html_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("<script>alert('xss')</script>"),
-    )]))
-    .unwrap();
-    assert!(result.as_str().unwrap().contains("&lt;"));
-    assert!(result.as_str().unwrap().contains("&gt;"));
-    assert!(result.as_str().unwrap().contains("&#x27;"));
-}
-
-#[test]
-fn test_escape_xml_fn_direct() {
-    let result = encoding::escape_xml_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("<tag attr=\"value\">text & more</tag>"),
-    )]))
-    .unwrap();
-    assert!(result.as_str().unwrap().contains("&lt;"));
-    assert!(result.as_str().unwrap().contains("&amp;"));
-    assert!(result.as_str().unwrap().contains("&quot;"));
-}
-
-#[test]
-fn test_escape_shell_fn_direct() {
-    let result = encoding::escape_shell_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("hello world"),
-    )]))
-    .unwrap();
-    assert_eq!(result.as_str().unwrap(), "'hello world'");
-}
-
-#[test]
-fn test_escape_shell_fn_with_quotes() {
-    let result = encoding::escape_shell_fn(Kwargs::from_iter(vec![(
-        "string",
-        Value::from("it's working"),
-    )]))
-    .unwrap();
-    assert_eq!(result.as_str().unwrap(), "'it'\\''s working'");
-}
+// Note: base64_encode_fn, base64_decode_fn, hex_encode_fn, hex_decode_fn,
+// escape_html_fn, escape_xml_fn, escape_shell_fn tests removed - these functions
+// are now in filter_functions/encoding.rs with dual function+filter syntax support.
+// See tests/test_filters_integration.rs for integration tests of these filters.
 
 #[test]
 fn test_generate_secret_missing_length() {
-    let result = encoding::generate_secret_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
+    let result = GenerateSecret::call(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_hmac_sha256_missing_key() {
-    let result =
-        encoding::hmac_sha256_fn(Kwargs::from_iter(vec![("message", Value::from("hello"))]));
+    let result = HmacSha256::call(Kwargs::from_iter(vec![("message", Value::from("hello"))]));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_hmac_sha256_missing_message() {
-    let result = encoding::hmac_sha256_fn(Kwargs::from_iter(vec![("key", Value::from("secret"))]));
+    let result = HmacSha256::call(Kwargs::from_iter(vec![("key", Value::from("secret"))]));
     assert!(result.is_err());
 }

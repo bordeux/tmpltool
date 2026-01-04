@@ -20,8 +20,27 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
+
+/// Common metadata for object argument (serialization)
+const OBJECT_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "object",
+    arg_type: "any",
+    required: true,
+    default: None,
+    description: "The value to serialize",
+};
+
+/// Common metadata for string argument (parsing)
+const STRING_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "string",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string to parse",
+};
 
 // ============================================
 // Serialization (Object -> String)
@@ -73,6 +92,27 @@ impl ToJson {
 
 impl FilterFunction for ToJson {
     const NAME: &'static str = "to_json";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_json",
+        category: "serialization",
+        description: "Convert object to JSON string",
+        arguments: &[
+            OBJECT_ARG,
+            ArgumentMetadata {
+                name: "pretty",
+                arg_type: "boolean",
+                required: false,
+                default: Some("false"),
+                description: "Pretty-print the JSON output",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ to_json(object=config) }}",
+            "{{ config | to_json(pretty=true) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let object: Value = kwargs.get("object")?;
@@ -121,6 +161,15 @@ impl ToYaml {
 
 impl FilterFunction for ToYaml {
     const NAME: &'static str = "to_yaml";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_yaml",
+        category: "serialization",
+        description: "Convert object to YAML string",
+        arguments: &[OBJECT_ARG],
+        return_type: "string",
+        examples: &["{{ to_yaml(object=config) }}", "{{ config | to_yaml }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let object: Value = kwargs.get("object")?;
@@ -174,6 +223,15 @@ impl ToToml {
 
 impl FilterFunction for ToToml {
     const NAME: &'static str = "to_toml";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_toml",
+        category: "serialization",
+        description: "Convert object to TOML string",
+        arguments: &[OBJECT_ARG],
+        return_type: "string",
+        examples: &["{{ to_toml(object=config) }}", "{{ config | to_toml }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let object: Value = kwargs.get("object")?;
@@ -217,6 +275,18 @@ impl ParseJson {
 
 impl FilterFunction for ParseJson {
     const NAME: &'static str = "parse_json";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "parse_json",
+        category: "serialization",
+        description: "Parse JSON string into object",
+        arguments: &[STRING_ARG],
+        return_type: "any",
+        examples: &[
+            "{{ parse_json(string='{\"key\": \"value\"}') }}",
+            "{{ json_string | parse_json }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -268,6 +338,18 @@ impl ParseYaml {
 
 impl FilterFunction for ParseYaml {
     const NAME: &'static str = "parse_yaml";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "parse_yaml",
+        category: "serialization",
+        description: "Parse YAML string into object",
+        arguments: &[STRING_ARG],
+        return_type: "any",
+        examples: &[
+            "{{ parse_yaml(string='key: value') }}",
+            "{{ yaml_string | parse_yaml }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -319,6 +401,18 @@ impl ParseToml {
 
 impl FilterFunction for ParseToml {
     const NAME: &'static str = "parse_toml";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "parse_toml",
+        category: "serialization",
+        description: "Parse TOML string into object",
+        arguments: &[STRING_ARG],
+        return_type: "any",
+        examples: &[
+            "{{ parse_toml(string='key = \"value\"') }}",
+            "{{ toml_string | parse_toml }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;

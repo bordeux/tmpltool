@@ -18,9 +18,19 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use std::path::{Component, Path, PathBuf};
+
+/// Common metadata for path argument
+const PATH_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "path",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The file path to process",
+};
 
 /// Helper to extract path string from Value
 fn extract_path(value: &Value, fn_name: &str) -> Result<String, Error> {
@@ -37,17 +47,6 @@ fn extract_path(value: &Value, fn_name: &str) -> Result<String, Error> {
 // ============================================
 
 /// Get the filename component from a path.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ basename(path="/path/to/file.txt") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "/path/to/file.txt" | basename }}
-/// {{ file_path | basename }}
-/// ```
 pub struct Basename;
 
 impl Basename {
@@ -60,6 +59,18 @@ impl Basename {
 
 impl FilterFunction for Basename {
     const NAME: &'static str = "basename";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "basename",
+        category: "path",
+        description: "Get the filename component from a path",
+        arguments: &[PATH_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ basename(path=\"/path/to/file.txt\") }}",
+            "{{ \"/path/to/file.txt\" | basename }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
@@ -77,17 +88,6 @@ impl FilterFunction for Basename {
 // ============================================
 
 /// Get the directory component from a path.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ dirname(path="/path/to/file.txt") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "/path/to/file.txt" | dirname }}
-/// {{ file_path | dirname }}
-/// ```
 pub struct Dirname;
 
 impl Dirname {
@@ -100,6 +100,18 @@ impl Dirname {
 
 impl FilterFunction for Dirname {
     const NAME: &'static str = "dirname";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "dirname",
+        category: "path",
+        description: "Get the directory component from a path",
+        arguments: &[PATH_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ dirname(path=\"/path/to/file.txt\") }}",
+            "{{ \"/path/to/file.txt\" | dirname }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
@@ -117,17 +129,6 @@ impl FilterFunction for Dirname {
 // ============================================
 
 /// Get the file extension from a path.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ file_extension(path="document.pdf") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "document.pdf" | file_extension }}
-/// {{ filename | file_extension }}
-/// ```
 pub struct FileExtension;
 
 impl FileExtension {
@@ -140,6 +141,18 @@ impl FileExtension {
 
 impl FilterFunction for FileExtension {
     const NAME: &'static str = "file_extension";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "file_extension",
+        category: "path",
+        description: "Get the file extension from a path",
+        arguments: &[PATH_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ file_extension(path=\"document.pdf\") }}",
+            "{{ \"document.pdf\" | file_extension }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
@@ -157,17 +170,6 @@ impl FilterFunction for FileExtension {
 // ============================================
 
 /// Join path components into a single path.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ join_path(parts=["path", "to", "file.txt"]) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ ["path", "to", "file.txt"] | join_path }}
-/// {{ path_parts | join_path }}
-/// ```
 pub struct JoinPath;
 
 impl JoinPath {
@@ -197,6 +199,24 @@ impl JoinPath {
 
 impl FilterFunction for JoinPath {
     const NAME: &'static str = "join_path";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "join_path",
+        category: "path",
+        description: "Join path components into a single path",
+        arguments: &[ArgumentMetadata {
+            name: "parts",
+            arg_type: "array",
+            required: true,
+            default: None,
+            description: "Array of path components to join",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ join_path(parts=[\"path\", \"to\", \"file.txt\"]) }}",
+            "{{ [\"path\", \"to\", \"file.txt\"] | join_path }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let parts: Vec<String> = kwargs.get("parts")?;
@@ -233,17 +253,6 @@ impl FilterFunction for JoinPath {
 // ============================================
 
 /// Normalize a path (resolve .. and . components).
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ normalize_path(path="./foo/../bar") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "./foo/../bar" | normalize_path }}
-/// {{ messy_path | normalize_path }}
-/// ```
 pub struct NormalizePath;
 
 impl NormalizePath {
@@ -282,6 +291,18 @@ impl NormalizePath {
 
 impl FilterFunction for NormalizePath {
     const NAME: &'static str = "normalize_path";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "normalize_path",
+        category: "path",
+        description: "Normalize a path (resolve .. and . components)",
+        arguments: &[PATH_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ normalize_path(path=\"./foo/../bar\") }}",
+            "{{ \"./foo/../bar\" | normalize_path }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;

@@ -1,14 +1,18 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
 use std::net::IpAddr;
-use tmpltool::functions::network;
+use tmpltool::functions::Function;
+use tmpltool::functions::network::{
+    CidrBroadcast, CidrContains, CidrNetmask, CidrNetwork, GetInterfaces, GetIpAddress, IntToIp,
+    IpToInt, ResolveDns,
+};
 
 // ==================== get_interfaces Tests ====================
 
 #[test]
 fn test_get_interfaces_returns_list() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-    let result = network::get_interfaces_fn(kwargs);
+    let result = GetInterfaces::call(kwargs);
     assert!(result.is_ok());
 
     let interfaces = result.unwrap();
@@ -19,7 +23,7 @@ fn test_get_interfaces_returns_list() {
 #[test]
 fn test_get_interfaces_has_loopback() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-    let result = network::get_interfaces_fn(kwargs).unwrap();
+    let result = GetInterfaces::call(kwargs).unwrap();
 
     let mut found_loopback = false;
     for iface in result.try_iter().unwrap() {
@@ -39,7 +43,7 @@ fn test_get_interfaces_has_loopback() {
 #[test]
 fn test_get_interfaces_has_required_fields() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-    let result = network::get_interfaces_fn(kwargs).unwrap();
+    let result = GetInterfaces::call(kwargs).unwrap();
 
     for iface in result.try_iter().unwrap() {
         // Each interface should have name, ip, and is_loopback fields
@@ -75,7 +79,7 @@ fn test_get_interfaces_has_required_fields() {
 #[test]
 fn test_get_interfaces_loopback_has_localhost_ip() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-    let result = network::get_interfaces_fn(kwargs).unwrap();
+    let result = GetInterfaces::call(kwargs).unwrap();
 
     for iface in result.try_iter().unwrap() {
         let is_loopback = iface.get_attr("is_loopback").unwrap();
@@ -95,7 +99,7 @@ fn test_get_interfaces_loopback_has_localhost_ip() {
 #[test]
 fn test_get_ip_address_no_interface() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-    let result = network::get_ip_address_fn(kwargs);
+    let result = GetIpAddress::call(kwargs);
     assert!(result.is_ok());
     let ip = result.unwrap();
     let ip_str = ip.as_str().unwrap();
@@ -110,7 +114,7 @@ fn test_get_ip_address_no_interface() {
 #[test]
 fn test_resolve_dns_missing_hostname() {
     let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-    let result = network::resolve_dns_fn(kwargs);
+    let result = ResolveDns::call(kwargs);
     // This will fail because hostname is required
     assert!(result.is_err());
 }
@@ -122,7 +126,7 @@ fn test_resolve_dns_missing_hostname() {
 
 #[test]
 fn test_cidr_contains_in_range() {
-    let result = network::cidr_contains_fn(Kwargs::from_iter(vec![
+    let result = CidrContains::call(Kwargs::from_iter(vec![
         ("cidr", Value::from("192.168.1.0/24")),
         ("ip", Value::from("192.168.1.100")),
     ]));
@@ -132,7 +136,7 @@ fn test_cidr_contains_in_range() {
 
 #[test]
 fn test_cidr_contains_out_of_range() {
-    let result = network::cidr_contains_fn(Kwargs::from_iter(vec![
+    let result = CidrContains::call(Kwargs::from_iter(vec![
         ("cidr", Value::from("192.168.1.0/24")),
         ("ip", Value::from("192.168.2.1")),
     ]));
@@ -142,7 +146,7 @@ fn test_cidr_contains_out_of_range() {
 
 #[test]
 fn test_cidr_contains_class_a() {
-    let result = network::cidr_contains_fn(Kwargs::from_iter(vec![
+    let result = CidrContains::call(Kwargs::from_iter(vec![
         ("cidr", Value::from("10.0.0.0/8")),
         ("ip", Value::from("10.255.255.255")),
     ]));
@@ -152,7 +156,7 @@ fn test_cidr_contains_class_a() {
 
 #[test]
 fn test_cidr_contains_invalid_cidr() {
-    let result = network::cidr_contains_fn(Kwargs::from_iter(vec![
+    let result = CidrContains::call(Kwargs::from_iter(vec![
         ("cidr", Value::from("invalid")),
         ("ip", Value::from("192.168.1.1")),
     ]));
@@ -161,7 +165,7 @@ fn test_cidr_contains_invalid_cidr() {
 
 #[test]
 fn test_cidr_contains_invalid_ip() {
-    let result = network::cidr_contains_fn(Kwargs::from_iter(vec![
+    let result = CidrContains::call(Kwargs::from_iter(vec![
         ("cidr", Value::from("192.168.1.0/24")),
         ("ip", Value::from("invalid")),
     ]));
@@ -172,7 +176,7 @@ fn test_cidr_contains_invalid_ip() {
 
 #[test]
 fn test_cidr_network_class_c() {
-    let result = network::cidr_network_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetwork::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("192.168.1.100/24"),
     )]));
@@ -182,7 +186,7 @@ fn test_cidr_network_class_c() {
 
 #[test]
 fn test_cidr_network_class_b() {
-    let result = network::cidr_network_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetwork::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("172.16.50.100/16"),
     )]));
@@ -192,7 +196,7 @@ fn test_cidr_network_class_b() {
 
 #[test]
 fn test_cidr_network_class_a() {
-    let result = network::cidr_network_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetwork::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("10.20.30.40/8"),
     )]));
@@ -204,7 +208,7 @@ fn test_cidr_network_class_a() {
 
 #[test]
 fn test_cidr_broadcast_class_c() {
-    let result = network::cidr_broadcast_fn(Kwargs::from_iter(vec![(
+    let result = CidrBroadcast::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("192.168.1.0/24"),
     )]));
@@ -214,15 +218,14 @@ fn test_cidr_broadcast_class_c() {
 
 #[test]
 fn test_cidr_broadcast_class_a() {
-    let result =
-        network::cidr_broadcast_fn(Kwargs::from_iter(vec![("cidr", Value::from("10.0.0.0/8"))]));
+    let result = CidrBroadcast::call(Kwargs::from_iter(vec![("cidr", Value::from("10.0.0.0/8"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "10.255.255.255");
 }
 
 #[test]
 fn test_cidr_broadcast_slash_32() {
-    let result = network::cidr_broadcast_fn(Kwargs::from_iter(vec![(
+    let result = CidrBroadcast::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("192.168.1.1/32"),
     )]));
@@ -234,7 +237,7 @@ fn test_cidr_broadcast_slash_32() {
 
 #[test]
 fn test_cidr_netmask_24() {
-    let result = network::cidr_netmask_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetmask::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("192.168.1.0/24"),
     )]));
@@ -244,7 +247,7 @@ fn test_cidr_netmask_24() {
 
 #[test]
 fn test_cidr_netmask_16() {
-    let result = network::cidr_netmask_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetmask::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("172.16.0.0/16"),
     )]));
@@ -254,15 +257,14 @@ fn test_cidr_netmask_16() {
 
 #[test]
 fn test_cidr_netmask_8() {
-    let result =
-        network::cidr_netmask_fn(Kwargs::from_iter(vec![("cidr", Value::from("10.0.0.0/8"))]));
+    let result = CidrNetmask::call(Kwargs::from_iter(vec![("cidr", Value::from("10.0.0.0/8"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "255.0.0.0");
 }
 
 #[test]
 fn test_cidr_netmask_12() {
-    let result = network::cidr_netmask_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetmask::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("172.16.0.0/12"),
     )]));
@@ -272,7 +274,7 @@ fn test_cidr_netmask_12() {
 
 #[test]
 fn test_cidr_netmask_32() {
-    let result = network::cidr_netmask_fn(Kwargs::from_iter(vec![(
+    let result = CidrNetmask::call(Kwargs::from_iter(vec![(
         "cidr",
         Value::from("192.168.1.1/32"),
     )]));
@@ -282,8 +284,7 @@ fn test_cidr_netmask_32() {
 
 #[test]
 fn test_cidr_netmask_0() {
-    let result =
-        network::cidr_netmask_fn(Kwargs::from_iter(vec![("cidr", Value::from("0.0.0.0/0"))]));
+    let result = CidrNetmask::call(Kwargs::from_iter(vec![("cidr", Value::from("0.0.0.0/0"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "0.0.0.0");
 }
@@ -292,21 +293,21 @@ fn test_cidr_netmask_0() {
 
 #[test]
 fn test_ip_to_int_basic() {
-    let result = network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from("192.168.1.1"))]));
+    let result = IpToInt::call(Kwargs::from_iter(vec![("ip", Value::from("192.168.1.1"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_i64(), Some(3232235777));
 }
 
 #[test]
 fn test_ip_to_int_zero() {
-    let result = network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from("0.0.0.0"))]));
+    let result = IpToInt::call(Kwargs::from_iter(vec![("ip", Value::from("0.0.0.0"))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_i64(), Some(0));
 }
 
 #[test]
 fn test_ip_to_int_max() {
-    let result = network::ip_to_int_fn(Kwargs::from_iter(vec![(
+    let result = IpToInt::call(Kwargs::from_iter(vec![(
         "ip",
         Value::from("255.255.255.255"),
     )]));
@@ -316,7 +317,7 @@ fn test_ip_to_int_max() {
 
 #[test]
 fn test_ip_to_int_invalid() {
-    let result = network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from("invalid"))]));
+    let result = IpToInt::call(Kwargs::from_iter(vec![("ip", Value::from("invalid"))]));
     assert!(result.is_err());
 }
 
@@ -324,7 +325,7 @@ fn test_ip_to_int_invalid() {
 
 #[test]
 fn test_int_to_ip_basic() {
-    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![(
+    let result = IntToIp::call(Kwargs::from_iter(vec![(
         "int",
         Value::from(3232235777_i64),
     )]));
@@ -334,14 +335,14 @@ fn test_int_to_ip_basic() {
 
 #[test]
 fn test_int_to_ip_zero() {
-    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![("int", Value::from(0))]));
+    let result = IntToIp::call(Kwargs::from_iter(vec![("int", Value::from(0))]));
     assert!(result.is_ok());
     assert_eq!(result.unwrap().as_str().unwrap(), "0.0.0.0");
 }
 
 #[test]
 fn test_int_to_ip_max() {
-    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![(
+    let result = IntToIp::call(Kwargs::from_iter(vec![(
         "int",
         Value::from(4294967295_i64),
     )]));
@@ -351,14 +352,14 @@ fn test_int_to_ip_max() {
 
 #[test]
 fn test_int_to_ip_negative() {
-    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![("int", Value::from(-1))]));
+    let result = IntToIp::call(Kwargs::from_iter(vec![("int", Value::from(-1))]));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("between 0 and"));
 }
 
 #[test]
 fn test_int_to_ip_too_large() {
-    let result = network::int_to_ip_fn(Kwargs::from_iter(vec![(
+    let result = IntToIp::call(Kwargs::from_iter(vec![(
         "int",
         Value::from(4294967296_i64),
     )]));
@@ -372,13 +373,12 @@ fn test_ip_int_roundtrip() {
     let ip = "10.20.30.40";
 
     // IP to int
-    let int_result =
-        network::ip_to_int_fn(Kwargs::from_iter(vec![("ip", Value::from(ip))])).unwrap();
+    let int_result = IpToInt::call(Kwargs::from_iter(vec![("ip", Value::from(ip))])).unwrap();
     let int_value = int_result.as_i64().unwrap();
 
     // Int back to IP
     let ip_result =
-        network::int_to_ip_fn(Kwargs::from_iter(vec![("int", Value::from(int_value))])).unwrap();
+        IntToIp::call(Kwargs::from_iter(vec![("int", Value::from(int_value))])).unwrap();
 
     assert_eq!(ip_result.as_str().unwrap(), ip);
 }

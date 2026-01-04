@@ -76,18 +76,163 @@ pub mod filesystem;
 pub mod kubernetes;
 pub mod logic;
 pub mod math;
+pub mod metadata;
 pub mod network;
 pub mod object;
 pub mod predicates;
 pub mod random;
 pub mod string;
 pub mod system;
+pub mod traits;
 pub mod url;
 pub mod uuid_gen;
 pub mod validation;
 
 use crate::TemplateContext;
 use minijinja::Environment;
+
+// Re-export metadata types for external use
+pub use metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+pub use traits::{ContextFunction, Function};
+
+/// Collect all function metadata for IDE integration
+///
+/// This function gathers metadata from all functions that have been migrated
+/// to use the `Function` trait with metadata. This enables IDE features like
+/// autocomplete and documentation.
+///
+/// # Returns
+///
+/// Returns a vector of references to FunctionMetadata for all registered functions.
+pub fn get_all_metadata() -> Vec<&'static FunctionMetadata> {
+    vec![
+        // Environment functions
+        &environment::GetEnv::METADATA,
+        &environment::FilterEnv::METADATA,
+        // Random/UUID functions
+        &random::GetRandom::METADATA,
+        &random::RandomString::METADATA,
+        &uuid_gen::UuidGen::METADATA,
+        // Validation functions
+        &validation::MatchesRegex::METADATA,
+        // System functions
+        &system::GetHostname::METADATA,
+        &system::GetUsername::METADATA,
+        &system::GetHomeDir::METADATA,
+        &system::GetTempDir::METADATA,
+        &system::GetOs::METADATA,
+        &system::GetArch::METADATA,
+        &system::GetCwd::METADATA,
+        // Network functions
+        &network::GetIpAddress::METADATA,
+        &network::GetInterfaces::METADATA,
+        &network::ResolveDns::METADATA,
+        &network::CidrContains::METADATA,
+        &network::CidrNetwork::METADATA,
+        &network::CidrBroadcast::METADATA,
+        &network::CidrNetmask::METADATA,
+        &network::IpToInt::METADATA,
+        &network::IntToIp::METADATA,
+        // Debug functions
+        &debug::Debug::METADATA,
+        &debug::TypeOf::METADATA,
+        &debug::Inspect::METADATA,
+        &debug::Assert::METADATA,
+        &debug::Warn::METADATA,
+        &debug::Abort::METADATA,
+        // Predicate functions
+        &predicates::ArrayAny::METADATA,
+        &predicates::ArrayAll::METADATA,
+        &predicates::ArrayContains::METADATA,
+        &predicates::StartsWith::METADATA,
+        &predicates::EndsWith::METADATA,
+        // Logic functions
+        &logic::Default::METADATA,
+        &logic::Coalesce::METADATA,
+        &logic::Ternary::METADATA,
+        &logic::InRange::METADATA,
+        // DateTime functions
+        &datetime::Now::METADATA,
+        &datetime::ParseDate::METADATA,
+        &datetime::DateAdd::METADATA,
+        &datetime::DateDiff::METADATA,
+        &datetime::TimezoneConvert::METADATA,
+        // Encoding functions
+        &encoding::Bcrypt::METADATA,
+        &encoding::GenerateSecret::METADATA,
+        &encoding::HmacSha256::METADATA,
+        // Math functions
+        &math::Min::METADATA,
+        &math::Max::METADATA,
+        &math::Percentage::METADATA,
+        // String functions
+        &string::RegexMatch::METADATA,
+        &string::RegexFindAll::METADATA,
+        &string::Contains::METADATA,
+        &string::IndexOf::METADATA,
+        &string::CountOccurrences::METADATA,
+        &string::SentenceCase::METADATA,
+        &string::ToConstantCase::METADATA,
+        &string::Pluralize::METADATA,
+        // Array functions
+        &array::ArrayCount::METADATA,
+        &array::ArrayChunk::METADATA,
+        &array::ArrayZip::METADATA,
+        &array::ArraySortBy::METADATA,
+        &array::ArrayGroupBy::METADATA,
+        &array::ArrayTake::METADATA,
+        &array::ArrayDrop::METADATA,
+        &array::ArrayIndexOf::METADATA,
+        &array::ArrayFind::METADATA,
+        &array::ArrayFilterBy::METADATA,
+        &array::ArrayPluck::METADATA,
+        &array::ArrayIntersection::METADATA,
+        &array::ArrayDifference::METADATA,
+        &array::ArrayUnion::METADATA,
+        &array::ArraySymmetricDifference::METADATA,
+        // Object functions
+        &object::ObjectMerge::METADATA,
+        &object::ObjectGet::METADATA,
+        &object::ObjectSet::METADATA,
+        &object::ObjectHasKey::METADATA,
+        &object::JsonPath::METADATA,
+        &object::ObjectPick::METADATA,
+        &object::ObjectOmit::METADATA,
+        &object::ObjectRenameKeys::METADATA,
+        &object::ObjectUnflatten::METADATA,
+        // Kubernetes functions
+        &kubernetes::K8sResourceRequest::METADATA,
+        &kubernetes::K8sEnvVarRef::METADATA,
+        &kubernetes::K8sSecretRef::METADATA,
+        &kubernetes::K8sConfigmapRef::METADATA,
+        &kubernetes::HelmTpl::METADATA,
+        &kubernetes::K8sQuantityToBytes::METADATA,
+        &kubernetes::K8sBytesToQuantity::METADATA,
+        &kubernetes::K8sSelector::METADATA,
+        &kubernetes::K8sPodAffinity::METADATA,
+        &kubernetes::K8sToleration::METADATA,
+        &kubernetes::K8sProbe::METADATA,
+        // URL functions
+        &url::BasicAuth::METADATA,
+        &url::BuildUrl::METADATA,
+        &url::QueryString::METADATA,
+        // Filesystem functions (context-aware)
+        &filesystem::ReadFile::METADATA,
+        &filesystem::FileExists::METADATA,
+        &filesystem::ListDir::METADATA,
+        &filesystem::Glob::METADATA,
+        &filesystem::FileSize::METADATA,
+        &filesystem::FileModified::METADATA,
+        &filesystem::ReadLines::METADATA,
+        // Data parsing functions (context-aware)
+        &data_parsing::ReadJsonFile::METADATA,
+        &data_parsing::ReadYamlFile::METADATA,
+        &data_parsing::ReadTomlFile::METADATA,
+        // Exec functions (context-aware)
+        &exec::Exec::METADATA,
+        &exec::ExecRaw::METADATA,
+    ]
+}
 
 /// Register all custom functions with the MiniJinja environment
 ///
@@ -112,6 +257,7 @@ use minijinja::Environment;
 /// ```
 pub fn register_all(env: &mut Environment, context: TemplateContext) {
     use std::sync::Arc;
+    use traits::{ContextFunction, Function};
 
     // Register filter-functions (functions that also work as filters)
     crate::filter_functions::register_all(env);
@@ -122,217 +268,151 @@ pub fn register_all(env: &mut Environment, context: TemplateContext) {
     // Register is-functions (functions that also work as "is" tests)
     crate::is_functions::register_all(env, context_arc.clone());
 
-    // Register built-in function replacements (were built-in in Tera)
-    env.add_function("get_env", environment::env_fn);
-    env.add_function("now", datetime::now_fn);
-    env.add_function("get_random", random::get_random_fn);
+    // ===== Simple Functions (no context needed) =====
 
-    // Date/Time functions
-    // Note: format_date, get_year, get_month, get_day, get_hour, get_minute, get_second
-    // are now registered via filter_functions module
-    // Note: is_leap_year is now registered via is_functions module
-    env.add_function("parse_date", datetime::parse_date_fn);
-    env.add_function("date_add", datetime::date_add_fn);
-    env.add_function("date_diff", datetime::date_diff_fn);
-    env.add_function("timezone_convert", datetime::timezone_convert_fn);
+    // Environment functions
+    environment::GetEnv::register(env);
+    environment::FilterEnv::register(env);
 
-    // Register custom functions (simple, no context needed)
-    env.add_function("filter_env", environment::filter_env_fn);
-    // Hash functions (md5, sha1, sha256, sha512) are now registered via filter_functions module
-    env.add_function("uuid", uuid_gen::uuid_fn);
-    env.add_function("random_string", random::random_string_fn);
+    // Random/UUID functions
+    random::GetRandom::register(env);
+    random::RandomString::register(env);
+    uuid_gen::UuidGen::register(env);
+
+    // DateTime functions
+    datetime::Now::register(env);
+    datetime::ParseDate::register(env);
+    datetime::DateAdd::register(env);
+    datetime::DateDiff::register(env);
+    datetime::TimezoneConvert::register(env);
 
     // Validation functions
-    // Note: is_email, is_url, is_ip, is_uuid are now registered via is_functions module
-    // (provides both function and "is" test syntax)
-    env.add_function("matches_regex", validation::matches_regex_fn);
+    validation::MatchesRegex::register(env);
 
-    // System information functions
-    env.add_function("get_hostname", system::get_hostname_fn);
-    env.add_function("get_username", system::get_username_fn);
-    env.add_function("get_home_dir", system::get_home_dir_fn);
-    env.add_function("get_temp_dir", system::get_temp_dir_fn);
-    env.add_function("get_os", system::get_os_fn);
-    env.add_function("get_arch", system::get_arch_fn);
-    env.add_function("get_cwd", system::get_cwd_fn);
+    // System functions
+    system::GetHostname::register(env);
+    system::GetUsername::register(env);
+    system::GetHomeDir::register(env);
+    system::GetTempDir::register(env);
+    system::GetOs::register(env);
+    system::GetArch::register(env);
+    system::GetCwd::register(env);
 
     // Network functions
-    // Note: is_port_available is now registered via is_functions module
-    env.add_function("get_ip_address", network::get_ip_address_fn);
-    env.add_function("get_interfaces", network::get_interfaces_fn);
-    env.add_function("resolve_dns", network::resolve_dns_fn);
-    env.add_function("cidr_contains", network::cidr_contains_fn);
-    env.add_function("cidr_network", network::cidr_network_fn);
-    env.add_function("cidr_broadcast", network::cidr_broadcast_fn);
-    env.add_function("cidr_netmask", network::cidr_netmask_fn);
-    env.add_function("ip_to_int", network::ip_to_int_fn);
-    env.add_function("int_to_ip", network::int_to_ip_fn);
+    network::GetIpAddress::register(env);
+    network::GetInterfaces::register(env);
+    network::ResolveDns::register(env);
+    network::CidrContains::register(env);
+    network::CidrNetwork::register(env);
+    network::CidrBroadcast::register(env);
+    network::CidrNetmask::register(env);
+    network::IpToInt::register(env);
+    network::IntToIp::register(env);
 
-    // Data parsing functions (parse_json, parse_yaml, parse_toml) are now
-    // registered via filter_functions module
+    // Encoding functions
+    encoding::Bcrypt::register(env);
+    encoding::GenerateSecret::register(env);
+    encoding::HmacSha256::register(env);
 
-    // File system functions (need context)
-    env.add_function(
-        "read_file",
-        filesystem::create_read_file_fn(context_arc.clone()),
-    );
-    env.add_function(
-        "file_exists",
-        filesystem::create_file_exists_fn(context_arc.clone()),
-    );
-    env.add_function(
-        "list_dir",
-        filesystem::create_list_dir_fn(context_arc.clone()),
-    );
-    env.add_function("glob", filesystem::create_glob_fn(context_arc.clone()));
-    env.add_function(
-        "file_size",
-        filesystem::create_file_size_fn(context_arc.clone()),
-    );
-    env.add_function(
-        "file_modified",
-        filesystem::create_file_modified_fn(context_arc.clone()),
-    );
-    // Note: is_file, is_dir, is_symlink are now registered via is_functions module
-    env.add_function(
-        "read_lines",
-        filesystem::create_read_lines_fn(context_arc.clone()),
-    );
-
-    // Path utility functions
-    // Note: basename, dirname, file_extension, join_path, normalize_path are now
-    // registered via filter_functions module
-
-    // Data parsing file functions (need context)
-    env.add_function(
-        "read_json_file",
-        data_parsing::create_read_json_file_fn(context_arc.clone()),
-    );
-    env.add_function(
-        "read_yaml_file",
-        data_parsing::create_read_yaml_file_fn(context_arc.clone()),
-    );
-    env.add_function(
-        "read_toml_file",
-        data_parsing::create_read_toml_file_fn(context_arc.clone()),
-    );
-
-    // Execution functions (need context)
-    env.add_function("exec", exec::create_exec_fn(context_arc.clone()));
-    env.add_function("exec_raw", exec::create_exec_raw_fn(context_arc));
-
-    // Encoding and security functions
-    // Note: base64_encode, base64_decode, hex_encode, hex_decode, escape_html,
-    // escape_xml, escape_shell are now registered via filter_functions module
-    env.add_function("bcrypt", encoding::bcrypt_fn);
-    env.add_function("generate_secret", encoding::generate_secret_fn);
-    env.add_function("hmac_sha256", encoding::hmac_sha256_fn);
-
-    // Debug and development functions
-    env.add_function("debug", debug::debug_fn);
-    env.add_function("type_of", debug::type_of_fn);
-    env.add_function("inspect", debug::inspect_fn);
-    env.add_function("assert", debug::assert_fn);
-    env.add_function("warn", debug::warn_fn);
-    env.add_function("abort", debug::abort_fn);
-
-    // Object manipulation functions
-    // Note: object_keys, object_values, object_flatten are now registered via filter_functions module
-    env.add_function("object_merge", object::object_merge_fn);
-    env.add_function("object_get", object::object_get_fn);
-    env.add_function("object_set", object::object_set_fn);
-    env.add_function("object_has_key", object::object_has_key_fn);
-    env.add_function("json_path", object::json_path_fn);
-    env.add_function("object_pick", object::object_pick_fn);
-    env.add_function("object_omit", object::object_omit_fn);
-    env.add_function("object_rename_keys", object::object_rename_keys_fn);
-    env.add_function("object_unflatten", object::object_unflatten_fn);
+    // Debug functions
+    debug::Debug::register(env);
+    debug::TypeOf::register(env);
+    debug::Inspect::register(env);
+    debug::Assert::register(env);
+    debug::Warn::register(env);
+    debug::Abort::register(env);
 
     // Predicate functions
-    env.add_function("array_any", predicates::array_any_fn);
-    env.add_function("array_all", predicates::array_all_fn);
-    env.add_function("array_contains", predicates::array_contains_fn);
-    env.add_function("starts_with", predicates::starts_with_fn);
-    env.add_function("ends_with", predicates::ends_with_fn);
-
-    // Statistical functions
-    // Note: array_sum, array_avg, array_median, array_min, array_max are now
-    // registered via filter_functions module
-
-    // Array manipulation functions
-    // Note: array_unique, array_flatten are now registered via filter_functions module
-    env.add_function("array_count", array::array_count_fn);
-    env.add_function("array_chunk", array::array_chunk_fn);
-    env.add_function("array_zip", array::array_zip_fn);
-    env.add_function("array_sort_by", array::array_sort_by_fn);
-    env.add_function("array_group_by", array::array_group_by_fn);
-    env.add_function("array_take", array::array_take_fn);
-    env.add_function("array_drop", array::array_drop_fn);
-    env.add_function("array_index_of", array::array_index_of_fn);
-    env.add_function("array_find", array::array_find_fn);
-    env.add_function("array_filter_by", array::array_filter_by_fn);
-    env.add_function("array_pluck", array::array_pluck_fn);
-
-    // Set operations
-    env.add_function("array_intersection", array::array_intersection_fn);
-    env.add_function("array_difference", array::array_difference_fn);
-    env.add_function("array_union", array::array_union_fn);
-    env.add_function(
-        "array_symmetric_difference",
-        array::array_symmetric_difference_fn,
-    );
-
-    // String manipulation functions
-    // Note: regex_replace, substring, truncate, word_count, split_lines, wrap,
-    // center, strip_html, strip_ansi, normalize_whitespace are now registered
-    // via filter_functions module
-    env.add_function("regex_match", string::regex_match_fn);
-    env.add_function("regex_find_all", string::regex_find_all_fn);
-    env.add_function("contains", string::contains_fn);
-    env.add_function("index_of", string::index_of_fn);
-    env.add_function("count_occurrences", string::count_occurrences_fn);
-    env.add_function("sentence_case", string::sentence_case_fn);
-    env.add_function("to_constant_case", string::to_constant_case_fn);
-    env.add_function("pluralize", string::pluralize_fn);
-
-    // Math functions (min, max, percentage remain function-only as they take 2 args)
-    // abs, round, ceil, floor are registered via filter_functions module
-    env.add_function("min", math::min_fn);
-    env.add_function("max", math::max_fn);
-    env.add_function("percentage", math::percentage_fn);
+    predicates::ArrayAny::register(env);
+    predicates::ArrayAll::register(env);
+    predicates::ArrayContains::register(env);
+    predicates::StartsWith::register(env);
+    predicates::EndsWith::register(env);
 
     // Logic functions
-    env.add_function("default", logic::default_fn);
-    env.add_function("coalesce", logic::coalesce_fn);
-    env.add_function("ternary", logic::ternary_fn);
-    env.add_function("in_range", logic::in_range_fn);
+    logic::Default::register(env);
+    logic::Coalesce::register(env);
+    logic::Ternary::register(env);
+    logic::InRange::register(env);
+
+    // Math functions
+    math::Min::register(env);
+    math::Max::register(env);
+    math::Percentage::register(env);
+
+    // String functions
+    string::RegexMatch::register(env);
+    string::RegexFindAll::register(env);
+    string::Contains::register(env);
+    string::IndexOf::register(env);
+    string::CountOccurrences::register(env);
+    string::SentenceCase::register(env);
+    string::ToConstantCase::register(env);
+    string::Pluralize::register(env);
+
+    // Array functions
+    array::ArrayCount::register(env);
+    array::ArrayChunk::register(env);
+    array::ArrayZip::register(env);
+    array::ArraySortBy::register(env);
+    array::ArrayGroupBy::register(env);
+    array::ArrayTake::register(env);
+    array::ArrayDrop::register(env);
+    array::ArrayIndexOf::register(env);
+    array::ArrayFind::register(env);
+    array::ArrayFilterBy::register(env);
+    array::ArrayPluck::register(env);
+    array::ArrayIntersection::register(env);
+    array::ArrayDifference::register(env);
+    array::ArrayUnion::register(env);
+    array::ArraySymmetricDifference::register(env);
+
+    // Object functions
+    object::ObjectMerge::register(env);
+    object::ObjectGet::register(env);
+    object::ObjectSet::register(env);
+    object::ObjectHasKey::register(env);
+    object::JsonPath::register(env);
+    object::ObjectPick::register(env);
+    object::ObjectOmit::register(env);
+    object::ObjectRenameKeys::register(env);
+    object::ObjectUnflatten::register(env);
 
     // Kubernetes functions
-    // Note: k8s_label_safe, k8s_dns_label_safe, k8s_annotation_safe are now
-    // registered via filter_functions module
-    env.add_function("k8s_resource_request", kubernetes::k8s_resource_request_fn);
-    env.add_function("k8s_env_var_ref", kubernetes::k8s_env_var_ref_fn);
-    env.add_function("k8s_secret_ref", kubernetes::k8s_secret_ref_fn);
-    env.add_function("k8s_configmap_ref", kubernetes::k8s_configmap_ref_fn);
-    env.add_function("helm_tpl", kubernetes::helm_tpl_fn);
-    env.add_function(
-        "k8s_quantity_to_bytes",
-        kubernetes::k8s_quantity_to_bytes_fn,
-    );
-    env.add_function(
-        "k8s_bytes_to_quantity",
-        kubernetes::k8s_bytes_to_quantity_fn,
-    );
-    env.add_function("k8s_selector", kubernetes::k8s_selector_fn);
-    env.add_function("k8s_pod_affinity", kubernetes::k8s_pod_affinity_fn);
-    env.add_function("k8s_toleration", kubernetes::k8s_toleration_fn);
-    env.add_function("k8s_probe", kubernetes::k8s_probe_fn);
+    kubernetes::K8sResourceRequest::register(env);
+    kubernetes::K8sEnvVarRef::register(env);
+    kubernetes::K8sSecretRef::register(env);
+    kubernetes::K8sConfigmapRef::register(env);
+    kubernetes::HelmTpl::register(env);
+    kubernetes::K8sQuantityToBytes::register(env);
+    kubernetes::K8sBytesToQuantity::register(env);
+    kubernetes::K8sSelector::register(env);
+    kubernetes::K8sPodAffinity::register(env);
+    kubernetes::K8sToleration::register(env);
+    kubernetes::K8sProbe::register(env);
 
-    // URL and HTTP utility functions
-    // Note: url_encode, url_decode, parse_url are now registered via filter_functions module
-    env.add_function("basic_auth", url::basic_auth_fn);
-    env.add_function("build_url", url::build_url_fn);
-    env.add_function("query_string", url::query_string_fn);
+    // URL functions
+    url::BasicAuth::register(env);
+    url::BuildUrl::register(env);
+    url::QueryString::register(env);
 
-    // Note: All filters are now registered via filter_functions module (dual function+filter syntax)
+    // ===== Context-Aware Functions (need filesystem/trust mode access) =====
+
+    // Filesystem functions
+    filesystem::ReadFile::register(env, context_arc.clone());
+    filesystem::FileExists::register(env, context_arc.clone());
+    filesystem::ListDir::register(env, context_arc.clone());
+    filesystem::Glob::register(env, context_arc.clone());
+    filesystem::FileSize::register(env, context_arc.clone());
+    filesystem::FileModified::register(env, context_arc.clone());
+    filesystem::ReadLines::register(env, context_arc.clone());
+
+    // Data parsing file functions
+    data_parsing::ReadJsonFile::register(env, context_arc.clone());
+    data_parsing::ReadYamlFile::register(env, context_arc.clone());
+    data_parsing::ReadTomlFile::register(env, context_arc.clone());
+
+    // Execution functions
+    exec::Exec::register(env, context_arc.clone());
+    exec::ExecRaw::register(env, context_arc);
 }

@@ -25,10 +25,20 @@
 //! ```
 
 use crate::TemplateContext;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use crate::is_functions::ContextIsFunction;
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, Value};
 use std::sync::Arc;
+
+/// Common metadata for path argument
+const PATH_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "path",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "Path to check",
+};
 
 /// File existence check is-function
 ///
@@ -50,6 +60,18 @@ pub struct File;
 impl ContextIsFunction for File {
     const FUNCTION_NAME: &'static str = "is_file";
     const IS_NAME: &'static str = "file";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_file",
+        category: "filesystem",
+        description: "Check if path exists and is a regular file",
+        arguments: &[PATH_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_file(path=\"config.json\") }}",
+            "{% if \"config.json\" is file %}config exists{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
@@ -85,6 +107,18 @@ pub struct Dir;
 impl ContextIsFunction for Dir {
     const FUNCTION_NAME: &'static str = "is_dir";
     const IS_NAME: &'static str = "dir";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_dir",
+        category: "filesystem",
+        description: "Check if path exists and is a directory",
+        arguments: &[PATH_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_dir(path=\"src\") }}",
+            "{% if \"src\" is dir %}directory exists{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
@@ -129,6 +163,18 @@ impl Symlink {
 impl ContextIsFunction for Symlink {
     const FUNCTION_NAME: &'static str = "is_symlink";
     const IS_NAME: &'static str = "symlink";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_symlink",
+        category: "filesystem",
+        description: "Check if path exists and is a symbolic link",
+        arguments: &[PATH_ARG],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_symlink(path=\"link\") }}",
+            "{% if \"link\" is symlink %}it's a symlink{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
         let path: String = kwargs.get("path")?;
