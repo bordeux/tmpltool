@@ -1,0 +1,197 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # ============================================
+  # Extract Version from Tag
+  # ============================================
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+  # ============================================
+  # Build Binaries (reusable workflow)
+  # ============================================
+  build-binaries:
+    name: Build Binaries
+    needs: prepare
+    uses: ./.github/workflows/_build-binaries.yml
+    with:
+      ref: ${{ github.ref }}
+      upload-artifacts: true
+      artifact-retention-days: 1
+
+  # ============================================
+  # Build Packages (reusable workflow)
+  # ============================================
+  build-packages:
+    name: Build Packages
+    needs: prepare
+    uses: ./.github/workflows/_build-packages.yml
+    with:
+      ref: ${{ github.ref }}
+      version: ${{ needs.prepare.outputs.version }}
+      artifact-retention-days: 1
+
+  # ============================================
+  # Create GitHub Release with All Assets
+  # ============================================
+  create-github-release:
+    name: Create GitHub Release
+    needs: [prepare, build-binaries, build-packages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure
+        run: ls -R artifacts
+
+      - name: Extract release notes from CHANGELOG
+        id: release_notes
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          # Extract the section for this version from CHANGELOG.md
+          # The changelog format is: ## [version](url) (date)
+          # We want everything between this version header and the next ## header
+
+          # Use awk to extract the section
+          NOTES=$(awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]")) found=1
+              next
+            }
+            found { print }
+          ' CHANGELOG.md)
+
+          # If no notes found, use a default message
+          if [ -z "$NOTES" ]; then
+            NOTES="Release v$VERSION"
+          fi
+
+          # Write to file to handle multiline content
+          echo "$NOTES" > release_notes.md
+          echo "Release notes extracted for v$VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: release_notes.md
+          files: artifacts/**/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================
+  # Docker Build & Push
+  # ============================================
+  docker:
+    name: Build and Push Docker Image
+    needs: [prepare, build-binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.prepare.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.prepare.outputs.version }}
+            type=semver,pattern={{major}},value=${{ needs.prepare.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # Trigger External Package Repository Updates
+  # ============================================
+  update-package-repos:
+    name: Trigger ${{ matrix.name }} Update
+    needs: [prepare, create-github-release]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: Homebrew
+            repo: bordeux/homebrew-tap
+            token_env: HOMEBREW_TAP_TOKEN
+          - name: APT Repository
+            repo: bordeux/apt-repo
+            token_env: APT_REPO_TOKEN
+          - name: APK Repository
+            repo: bordeux/apk-repo
+            token_env: APK_REPO_TOKEN
+          - name: RPM Repository
+            repo: bordeux/rpm-repo
+            token_env: RPM_REPO_TOKEN
+          - name: ARCH Repository
+            repo: bordeux/arch-repo
+            token_env: ARCH_REPO_TOKEN
+    steps:
+      - name: Trigger ${{ matrix.name }} workflow
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          APT_REPO_TOKEN: ${{ secrets.APT_REPO_TOKEN }}
+          APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          RPM_REPO_TOKEN: ${{ secrets.RPM_REPO_TOKEN }}
+          ARCH_REPO_TOKEN: ${{ secrets.ARCH_REPO_TOKEN }}
+        run: |
+          TOKEN_VAR="${{ matrix.token_env }}"
+          TOKEN="${!TOKEN_VAR}"
+          curl -X POST \
+            -H "Authorization: token $TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ matrix.repo }}/actions/workflows/update-repo.yml/dispatches" \
+            -d '{"ref":"master","inputs":{"project":"bordeux/tmpltool"}}'
