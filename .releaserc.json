@@ -51,7 +51,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i.bak 's/^version = \".*\"/version = \"${nextRelease.version}\"/' Cargo.toml && rm Cargo.toml.bak && cargo build --release"
+        "prepareCmd": "sed -i.bak 's/^version = \".*\"/version = \"${nextRelease.version}\"/' Cargo.toml && rm Cargo.toml.bak"
       }
     ],
     [
