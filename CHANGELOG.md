@@ -1,3 +1,9 @@
+## <small>1.4.2 (2026-01-04)</small>
+
+* Merge pull request #34 from bordeux/fix/fix-release-semantic ([fb2e518](https://github.com/bordeux/tmpltool/commit/fb2e518)), closes [#34](https://github.com/bordeux/tmpltool/issues/34)
+* fix: fix semantic release process ([8ce01e7](https://github.com/bordeux/tmpltool/commit/8ce01e7))
+* fix: use workflow_dispatch to trigger publish from release ([29bbab3](https://github.com/bordeux/tmpltool/commit/29bbab3))
+
 ## <small>1.4.1 (2026-01-04)</small>
 
 * Merge pull request #33 from bordeux/hotfix/fix-after-1-4-release ([d412a40](https://github.com/bordeux/tmpltool/commit/d412a40)), closes [#33](https://github.com/bordeux/tmpltool/issues/33)
