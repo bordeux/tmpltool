@@ -6,13 +6,15 @@ use std::process::Command;
 
 fn get_binary_path() -> String {
     // Try release binary first, then debug
-    let release_path = "target/release/tmpltool";
-    let debug_path = "target/debug/tmpltool";
+    // Use EXE_SUFFIX for cross-platform compatibility (.exe on Windows, empty on Unix)
+    let exe_suffix = std::env::consts::EXE_SUFFIX;
+    let release_path = format!("target/release/tmpltool{}", exe_suffix);
+    let debug_path = format!("target/debug/tmpltool{}", exe_suffix);
 
-    if std::path::Path::new(release_path).exists() {
-        release_path.to_string()
-    } else if std::path::Path::new(debug_path).exists() {
-        debug_path.to_string()
+    if std::path::Path::new(&release_path).exists() {
+        release_path
+    } else if std::path::Path::new(&debug_path).exists() {
+        debug_path
     } else {
         panic!("Binary not found. Please run 'cargo build' first.");
     }
