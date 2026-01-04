@@ -712,17 +712,17 @@ mod unit_tests {
     use minijinja::value::Kwargs;
     // Note: is_leap_year has been moved to src/is_functions/datetime.rs
     // and is tested in tests/test_is_datetime.rs
-    use tmpltool::functions::datetime::{
-        date_add_fn, date_diff_fn, format_date_fn, get_day_fn, get_hour_fn, get_minute_fn,
-        get_month_fn, get_year_fn, now_fn, parse_date_fn, timezone_convert_fn,
-    };
+    // Note: format_date_fn, get_year_fn, get_month_fn, get_day_fn, get_hour_fn, get_minute_fn
+    // have been moved to filter_functions/datetime.rs with dual function+filter syntax.
+    use tmpltool::functions::Function;
+    use tmpltool::functions::datetime::{DateAdd, DateDiff, Now, ParseDate, TimezoneConvert};
 
     const TEST_TIMESTAMP: i64 = 1704067200; // 2024-01-01 00:00:00 UTC
 
     #[test]
     fn test_now_fn_direct() {
         let kwargs = Kwargs::from_iter(Vec::<(&str, Value)>::new());
-        let result = now_fn(kwargs).unwrap();
+        let result = Now::call(kwargs).unwrap();
         // Should return a timestamp (integer)
         assert!(result.as_i64().is_some());
     }
@@ -730,37 +730,12 @@ mod unit_tests {
     #[test]
     fn test_now_fn_with_format() {
         let kwargs = Kwargs::from_iter(vec![("format", Value::from("%Y"))]);
-        let result = now_fn(kwargs).unwrap();
+        let result = Now::call(kwargs).unwrap();
         // Should return a formatted string
         assert!(result.as_str().is_some());
     }
 
-    #[test]
-    fn test_format_date_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![
-            ("timestamp", Value::from(TEST_TIMESTAMP)),
-            ("format", Value::from("%Y-%m-%d")),
-        ]);
-        let result = format_date_fn(kwargs).unwrap();
-        assert_eq!(result.as_str().unwrap(), "2024-01-01");
-    }
-
-    #[test]
-    fn test_format_date_fn_default_format() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(TEST_TIMESTAMP))]);
-        let result = format_date_fn(kwargs).unwrap();
-        assert!(result.as_str().unwrap().contains("2024-01-01"));
-    }
-
-    #[test]
-    fn test_format_date_fn_invalid_timestamp() {
-        let kwargs = Kwargs::from_iter(vec![
-            ("timestamp", Value::from(i64::MAX)),
-            ("format", Value::from("%Y-%m-%d")),
-        ]);
-        let result = format_date_fn(kwargs);
-        assert!(result.is_err());
-    }
+    // Note: format_date_fn tests removed - function now in filter_functions/datetime.rs
 
     #[test]
     fn test_parse_date_fn_direct() {
@@ -768,7 +743,7 @@ mod unit_tests {
             ("string", Value::from("2024-01-01")),
             ("format", Value::from("%Y-%m-%d")),
         ]);
-        let result = parse_date_fn(kwargs).unwrap();
+        let result = ParseDate::call(kwargs).unwrap();
         assert_eq!(result.as_i64().unwrap(), TEST_TIMESTAMP);
     }
 
@@ -778,7 +753,7 @@ mod unit_tests {
             ("string", Value::from("2024-01-01 12:00:00")),
             ("format", Value::from("%Y-%m-%d %H:%M:%S")),
         ]);
-        let result = parse_date_fn(kwargs).unwrap();
+        let result = ParseDate::call(kwargs).unwrap();
         assert!(result.as_i64().is_some());
     }
 
@@ -788,7 +763,7 @@ mod unit_tests {
             ("string", Value::from("not-a-date")),
             ("format", Value::from("%Y-%m-%d")),
         ]);
-        let result = parse_date_fn(kwargs);
+        let result = ParseDate::call(kwargs);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Failed to parse"));
     }
@@ -799,7 +774,7 @@ mod unit_tests {
             ("timestamp", Value::from(TEST_TIMESTAMP)),
             ("days", Value::from(7)),
         ]);
-        let result = date_add_fn(kwargs).unwrap();
+        let result = DateAdd::call(kwargs).unwrap();
         assert_eq!(result.as_i64().unwrap(), TEST_TIMESTAMP + 7 * 86400);
     }
 
@@ -809,7 +784,7 @@ mod unit_tests {
             ("timestamp", Value::from(TEST_TIMESTAMP)),
             ("days", Value::from(-7)),
         ]);
-        let result = date_add_fn(kwargs).unwrap();
+        let result = DateAdd::call(kwargs).unwrap();
         assert_eq!(result.as_i64().unwrap(), TEST_TIMESTAMP - 7 * 86400);
     }
 
@@ -819,7 +794,7 @@ mod unit_tests {
             ("timestamp", Value::from(i64::MAX)),
             ("days", Value::from(1)),
         ]);
-        let result = date_add_fn(kwargs);
+        let result = DateAdd::call(kwargs);
         assert!(result.is_err());
     }
 
@@ -829,7 +804,7 @@ mod unit_tests {
             ("timestamp1", Value::from(TEST_TIMESTAMP + 7 * 86400)),
             ("timestamp2", Value::from(TEST_TIMESTAMP)),
         ]);
-        let result = date_diff_fn(kwargs).unwrap();
+        let result = DateDiff::call(kwargs).unwrap();
         assert_eq!(result.as_i64().unwrap(), 7);
     }
 
@@ -839,7 +814,7 @@ mod unit_tests {
             ("timestamp1", Value::from(i64::MAX)),
             ("timestamp2", Value::from(TEST_TIMESTAMP)),
         ]);
-        let result = date_diff_fn(kwargs);
+        let result = DateDiff::call(kwargs);
         assert!(result.is_err());
     }
 
@@ -849,79 +824,12 @@ mod unit_tests {
             ("timestamp1", Value::from(TEST_TIMESTAMP)),
             ("timestamp2", Value::from(i64::MAX)),
         ]);
-        let result = date_diff_fn(kwargs);
+        let result = DateDiff::call(kwargs);
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_get_year_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(TEST_TIMESTAMP))]);
-        let result = get_year_fn(kwargs).unwrap();
-        assert_eq!(result.as_i64().unwrap(), 2024);
-    }
-
-    #[test]
-    fn test_get_year_fn_invalid() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(i64::MAX))]);
-        let result = get_year_fn(kwargs);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_get_month_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(TEST_TIMESTAMP))]);
-        let result = get_month_fn(kwargs).unwrap();
-        assert_eq!(result.as_i64().unwrap(), 1);
-    }
-
-    #[test]
-    fn test_get_month_fn_invalid() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(i64::MAX))]);
-        let result = get_month_fn(kwargs);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_get_day_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(TEST_TIMESTAMP))]);
-        let result = get_day_fn(kwargs).unwrap();
-        assert_eq!(result.as_i64().unwrap(), 1);
-    }
-
-    #[test]
-    fn test_get_day_fn_invalid() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(i64::MAX))]);
-        let result = get_day_fn(kwargs);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_get_hour_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(TEST_TIMESTAMP))]);
-        let result = get_hour_fn(kwargs).unwrap();
-        assert_eq!(result.as_i64().unwrap(), 0);
-    }
-
-    #[test]
-    fn test_get_hour_fn_invalid() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(i64::MAX))]);
-        let result = get_hour_fn(kwargs);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_get_minute_fn_direct() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(TEST_TIMESTAMP))]);
-        let result = get_minute_fn(kwargs).unwrap();
-        assert_eq!(result.as_i64().unwrap(), 0);
-    }
-
-    #[test]
-    fn test_get_minute_fn_invalid() {
-        let kwargs = Kwargs::from_iter(vec![("timestamp", Value::from(i64::MAX))]);
-        let result = get_minute_fn(kwargs);
-        assert!(result.is_err());
-    }
+    // Note: get_year_fn, get_month_fn, get_day_fn, get_hour_fn, get_minute_fn tests removed
+    // - these functions are now in filter_functions/datetime.rs with dual function+filter syntax.
 
     #[test]
     fn test_timezone_convert_fn_direct() {
@@ -930,7 +838,7 @@ mod unit_tests {
             ("from_tz", Value::from("UTC")),
             ("to_tz", Value::from("America/New_York")),
         ]);
-        let result = timezone_convert_fn(kwargs).unwrap();
+        let result = TimezoneConvert::call(kwargs).unwrap();
         assert!(result.as_i64().is_some());
     }
 
@@ -941,7 +849,7 @@ mod unit_tests {
             ("from_tz", Value::from("UTC")),
             ("to_tz", Value::from("UTC")),
         ]);
-        let result = timezone_convert_fn(kwargs);
+        let result = TimezoneConvert::call(kwargs);
         assert!(result.is_err());
     }
 
@@ -952,7 +860,7 @@ mod unit_tests {
             ("from_tz", Value::from("Invalid/TZ")),
             ("to_tz", Value::from("UTC")),
         ]);
-        let result = timezone_convert_fn(kwargs);
+        let result = TimezoneConvert::call(kwargs);
         assert!(result.is_err());
     }
 
@@ -963,7 +871,7 @@ mod unit_tests {
             ("from_tz", Value::from("UTC")),
             ("to_tz", Value::from("Invalid/TZ")),
         ]);
-        let result = timezone_convert_fn(kwargs);
+        let result = TimezoneConvert::call(kwargs);
         assert!(result.is_err());
     }
 

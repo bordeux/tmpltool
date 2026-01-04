@@ -17,9 +17,19 @@
 //! {{ "hello" | sha256 | md5 }}
 //! ```
 
-use super::FilterFunction;
+use super::traits::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
+
+/// Common metadata for single-argument hash functions
+const HASH_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "string",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string to hash",
+};
 
 /// MD5 hash function.
 ///
@@ -45,6 +55,15 @@ impl Md5 {
 
 impl FilterFunction for Md5 {
     const NAME: &'static str = "md5";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "md5",
+        category: "hash",
+        description: "Compute MD5 hash of a string",
+        arguments: &[HASH_ARG],
+        return_type: "string",
+        examples: &["{{ md5(string=\"hello\") }}", "{{ \"hello\" | md5 }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -83,6 +102,15 @@ impl Sha1 {
 
 impl FilterFunction for Sha1 {
     const NAME: &'static str = "sha1";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "sha1",
+        category: "hash",
+        description: "Compute SHA-1 hash of a string",
+        arguments: &[HASH_ARG],
+        return_type: "string",
+        examples: &["{{ sha1(string=\"hello\") }}", "{{ \"hello\" | sha1 }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -121,6 +149,15 @@ impl Sha256 {
 
 impl FilterFunction for Sha256 {
     const NAME: &'static str = "sha256";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "sha256",
+        category: "hash",
+        description: "Compute SHA-256 hash of a string",
+        arguments: &[HASH_ARG],
+        return_type: "string",
+        examples: &["{{ sha256(string=\"hello\") }}", "{{ \"hello\" | sha256 }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -159,6 +196,15 @@ impl Sha512 {
 
 impl FilterFunction for Sha512 {
     const NAME: &'static str = "sha512";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "sha512",
+        category: "hash",
+        description: "Compute SHA-512 hash of a string",
+        arguments: &[HASH_ARG],
+        return_type: "string",
+        examples: &["{{ sha512(string=\"hello\") }}", "{{ \"hello\" | sha512 }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;

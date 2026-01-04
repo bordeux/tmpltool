@@ -1,349 +1,290 @@
-/// Date and time functions for templates
-use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, TimeZone, Timelike, Utc};
+//! Date and time functions for templates
+//!
+//! This module provides date/time functions:
+//! - `now`: Get current timestamp
+//! - `parse_date`: Parse date string to timestamp
+//! - `date_add`: Add days to timestamp
+//! - `date_diff`: Calculate difference between timestamps
+//! - `timezone_convert`: Convert timestamp between timezones
+//!
+//! Note: format_date, get_year, get_month, get_day, get_hour, get_minute, get_second
+//! are now in filter_functions/datetime.rs with dual function+filter syntax support.
+//!
+//! Note: is_leap_year is now in is_functions/datetime.rs with dual function+is-test syntax.
+
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::Function;
+use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Tz;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 
 /// Get current Unix timestamp, optionally formatted
-///
-/// # Arguments
-///
-/// * `format` (optional) - Format string. If provided, returns formatted string.
-///   If not provided, returns Unix timestamp (seconds since epoch).
-///
-/// Format specifiers: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-///
-/// # Example
-///
-/// ```jinja
-/// {{ now() }}  => 1704067200
-/// {{ format_date(timestamp=now(), format="%Y-%m-%d") }}  => "2024-01-01"
-/// {{ now(format="%Y-%m-%d %H:%M:%S") }}  => "2024-12-31 12:34:56"
-/// ```
-pub fn now_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let format: Option<String> = kwargs.get("format").ok();
-    let now = Utc::now();
+pub struct Now;
 
-    match format {
-        Some(fmt) => Ok(Value::from(now.format(&fmt).to_string())),
-        None => Ok(Value::from(now.timestamp())),
+impl Function for Now {
+    const NAME: &'static str = "now";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "now",
+        category: "datetime",
+        description: "Get current Unix timestamp (seconds since epoch), optionally formatted",
+        arguments: &[ArgumentMetadata {
+            name: "format",
+            arg_type: "string",
+            required: false,
+            default: None,
+            description: "Optional format string (e.g., %Y-%m-%d). If not provided, returns Unix timestamp",
+        }],
+        return_type: "integer|string",
+        examples: &["{{ now() }}", "{{ now(format=\"%Y-%m-%d %H:%M:%S\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let format: Option<String> = kwargs.get("format").ok();
+        let now = Utc::now();
+
+        match format {
+            Some(fmt) => Ok(Value::from(now.format(&fmt).to_string())),
+            None => Ok(Value::from(now.timestamp())),
+        }
     }
 }
 
-/// Format a Unix timestamp with a custom format string
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-/// * `format` (optional) - Format string (default: "%Y-%m-%d %H:%M:%S")
-///
-/// Format specifiers: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-///
-/// # Example
-///
-/// ```jinja
-/// {{ format_date(timestamp=1704067200) }}
-/// {{ format_date(timestamp=1704067200, format="%Y-%m-%d") }}
-/// {{ format_date(timestamp=1704067200, format="%B %d, %Y at %I:%M %p") }}
-/// ```
-pub fn format_date_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-    let format: String = kwargs
-        .get("format")
-        .unwrap_or_else(|_| "%Y-%m-%d %H:%M:%S".to_string());
-
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
-
-    let formatted = dt.format(&format).to_string();
-    Ok(Value::from(formatted))
-}
-
 /// Parse a date string into a Unix timestamp
-///
-/// # Arguments
-///
-/// * `string` (required) - Date string to parse
-/// * `format` (required) - Format string matching the input
-///
-/// # Example
-///
-/// ```jinja
-/// {{ parse_date(string="2024-01-01 12:00:00", format="%Y-%m-%d %H:%M:%S") }}
-/// {{ parse_date(string="01/15/2024", format="%m/%d/%Y") }}
-/// ```
-pub fn parse_date_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let date_string: String = kwargs.get("string")?;
-    let format: String = kwargs.get("format")?;
+pub struct ParseDate;
 
-    // Try parsing as datetime first
-    let naive_dt = if let Ok(dt) = NaiveDateTime::parse_from_str(&date_string, &format) {
-        dt
-    } else {
-        // If that fails, try parsing as date-only and set time to midnight
-        let naive_date = NaiveDate::parse_from_str(&date_string, &format).map_err(|e| {
-            Error::new(
-                ErrorKind::InvalidOperation,
-                format!(
-                    "Failed to parse date '{}' with format '{}': {}",
-                    date_string, format, e
-                ),
-            )
-        })?;
-        naive_date.and_hms_opt(0, 0, 0).ok_or_else(|| {
-            Error::new(
-                ErrorKind::InvalidOperation,
-                "Failed to create datetime at midnight".to_string(),
-            )
-        })?
+impl Function for ParseDate {
+    const NAME: &'static str = "parse_date";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "parse_date",
+        category: "datetime",
+        description: "Parse a date string into a Unix timestamp",
+        arguments: &[
+            ArgumentMetadata {
+                name: "string",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Date string to parse",
+            },
+            ArgumentMetadata {
+                name: "format",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Format string matching the input (e.g., %Y-%m-%d)",
+            },
+        ],
+        return_type: "integer",
+        examples: &[
+            "{{ parse_date(string=\"2024-01-01 12:00:00\", format=\"%Y-%m-%d %H:%M:%S\") }}",
+            "{{ parse_date(string=\"01/15/2024\", format=\"%m/%d/%Y\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
     };
 
-    let dt = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
-    Ok(Value::from(dt.timestamp()))
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let date_string: String = kwargs.get("string")?;
+        let format: String = kwargs.get("format")?;
+
+        let naive_dt = if let Ok(dt) = NaiveDateTime::parse_from_str(&date_string, &format) {
+            dt
+        } else {
+            let naive_date = NaiveDate::parse_from_str(&date_string, &format).map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!(
+                        "Failed to parse date '{}' with format '{}': {}",
+                        date_string, format, e
+                    ),
+                )
+            })?;
+            naive_date.and_hms_opt(0, 0, 0).ok_or_else(|| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    "Failed to create datetime at midnight".to_string(),
+                )
+            })?
+        };
+
+        let dt = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
+        Ok(Value::from(dt.timestamp()))
+    }
 }
 
 /// Add days to a Unix timestamp
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-/// * `days` (required) - Number of days to add (can be negative)
-///
-/// # Example
-///
-/// ```jinja
-/// {{ date_add(timestamp=1704067200, days=7) }}
-/// {{ date_add(timestamp=1704067200, days=-30) }}
-/// ```
-pub fn date_add_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-    let days: i64 = kwargs.get("days")?;
+pub struct DateAdd;
 
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
+impl Function for DateAdd {
+    const NAME: &'static str = "date_add";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "date_add",
+        category: "datetime",
+        description: "Add days to a Unix timestamp",
+        arguments: &[
+            ArgumentMetadata {
+                name: "timestamp",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Unix timestamp in seconds",
+            },
+            ArgumentMetadata {
+                name: "days",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Number of days to add (can be negative)",
+            },
+        ],
+        return_type: "integer",
+        examples: &[
+            "{{ date_add(timestamp=now(), days=7) }}",
+            "{{ date_add(timestamp=now(), days=-30) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let new_dt = dt + Duration::days(days);
-    Ok(Value::from(new_dt.timestamp()))
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let timestamp: i64 = kwargs.get("timestamp")?;
+        let days: i64 = kwargs.get("days")?;
+
+        let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid timestamp: {}", timestamp),
+            )
+        })?;
+
+        let new_dt = dt + Duration::days(days);
+        Ok(Value::from(new_dt.timestamp()))
+    }
 }
 
 /// Calculate the difference in days between two timestamps
-///
-/// # Arguments
-///
-/// * `timestamp1` (required) - First Unix timestamp in seconds
-/// * `timestamp2` (required) - Second Unix timestamp in seconds
-///
-/// Returns the difference in days (timestamp1 - timestamp2)
-///
-/// # Example
-///
-/// ```jinja
-/// {{ date_diff(timestamp1=1704067200, timestamp2=1704067200) }}  => 0
-/// {{ date_diff(timestamp1=1704153600, timestamp2=1704067200) }}  => 1
-/// ```
-pub fn date_diff_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp1: i64 = kwargs.get("timestamp1")?;
-    let timestamp2: i64 = kwargs.get("timestamp2")?;
+pub struct DateDiff;
 
-    let dt1 = DateTime::from_timestamp(timestamp1, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp1: {}", timestamp1),
-        )
-    })?;
+impl Function for DateDiff {
+    const NAME: &'static str = "date_diff";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "date_diff",
+        category: "datetime",
+        description: "Calculate the difference in days between two timestamps",
+        arguments: &[
+            ArgumentMetadata {
+                name: "timestamp1",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "First Unix timestamp",
+            },
+            ArgumentMetadata {
+                name: "timestamp2",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Second Unix timestamp",
+            },
+        ],
+        return_type: "integer",
+        examples: &["{{ date_diff(timestamp1=now(), timestamp2=yesterday) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let dt2 = DateTime::from_timestamp(timestamp2, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp2: {}", timestamp2),
-        )
-    })?;
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let timestamp1: i64 = kwargs.get("timestamp1")?;
+        let timestamp2: i64 = kwargs.get("timestamp2")?;
 
-    let duration = dt1.signed_duration_since(dt2);
-    let days = duration.num_days();
+        let dt1 = DateTime::from_timestamp(timestamp1, 0).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid timestamp1: {}", timestamp1),
+            )
+        })?;
 
-    Ok(Value::from(days))
-}
+        let dt2 = DateTime::from_timestamp(timestamp2, 0).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid timestamp2: {}", timestamp2),
+            )
+        })?;
 
-/// Extract the year from a Unix timestamp
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-///
-/// # Example
-///
-/// ```jinja
-/// {{ get_year(timestamp=1704067200) }}  => 2024
-/// ```
-pub fn get_year_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
+        let duration = dt1.signed_duration_since(dt2);
+        let days = duration.num_days();
 
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
-
-    Ok(Value::from(dt.year()))
-}
-
-/// Extract the month from a Unix timestamp (1-12)
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-///
-/// # Example
-///
-/// ```jinja
-/// {{ get_month(timestamp=1704067200) }}  => 1
-/// ```
-pub fn get_month_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
-
-    Ok(Value::from(dt.month()))
-}
-
-/// Extract the day from a Unix timestamp (1-31)
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-///
-/// # Example
-///
-/// ```jinja
-/// {{ get_day(timestamp=1704067200) }}  => 1
-/// ```
-pub fn get_day_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
-
-    Ok(Value::from(dt.day()))
-}
-
-/// Extract the hour from a Unix timestamp (0-23)
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-///
-/// # Example
-///
-/// ```jinja
-/// {{ get_hour(timestamp=1704067200) }}  => 12
-/// ```
-pub fn get_hour_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
-
-    Ok(Value::from(dt.hour()))
-}
-
-/// Extract the minute from a Unix timestamp (0-59)
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-///
-/// # Example
-///
-/// ```jinja
-/// {{ get_minute(timestamp=1704067200) }}  => 0
-/// ```
-pub fn get_minute_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-
-    let dt = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
-
-    Ok(Value::from(dt.minute()))
+        Ok(Value::from(days))
+    }
 }
 
 /// Convert a timestamp from one timezone to another
-///
-/// # Arguments
-///
-/// * `timestamp` (required) - Unix timestamp in seconds
-/// * `from_tz` (required) - Source timezone (e.g., "UTC", "America/New_York")
-/// * `to_tz` (required) - Target timezone (e.g., "Europe/London", "Asia/Tokyo")
-///
-/// # Example
-///
-/// ```jinja
-/// {{ timezone_convert(timestamp=1704067200, from_tz="UTC", to_tz="America/New_York") }}
-/// {{ timezone_convert(timestamp=1704067200, from_tz="America/Los_Angeles", to_tz="Europe/Paris") }}
-/// ```
-pub fn timezone_convert_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let timestamp: i64 = kwargs.get("timestamp")?;
-    let from_tz_str: String = kwargs.get("from_tz")?;
-    let to_tz_str: String = kwargs.get("to_tz")?;
+pub struct TimezoneConvert;
 
-    // Parse timezones
-    let from_tz: Tz = from_tz_str.parse().map_err(|_| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timezone: {}", from_tz_str),
-        )
-    })?;
+impl Function for TimezoneConvert {
+    const NAME: &'static str = "timezone_convert";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "timezone_convert",
+        category: "datetime",
+        description: "Convert a timestamp from one timezone to another",
+        arguments: &[
+            ArgumentMetadata {
+                name: "timestamp",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Unix timestamp in seconds",
+            },
+            ArgumentMetadata {
+                name: "from_tz",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Source timezone (e.g., UTC, America/New_York)",
+            },
+            ArgumentMetadata {
+                name: "to_tz",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Target timezone (e.g., Europe/London, Asia/Tokyo)",
+            },
+        ],
+        return_type: "integer",
+        examples: &[
+            "{{ timezone_convert(timestamp=now(), from_tz=\"UTC\", to_tz=\"America/New_York\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let to_tz: Tz = to_tz_str.parse().map_err(|_| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timezone: {}", to_tz_str),
-        )
-    })?;
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let timestamp: i64 = kwargs.get("timestamp")?;
+        let from_tz_str: String = kwargs.get("from_tz")?;
+        let to_tz_str: String = kwargs.get("to_tz")?;
 
-    // Convert timestamp to datetime in source timezone
-    let dt_utc = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid timestamp: {}", timestamp),
-        )
-    })?;
+        let from_tz: Tz = from_tz_str.parse().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid timezone: {}", from_tz_str),
+            )
+        })?;
 
-    // Convert to target timezone
-    let dt_from = from_tz.from_utc_datetime(&dt_utc.naive_utc());
-    let dt_to = dt_from.with_timezone(&to_tz);
+        let to_tz: Tz = to_tz_str.parse().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid timezone: {}", to_tz_str),
+            )
+        })?;
 
-    // Return new timestamp
-    Ok(Value::from(dt_to.timestamp()))
+        let dt_utc = DateTime::from_timestamp(timestamp, 0).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid timestamp: {}", timestamp),
+            )
+        })?;
+
+        let dt_from = from_tz.from_utc_datetime(&dt_utc.naive_utc());
+        let dt_to = dt_from.with_timezone(&to_tz);
+
+        Ok(Value::from(dt_to.timestamp()))
+    }
 }
-
-// Note: is_leap_year has been migrated to src/is_functions/datetime.rs
-// and supports both function syntax and "is" test syntax:
-// - `{{ is_leap_year(year=2024) }}`
-// - `{% if 2024 is leap_year %}`

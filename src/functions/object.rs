@@ -3,59 +3,74 @@
 //! This module provides functions for:
 //! - Merging objects
 //! - Getting/setting nested values by path
-//! - Extracting keys and values
 //! - Checking key existence
 //! - JSONPath queries
 //! - Object picking/omitting keys
 //! - Key renaming
-//! - Flattening/unflattening nested objects
+//! - Unflattening nested objects
+//!
+//! Note: object_keys, object_values, object_flatten are now in
+//! filter_functions/object.rs with dual function+filter syntax support.
 
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::Function;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use serde_json::Map;
 
 /// Deep merge two objects
-///
-/// # Arguments
-///
-/// * `obj1` (required) - First object (base)
-/// * `obj2` (required) - Second object (overlay, takes precedence)
-///
-/// # Returns
-///
-/// Returns a new object with merged values. obj2 values override obj1 values.
-/// Nested objects are merged recursively.
-///
-/// # Example
-///
-/// ```jinja
-/// {% set base = {"a": 1, "b": {"c": 2}} %}
-/// {% set overlay = {"b": {"d": 3}, "e": 4} %}
-/// {% set merged = object_merge(obj1=base, obj2=overlay) %}
-/// {# Result: {"a": 1, "b": {"c": 2, "d": 3}, "e": 4} #}
-/// ```
-pub fn object_merge_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let obj1: Value = kwargs.get("obj1")?;
-    let obj2: Value = kwargs.get("obj2")?;
+pub struct ObjectMerge;
 
-    // Convert to serde_json::Value for easier manipulation
-    let json1: serde_json::Value = serde_json::to_value(&obj1).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert obj1: {}", e),
-        )
-    })?;
+impl Function for ObjectMerge {
+    const NAME: &'static str = "object_merge";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_merge",
+        category: "object",
+        description: "Deep merge two objects (obj2 values override obj1 values)",
+        arguments: &[
+            ArgumentMetadata {
+                name: "obj1",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "First object (base)",
+            },
+            ArgumentMetadata {
+                name: "obj2",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Second object (overlay, takes precedence)",
+            },
+        ],
+        return_type: "object",
+        examples: &["{{ object_merge(obj1={\"a\": 1}, obj2={\"b\": 2}) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let json2: serde_json::Value = serde_json::to_value(&obj2).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert obj2: {}", e),
-        )
-    })?;
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let obj1: Value = kwargs.get("obj1")?;
+        let obj2: Value = kwargs.get("obj2")?;
 
-    let merged = merge_json_values(json1, json2);
+        // Convert to serde_json::Value for easier manipulation
+        let json1: serde_json::Value = serde_json::to_value(&obj1).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert obj1: {}", e),
+            )
+        })?;
 
-    Ok(Value::from_serialize(&merged))
+        let json2: serde_json::Value = serde_json::to_value(&obj2).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert obj2: {}", e),
+            )
+        })?;
+
+        let merged = merge_json_values(json1, json2);
+
+        Ok(Value::from_serialize(&merged))
+    }
 }
 
 /// Recursively merge two JSON values
@@ -77,113 +92,138 @@ fn merge_json_values(mut base: serde_json::Value, overlay: serde_json::Value) ->
 }
 
 /// Get nested value by path
-///
-/// # Arguments
-///
-/// * `object` (required) - Object to query
-/// * `path` (required) - Dot-separated path (e.g., "a.b.c")
-///
-/// # Returns
-///
-/// Returns the value at the specified path, or undefined if not found
-///
-/// # Example
-///
-/// ```jinja
-/// {% set config = {"server": {"host": "localhost", "port": 8080}} %}
-/// {{ object_get(object=config, path="server.host") }}
-/// {# Output: localhost #}
-///
-/// {{ object_get(object=config, path="server.port") }}
-/// {# Output: 8080 #}
-/// ```
-pub fn object_get_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let path: String = kwargs.get("path")?;
+pub struct ObjectGet;
 
-    let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
+impl Function for ObjectGet {
+    const NAME: &'static str = "object_get";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_get",
+        category: "object",
+        description: "Get nested value by dot-separated path",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Object to query",
+            },
+            ArgumentMetadata {
+                name: "path",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Dot-separated path (e.g., \"a.b.c\")",
+            },
+        ],
+        return_type: "any",
+        examples: &["{{ object_get(object=config, path=\"server.host\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let parts: Vec<&str> = path.split('.').collect();
-    let mut current = &json_value;
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let path: String = kwargs.get("path")?;
 
-    for part in parts {
-        match current {
-            serde_json::Value::Object(map) => {
-                if let Some(value) = map.get(part) {
-                    current = value;
-                } else {
-                    return Ok(Value::UNDEFINED);
-                }
-            }
-            serde_json::Value::Array(arr) => {
-                if let Ok(index) = part.parse::<usize>() {
-                    if let Some(value) = arr.get(index) {
+        let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
+
+        let parts: Vec<&str> = path.split('.').collect();
+        let mut current = &json_value;
+
+        for part in parts {
+            match current {
+                serde_json::Value::Object(map) => {
+                    if let Some(value) = map.get(part) {
                         current = value;
                     } else {
                         return Ok(Value::UNDEFINED);
                     }
-                } else {
-                    return Ok(Value::UNDEFINED);
                 }
+                serde_json::Value::Array(arr) => {
+                    if let Ok(index) = part.parse::<usize>() {
+                        if let Some(value) = arr.get(index) {
+                            current = value;
+                        } else {
+                            return Ok(Value::UNDEFINED);
+                        }
+                    } else {
+                        return Ok(Value::UNDEFINED);
+                    }
+                }
+                _ => return Ok(Value::UNDEFINED),
             }
-            _ => return Ok(Value::UNDEFINED),
         }
-    }
 
-    Ok(Value::from_serialize(current))
+        Ok(Value::from_serialize(current))
+    }
 }
 
 /// Set nested value by path
-///
-/// # Arguments
-///
-/// * `object` (required) - Object to modify
-/// * `path` (required) - Dot-separated path (e.g., "a.b.c")
-/// * `value` (required) - Value to set
-///
-/// # Returns
-///
-/// Returns a new object with the value set at the specified path.
-/// Creates intermediate objects as needed.
-///
-/// # Example
-///
-/// ```jinja
-/// {% set config = {"server": {"host": "localhost"}} %}
-/// {% set updated = object_set(object=config, path="server.port", value=8080) %}
-/// {# Result: {"server": {"host": "localhost", "port": 8080}} #}
-///
-/// {% set updated = object_set(object=config, path="database.host", value="db.local") %}
-/// {# Creates: {"server": {...}, "database": {"host": "db.local"}} #}
-/// ```
-pub fn object_set_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let path: String = kwargs.get("path")?;
-    let value: Value = kwargs.get("value")?;
+pub struct ObjectSet;
 
-    let mut json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
+impl Function for ObjectSet {
+    const NAME: &'static str = "object_set";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_set",
+        category: "object",
+        description: "Set nested value by dot-separated path",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Object to modify",
+            },
+            ArgumentMetadata {
+                name: "path",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Dot-separated path (e.g., \"a.b.c\")",
+            },
+            ArgumentMetadata {
+                name: "value",
+                arg_type: "any",
+                required: true,
+                default: None,
+                description: "Value to set",
+            },
+        ],
+        return_type: "object",
+        examples: &["{{ object_set(object=config, path=\"server.port\", value=8080) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let new_value: serde_json::Value = serde_json::to_value(&value).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert value: {}", e),
-        )
-    })?;
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let path: String = kwargs.get("path")?;
+        let value: Value = kwargs.get("value")?;
 
-    let parts: Vec<&str> = path.split('.').collect();
-    set_nested_value(&mut json_value, &parts, new_value)?;
+        let mut json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
 
-    Ok(Value::from_serialize(&json_value))
+        let new_value: serde_json::Value = serde_json::to_value(&value).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert value: {}", e),
+            )
+        })?;
+
+        let parts: Vec<&str> = path.split('.').collect();
+        set_nested_value(&mut json_value, &parts, new_value)?;
+
+        Ok(Value::from_serialize(&json_value))
+    }
 }
 
 /// Recursively set nested value
@@ -225,188 +265,110 @@ fn set_nested_value(
     Ok(())
 }
 
-/// Get object keys as array
-///
-/// # Arguments
-///
-/// * `object` (required) - Object to get keys from
-///
-/// # Returns
-///
-/// Returns an array of string keys
-///
-/// # Example
-///
-/// ```jinja
-/// {% set config = {"host": "localhost", "port": 8080, "debug": true} %}
-/// {% set keys = object_keys(object=config) %}
-/// {# Result: ["host", "port", "debug"] #}
-///
-/// {% for key in object_keys(object=config) %}
-///   {{ key }}: {{ config[key] }}
-/// {% endfor %}
-/// ```
-pub fn object_keys_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-
-    let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
-
-    if let serde_json::Value::Object(map) = json_value {
-        let keys: Vec<String> = map.keys().cloned().collect();
-        Ok(Value::from_serialize(&keys))
-    } else {
-        Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_keys requires an object, not an array or primitive".to_string(),
-        ))
-    }
-}
-
-/// Get object values as array
-///
-/// # Arguments
-///
-/// * `object` (required) - Object to get values from
-///
-/// # Returns
-///
-/// Returns an array of values
-///
-/// # Example
-///
-/// ```jinja
-/// {% set config = {"host": "localhost", "port": 8080, "debug": true} %}
-/// {% set values = object_values(object=config) %}
-/// {# Result: ["localhost", 8080, true] #}
-///
-/// {% for value in object_values(object=config) %}
-///   - {{ value }}
-/// {% endfor %}
-/// ```
-pub fn object_values_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-
-    let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
-
-    if let serde_json::Value::Object(map) = json_value {
-        let values: Vec<&serde_json::Value> = map.values().collect();
-        Ok(Value::from_serialize(&values))
-    } else {
-        Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_values requires an object, not an array or primitive".to_string(),
-        ))
-    }
-}
-
 /// Check if object has key
-///
-/// # Arguments
-///
-/// * `object` (required) - Object to check
-/// * `key` (required) - Key to check for
-///
-/// # Returns
-///
-/// Returns true if the key exists, false otherwise
-///
-/// # Example
-///
-/// ```jinja
-/// {% set config = {"host": "localhost", "port": 8080} %}
-/// {{ object_has_key(object=config, key="host") }}
-/// {# Output: true #}
-///
-/// {{ object_has_key(object=config, key="database") }}
-/// {# Output: false #}
-///
-/// {% if object_has_key(object=config, key="debug") %}
-///   Debug mode: {{ config.debug }}
-/// {% else %}
-///   Debug mode not configured
-/// {% endif %}
-/// ```
-pub fn object_has_key_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let key: String = kwargs.get("key")?;
+pub struct ObjectHasKey;
 
-    let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
+impl Function for ObjectHasKey {
+    const NAME: &'static str = "object_has_key";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_has_key",
+        category: "object",
+        description: "Check if object has a key",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Object to check",
+            },
+            ArgumentMetadata {
+                name: "key",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Key to check for",
+            },
+        ],
+        return_type: "boolean",
+        examples: &["{{ object_has_key(object=config, key=\"host\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    if let serde_json::Value::Object(map) = json_value {
-        Ok(Value::from(map.contains_key(&key)))
-    } else {
-        Ok(Value::from(false))
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let key: String = kwargs.get("key")?;
+
+        let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
+
+        if let serde_json::Value::Object(map) = json_value {
+            Ok(Value::from(map.contains_key(&key)))
+        } else {
+            Ok(Value::from(false))
+        }
     }
 }
 
 /// Query object using JSONPath-like syntax
-///
-/// Supports basic JSONPath operations:
-/// - `$.key` or `key` - Access object property
-/// - `$.key1.key2` - Nested property access
-/// - `$.array[0]` - Array index access
-/// - `$.array[*]` - Wildcard (returns all elements)
-/// - `$.users[*].name` - Extract property from all array elements
-///
-/// # Arguments
-///
-/// * `object` (required) - Object or array to query
-/// * `path` (required) - JSONPath expression
-///
-/// # Returns
-///
-/// Returns the matched value(s). For wildcard queries, returns an array.
-///
-/// # Example
-///
-/// ```jinja
-/// {% set data = {"users": [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]} %}
-/// {{ json_path(object=data, path="$.users[0].name") }}
-/// {# Output: Alice #}
-///
-/// {{ json_path(object=data, path="$.users[*].name") | tojson }}
-/// {# Output: ["Alice", "Bob"] #}
-///
-/// {% set config = {"server": {"host": "localhost", "port": 8080}} %}
-/// {{ json_path(object=config, path="$.server.port") }}
-/// {# Output: 8080 #}
-/// ```
-pub fn json_path_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let path: String = kwargs.get("path")?;
+pub struct JsonPath;
 
-    let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
+impl Function for JsonPath {
+    const NAME: &'static str = "json_path";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "json_path",
+        category: "object",
+        description: "Query object using JSONPath-like syntax",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Object or array to query",
+            },
+            ArgumentMetadata {
+                name: "path",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "JSONPath expression (e.g., \"$.users[*].name\")",
+            },
+        ],
+        return_type: "any",
+        examples: &[
+            "{{ json_path(object=data, path=\"$.users[0].name\") }}",
+            "{{ json_path(object=data, path=\"$.users[*].name\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    // Remove leading $. if present
-    let path = path.strip_prefix("$.").unwrap_or(&path);
-    let path = path.strip_prefix('$').unwrap_or(path);
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let path: String = kwargs.get("path")?;
 
-    if path.is_empty() {
-        return Ok(Value::from_serialize(&json_value));
+        let json_value: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
+
+        // Remove leading $. if present
+        let path = path.strip_prefix("$.").unwrap_or(&path);
+        let path = path.strip_prefix('$').unwrap_or(path);
+
+        if path.is_empty() {
+            return Ok(Value::from_serialize(&json_value));
+        }
+
+        let result = query_json_path(&json_value, path)?;
+        Ok(Value::from_serialize(&result))
     }
-
-    let result = query_json_path(&json_value, path)?;
-    Ok(Value::from_serialize(&result))
 }
 
 /// Parse and execute JSONPath query
@@ -494,334 +456,297 @@ fn query_json_path(value: &serde_json::Value, path: &str) -> Result<serde_json::
 }
 
 /// Create new object with only specified keys
-///
-/// # Arguments
-///
-/// * `object` (required) - Source object
-/// * `keys` (required) - Array of keys to keep
-///
-/// # Returns
-///
-/// Returns a new object containing only the specified keys
-///
-/// # Example
-///
-/// ```jinja
-/// {% set user = {"name": "Alice", "email": "alice@example.com", "password": "secret", "age": 30} %}
-/// {% set public = object_pick(object=user, keys=["name", "email", "age"]) %}
-/// {# Result: {"name": "Alice", "email": "alice@example.com", "age": 30} #}
-///
-/// {{ object_pick(object=config, keys=["host", "port"]) | tojson }}
-/// ```
-pub fn object_pick_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let keys: Value = kwargs.get("keys")?;
+pub struct ObjectPick;
 
-    let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
-
-    let keys_array: serde_json::Value = serde_json::to_value(&keys).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert keys: {}", e),
-        )
-    })?;
-
-    let keys_to_keep: Vec<String> = match keys_array {
-        serde_json::Value::Array(arr) => arr
-            .iter()
-            .filter_map(|v| v.as_str().map(String::from))
-            .collect(),
-        _ => {
-            return Err(Error::new(
-                ErrorKind::InvalidOperation,
-                "keys must be an array of strings".to_string(),
-            ));
-        }
+impl Function for ObjectPick {
+    const NAME: &'static str = "object_pick";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_pick",
+        category: "object",
+        description: "Create new object with only specified keys",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Source object",
+            },
+            ArgumentMetadata {
+                name: "keys",
+                arg_type: "array",
+                required: true,
+                default: None,
+                description: "Array of keys to keep",
+            },
+        ],
+        return_type: "object",
+        examples: &["{{ object_pick(object=user, keys=[\"name\", \"email\"]) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
     };
 
-    if let serde_json::Value::Object(map) = json_object {
-        let mut result = Map::new();
-        for key in keys_to_keep {
-            if let Some(value) = map.get(&key) {
-                result.insert(key, value.clone());
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let keys: Value = kwargs.get("keys")?;
+
+        let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
+
+        let keys_array: serde_json::Value = serde_json::to_value(&keys).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert keys: {}", e),
+            )
+        })?;
+
+        let keys_to_keep: Vec<String> = match keys_array {
+            serde_json::Value::Array(arr) => arr
+                .iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect(),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidOperation,
+                    "keys must be an array of strings".to_string(),
+                ));
             }
+        };
+
+        if let serde_json::Value::Object(map) = json_object {
+            let mut result = Map::new();
+            for key in keys_to_keep {
+                if let Some(value) = map.get(&key) {
+                    result.insert(key, value.clone());
+                }
+            }
+            Ok(Value::from_serialize(serde_json::Value::Object(result)))
+        } else {
+            Err(Error::new(
+                ErrorKind::InvalidOperation,
+                "object_pick requires an object".to_string(),
+            ))
         }
-        Ok(Value::from_serialize(serde_json::Value::Object(result)))
-    } else {
-        Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_pick requires an object".to_string(),
-        ))
     }
 }
 
 /// Create new object without specified keys
-///
-/// # Arguments
-///
-/// * `object` (required) - Source object
-/// * `keys` (required) - Array of keys to exclude
-///
-/// # Returns
-///
-/// Returns a new object with the specified keys removed
-///
-/// # Example
-///
-/// ```jinja
-/// {% set user = {"name": "Alice", "email": "alice@example.com", "password": "secret", "age": 30} %}
-/// {% set safe = object_omit(object=user, keys=["password"]) %}
-/// {# Result: {"name": "Alice", "email": "alice@example.com", "age": 30} #}
-///
-/// {{ object_omit(object=config, keys=["internal", "debug"]) | tojson }}
-/// ```
-pub fn object_omit_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let keys: Value = kwargs.get("keys")?;
+pub struct ObjectOmit;
 
-    let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
-
-    let keys_array: serde_json::Value = serde_json::to_value(&keys).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert keys: {}", e),
-        )
-    })?;
-
-    let keys_to_omit: Vec<String> = match keys_array {
-        serde_json::Value::Array(arr) => arr
-            .iter()
-            .filter_map(|v| v.as_str().map(String::from))
-            .collect(),
-        _ => {
-            return Err(Error::new(
-                ErrorKind::InvalidOperation,
-                "keys must be an array of strings".to_string(),
-            ));
-        }
+impl Function for ObjectOmit {
+    const NAME: &'static str = "object_omit";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_omit",
+        category: "object",
+        description: "Create new object without specified keys",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Source object",
+            },
+            ArgumentMetadata {
+                name: "keys",
+                arg_type: "array",
+                required: true,
+                default: None,
+                description: "Array of keys to exclude",
+            },
+        ],
+        return_type: "object",
+        examples: &["{{ object_omit(object=user, keys=[\"password\"]) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
     };
 
-    if let serde_json::Value::Object(map) = json_object {
-        let mut result = Map::new();
-        for (key, value) in map {
-            if !keys_to_omit.contains(&key) {
-                result.insert(key, value);
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let keys: Value = kwargs.get("keys")?;
+
+        let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
+
+        let keys_array: serde_json::Value = serde_json::to_value(&keys).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert keys: {}", e),
+            )
+        })?;
+
+        let keys_to_omit: Vec<String> = match keys_array {
+            serde_json::Value::Array(arr) => arr
+                .iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect(),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidOperation,
+                    "keys must be an array of strings".to_string(),
+                ));
             }
+        };
+
+        if let serde_json::Value::Object(map) = json_object {
+            let mut result = Map::new();
+            for (key, value) in map {
+                if !keys_to_omit.contains(&key) {
+                    result.insert(key, value);
+                }
+            }
+            Ok(Value::from_serialize(serde_json::Value::Object(result)))
+        } else {
+            Err(Error::new(
+                ErrorKind::InvalidOperation,
+                "object_omit requires an object".to_string(),
+            ))
         }
-        Ok(Value::from_serialize(serde_json::Value::Object(result)))
-    } else {
-        Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_omit requires an object".to_string(),
-        ))
     }
 }
 
 /// Rename object keys using a mapping
-///
-/// # Arguments
-///
-/// * `object` (required) - Source object
-/// * `mapping` (required) - Object mapping old keys to new keys
-///
-/// # Returns
-///
-/// Returns a new object with renamed keys
-///
-/// # Example
-///
-/// ```jinja
-/// {% set data = {"firstName": "Alice", "lastName": "Smith", "emailAddress": "alice@example.com"} %}
-/// {% set renamed = object_rename_keys(object=data, mapping={"firstName": "first_name", "lastName": "last_name", "emailAddress": "email"}) %}
-/// {# Result: {"first_name": "Alice", "last_name": "Smith", "email": "alice@example.com"} #}
-///
-/// {# Useful for API response transformation #}
-/// {% set api_data = object_rename_keys(object=response, mapping={"userId": "user_id", "createdAt": "created_at"}) %}
-/// ```
-pub fn object_rename_keys_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let mapping: Value = kwargs.get("mapping")?;
+pub struct ObjectRenameKeys;
 
-    let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
-
-    let json_mapping: serde_json::Value = serde_json::to_value(&mapping).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert mapping: {}", e),
-        )
-    })?;
-
-    let key_map: std::collections::HashMap<String, String> = match json_mapping {
-        serde_json::Value::Object(map) => map
-            .iter()
-            .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
-            .collect(),
-        _ => {
-            return Err(Error::new(
-                ErrorKind::InvalidOperation,
-                "mapping must be an object".to_string(),
-            ));
-        }
+impl Function for ObjectRenameKeys {
+    const NAME: &'static str = "object_rename_keys";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_rename_keys",
+        category: "object",
+        description: "Rename object keys using a mapping",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Source object",
+            },
+            ArgumentMetadata {
+                name: "mapping",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Object mapping old keys to new keys",
+            },
+        ],
+        return_type: "object",
+        examples: &[
+            "{{ object_rename_keys(object=data, mapping={\"firstName\": \"first_name\"}) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
     };
 
-    if let serde_json::Value::Object(map) = json_object {
-        let mut result = Map::new();
-        for (key, value) in map {
-            let new_key = key_map.get(&key).cloned().unwrap_or(key);
-            result.insert(new_key, value);
-        }
-        Ok(Value::from_serialize(serde_json::Value::Object(result)))
-    } else {
-        Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_rename_keys requires an object".to_string(),
-        ))
-    }
-}
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let mapping: Value = kwargs.get("mapping")?;
 
-/// Flatten nested object to dot notation
-///
-/// # Arguments
-///
-/// * `object` (required) - Nested object to flatten
-/// * `delimiter` (optional) - Delimiter for keys (default: ".")
-///
-/// # Returns
-///
-/// Returns a flat object with dot-notation keys
-///
-/// # Example
-///
-/// ```jinja
-/// {% set nested = {"server": {"host": "localhost", "port": 8080}, "database": {"name": "mydb"}} %}
-/// {% set flat = object_flatten(object=nested) %}
-/// {# Result: {"server.host": "localhost", "server.port": 8080, "database.name": "mydb"} #}
-///
-/// {% set flat_underscore = object_flatten(object=nested, delimiter="_") %}
-/// {# Result: {"server_host": "localhost", "server_port": 8080, "database_name": "mydb"} #}
-/// ```
-pub fn object_flatten_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let delimiter: Option<String> = kwargs.get("delimiter")?;
-    let delimiter = delimiter.unwrap_or_else(|| ".".to_string());
+        let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
 
-    let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
+        let json_mapping: serde_json::Value = serde_json::to_value(&mapping).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert mapping: {}", e),
+            )
+        })?;
 
-    if !json_object.is_object() {
-        return Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_flatten requires an object".to_string(),
-        ));
-    }
-
-    let mut result = Map::new();
-    flatten_recursive(&json_object, "", &delimiter, &mut result);
-
-    Ok(Value::from_serialize(serde_json::Value::Object(result)))
-}
-
-/// Recursively flatten object
-fn flatten_recursive(
-    value: &serde_json::Value,
-    prefix: &str,
-    delimiter: &str,
-    result: &mut Map<String, serde_json::Value>,
-) {
-    match value {
-        serde_json::Value::Object(map) => {
-            for (key, val) in map {
-                let new_key = if prefix.is_empty() {
-                    key.clone()
-                } else {
-                    format!("{}{}{}", prefix, delimiter, key)
-                };
-                flatten_recursive(val, &new_key, delimiter, result);
+        let key_map: std::collections::HashMap<String, String> = match json_mapping {
+            serde_json::Value::Object(map) => map
+                .iter()
+                .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                .collect(),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidOperation,
+                    "mapping must be an object".to_string(),
+                ));
             }
-        }
-        serde_json::Value::Array(arr) => {
-            for (index, val) in arr.iter().enumerate() {
-                let new_key = if prefix.is_empty() {
-                    index.to_string()
-                } else {
-                    format!("{}{}{}", prefix, delimiter, index)
-                };
-                flatten_recursive(val, &new_key, delimiter, result);
+        };
+
+        if let serde_json::Value::Object(map) = json_object {
+            let mut result = Map::new();
+            for (key, value) in map {
+                let new_key = key_map.get(&key).cloned().unwrap_or(key);
+                result.insert(new_key, value);
             }
-        }
-        _ => {
-            result.insert(prefix.to_string(), value.clone());
+            Ok(Value::from_serialize(serde_json::Value::Object(result)))
+        } else {
+            Err(Error::new(
+                ErrorKind::InvalidOperation,
+                "object_rename_keys requires an object".to_string(),
+            ))
         }
     }
 }
 
 /// Unflatten dot-notation object to nested structure
-///
-/// # Arguments
-///
-/// * `object` (required) - Flat object with dot-notation keys
-/// * `delimiter` (optional) - Delimiter used in keys (default: ".")
-///
-/// # Returns
-///
-/// Returns a nested object structure
-///
-/// # Example
-///
-/// ```jinja
-/// {% set flat = {"server.host": "localhost", "server.port": 8080, "database.name": "mydb"} %}
-/// {% set nested = object_unflatten(object=flat) %}
-/// {# Result: {"server": {"host": "localhost", "port": 8080}, "database": {"name": "mydb"}} #}
-///
-/// {% set flat_underscore = {"server_host": "localhost", "server_port": 8080} %}
-/// {% set nested = object_unflatten(object=flat_underscore, delimiter="_") %}
-/// {# Result: {"server": {"host": "localhost", "port": 8080}} #}
-/// ```
-pub fn object_unflatten_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let object: Value = kwargs.get("object")?;
-    let delimiter: Option<String> = kwargs.get("delimiter")?;
-    let delimiter = delimiter.unwrap_or_else(|| ".".to_string());
+pub struct ObjectUnflatten;
 
-    let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert object: {}", e),
-        )
-    })?;
+impl Function for ObjectUnflatten {
+    const NAME: &'static str = "object_unflatten";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "object_unflatten",
+        category: "object",
+        description: "Unflatten dot-notation object to nested structure",
+        arguments: &[
+            ArgumentMetadata {
+                name: "object",
+                arg_type: "object",
+                required: true,
+                default: None,
+                description: "Flat object with dot-notation keys",
+            },
+            ArgumentMetadata {
+                name: "delimiter",
+                arg_type: "string",
+                required: false,
+                default: Some("\".\""),
+                description: "Delimiter used in keys (default: \".\")",
+            },
+        ],
+        return_type: "object",
+        examples: &["{{ object_unflatten(object={\"server.host\": \"localhost\"}) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    if let serde_json::Value::Object(map) = json_object {
-        let mut result = serde_json::Value::Object(Map::new());
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let object: Value = kwargs.get("object")?;
+        let delimiter: Option<String> = kwargs.get("delimiter")?;
+        let delimiter = delimiter.unwrap_or_else(|| ".".to_string());
 
-        for (key, value) in map {
-            let parts: Vec<&str> = key.split(&delimiter).collect();
-            set_nested_value_json(&mut result, &parts, value)?;
+        let json_object: serde_json::Value = serde_json::to_value(&object).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to convert object: {}", e),
+            )
+        })?;
+
+        if let serde_json::Value::Object(map) = json_object {
+            let mut result = serde_json::Value::Object(Map::new());
+
+            for (key, value) in map {
+                let parts: Vec<&str> = key.split(&delimiter).collect();
+                set_nested_value_json(&mut result, &parts, value)?;
+            }
+
+            Ok(Value::from_serialize(&result))
+        } else {
+            Err(Error::new(
+                ErrorKind::InvalidOperation,
+                "object_unflatten requires an object".to_string(),
+            ))
         }
-
-        Ok(Value::from_serialize(&result))
-    } else {
-        Err(Error::new(
-            ErrorKind::InvalidOperation,
-            "object_unflatten requires an object".to_string(),
-        ))
     }
 }
 

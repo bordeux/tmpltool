@@ -20,10 +20,20 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use std::collections::BTreeMap;
 use url::Url;
+
+/// Common metadata for string argument
+const STRING_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "string",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string to process",
+};
 
 /// Helper to extract string from Value
 fn extract_string(value: &Value, fn_name: &str) -> Result<String, Error> {
@@ -61,6 +71,18 @@ impl UrlEncode {
 
 impl FilterFunction for UrlEncode {
     const NAME: &'static str = "url_encode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "url_encode",
+        category: "url",
+        description: "URL-encode a string for safe use in URLs",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ url_encode(string=\"hello world\") }}",
+            "{{ \"hello world\" | url_encode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -105,6 +127,18 @@ impl UrlDecode {
 
 impl FilterFunction for UrlDecode {
     const NAME: &'static str = "url_decode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "url_decode",
+        category: "url",
+        description: "URL-decode a percent-encoded string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ url_decode(string=\"hello%20world\") }}",
+            "{{ \"hello%20world\" | url_decode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -178,6 +212,24 @@ impl ParseUrl {
 
 impl FilterFunction for ParseUrl {
     const NAME: &'static str = "parse_url";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "parse_url",
+        category: "url",
+        description: "Parse a URL into its components (scheme, host, port, path, query, fragment)",
+        arguments: &[ArgumentMetadata {
+            name: "url",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "The URL to parse",
+        }],
+        return_type: "object",
+        examples: &[
+            "{{ parse_url(url=\"https://example.com:8080/path?q=1\") }}",
+            "{{ \"https://example.com/path\" | parse_url }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let url_str: String = kwargs.get("url")?;

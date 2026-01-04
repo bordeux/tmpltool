@@ -54,8 +54,28 @@ pub mod validation;
 pub use traits::{ContextIsFunction, IsFunction};
 
 use crate::TemplateContext;
+use crate::functions::metadata::FunctionMetadata;
 use minijinja::Environment;
 use std::sync::Arc;
+
+/// Get all metadata from is-functions
+pub fn get_all_metadata() -> Vec<&'static FunctionMetadata> {
+    vec![
+        // Validation functions
+        &validation::Email::METADATA,
+        &validation::Url::METADATA,
+        &validation::Ip::METADATA,
+        &validation::Uuid::METADATA,
+        // DateTime functions
+        &datetime::LeapYear::METADATA,
+        // Network functions
+        &network::PortAvailable::METADATA,
+        // Filesystem functions
+        &filesystem::File::METADATA,
+        &filesystem::Dir::METADATA,
+        &filesystem::Symlink::METADATA,
+    ]
+}
 
 /// Register all is-functions with the MiniJinja environment.
 ///

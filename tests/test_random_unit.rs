@@ -1,5 +1,6 @@
 use minijinja::value::Kwargs;
-use tmpltool::functions::random::get_random_fn;
+use tmpltool::functions::Function;
+use tmpltool::functions::random::GetRandom;
 
 // Helper to create kwargs for testing
 fn create_kwargs_i64(args: Vec<(&str, i64)>) -> Kwargs {
@@ -12,7 +13,7 @@ fn create_kwargs_i64(args: Vec<(&str, i64)>) -> Kwargs {
 #[test]
 fn test_get_random_default_range() {
     let kwargs: Kwargs = Kwargs::from_iter(Vec::<(&str, minijinja::Value)>::new());
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     // Default range is 0-100 (exclusive)
@@ -26,7 +27,7 @@ fn test_get_random_default_range() {
 #[test]
 fn test_get_random_custom_range() {
     let kwargs = create_kwargs_i64(vec![("start", 10), ("end", 20)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     assert!(
@@ -40,7 +41,7 @@ fn test_get_random_custom_range() {
 fn test_get_random_single_value_range() {
     // Range [5, 6) should only return 5
     let kwargs = create_kwargs_i64(vec![("start", 5), ("end", 6)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     assert_eq!(value, 5, "Single value range should return start value");
@@ -49,7 +50,7 @@ fn test_get_random_single_value_range() {
 #[test]
 fn test_get_random_negative_range() {
     let kwargs = create_kwargs_i64(vec![("start", -10), ("end", 0)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     assert!(
@@ -62,7 +63,7 @@ fn test_get_random_negative_range() {
 #[test]
 fn test_get_random_crossing_zero() {
     let kwargs = create_kwargs_i64(vec![("start", -5), ("end", 5)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     assert!(
@@ -75,7 +76,7 @@ fn test_get_random_crossing_zero() {
 #[test]
 fn test_get_random_large_range() {
     let kwargs = create_kwargs_i64(vec![("start", 0), ("end", 1000000)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     assert!(
@@ -88,7 +89,7 @@ fn test_get_random_large_range() {
 #[test]
 fn test_get_random_invalid_range_equal() {
     let kwargs = create_kwargs_i64(vec![("start", 10), ("end", 10)]);
-    let result = get_random_fn(kwargs);
+    let result = GetRandom::call(kwargs);
 
     assert!(result.is_err());
     assert!(
@@ -103,7 +104,7 @@ fn test_get_random_invalid_range_equal() {
 #[test]
 fn test_get_random_invalid_range_reversed() {
     let kwargs = create_kwargs_i64(vec![("start", 20), ("end", 10)]);
-    let result = get_random_fn(kwargs);
+    let result = GetRandom::call(kwargs);
 
     assert!(result.is_err());
     assert!(
@@ -118,7 +119,7 @@ fn test_get_random_invalid_range_reversed() {
 #[test]
 fn test_get_random_only_start() {
     let kwargs = create_kwargs_i64(vec![("start", 50)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     // Should use default end of 100
@@ -132,7 +133,7 @@ fn test_get_random_only_start() {
 #[test]
 fn test_get_random_only_end() {
     let kwargs = create_kwargs_i64(vec![("end", 50)]);
-    let result = get_random_fn(kwargs).unwrap();
+    let result = GetRandom::call(kwargs).unwrap();
     let value = result.as_i64().unwrap();
 
     // Should use default start of 0
@@ -150,7 +151,7 @@ fn test_get_random_distribution() {
     let mut values = std::collections::HashSet::new();
 
     for _ in 0..50 {
-        let result = get_random_fn(kwargs.clone()).unwrap();
+        let result = GetRandom::call(kwargs.clone()).unwrap();
         values.insert(result.as_i64().unwrap());
     }
 
@@ -168,7 +169,7 @@ fn test_get_random_always_in_range() {
     let kwargs = create_kwargs_i64(vec![("start", 1), ("end", 10)]);
 
     for _ in 0..100 {
-        let result = get_random_fn(kwargs.clone()).unwrap();
+        let result = GetRandom::call(kwargs.clone()).unwrap();
         let value = result.as_i64().unwrap();
         assert!(
             (1..10).contains(&value),

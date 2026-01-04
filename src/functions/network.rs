@@ -1,55 +1,59 @@
 //! Network-related functions for MiniJinja templates
 //!
-//! This module provides functions for network operations like:
-//! - Getting IP addresses
-//! - DNS resolution
-//! - Port availability checking
-//! - CIDR operations
-//! - IP address conversion
+//! This module provides functions for network operations:
+//! - `get_ip_address`: Get IP address of interface or primary local IP
+//! - `get_interfaces`: List all network interfaces
+//! - `resolve_dns`: DNS hostname resolution
+//! - `cidr_contains`: Check if IP is in CIDR range
+//! - `cidr_network`: Get network address from CIDR
+//! - `cidr_broadcast`: Get broadcast address from CIDR
+//! - `cidr_netmask`: Get netmask from CIDR
+//! - `ip_to_int`: Convert IP to integer
+//! - `int_to_ip`: Convert integer to IP
 
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::Function;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use std::net::{Ipv4Addr, ToSocketAddrs};
 
 /// Get IP address of a network interface or the primary local IP
-///
-/// # Arguments
-///
-/// * `interface` (optional) - Network interface name (e.g., "eth0", "en0")
-///   If not provided, attempts to get the primary local IP address
-///
-/// # Returns
-///
-/// Returns the IP address as a string
-///
-/// # Example
-///
-/// ```jinja
-/// {# Get primary local IP #}
-/// IP: {{ get_ip_address() }}
-///
-/// {# Get specific interface IP (platform-specific) #}
-/// IP: {{ get_ip_address(interface="eth0") }}
-/// ```
-pub fn get_ip_address_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let interface: Option<String> = kwargs.get("interface").ok();
+pub struct GetIpAddress;
 
-    if let Some(iface) = interface {
-        // Try to get IP for specific interface
-        get_interface_ip(&iface)
-    } else {
-        // Get primary local IP by connecting to an external address
-        get_local_ip()
+impl Function for GetIpAddress {
+    const NAME: &'static str = "get_ip_address";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "get_ip_address",
+        category: "network",
+        description: "Get IP address of a network interface or the primary local IP",
+        arguments: &[ArgumentMetadata {
+            name: "interface",
+            arg_type: "string",
+            required: false,
+            default: None,
+            description: "Network interface name (e.g., eth0, en0). If not provided, returns primary local IP",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ get_ip_address() }}",
+            "{{ get_ip_address(interface=\"eth0\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let interface: Option<String> = kwargs.get("interface").ok();
+
+        if let Some(iface) = interface {
+            get_interface_ip(&iface)
+        } else {
+            get_local_ip()
+        }
     }
 }
 
 /// Get the primary local IP address
-///
-/// This works by creating a connection to an external address (doesn't actually send data)
-/// and checking what local IP the system would use
 fn get_local_ip() -> Result<Value, Error> {
-    // Connect to a well-known DNS server to determine our local IP
-    // This doesn't actually send any data, just determines routing
     let socket = std::net::UdpSocket::bind("0.0.0.0:0").map_err(|e| {
         Error::new(
             ErrorKind::InvalidOperation,
@@ -76,7 +80,6 @@ fn get_local_ip() -> Result<Value, Error> {
 
 /// Get IP address for a specific network interface
 fn get_interface_ip(interface: &str) -> Result<Value, Error> {
-    // Use if-addrs crate to get interface information
     let ifaces = if_addrs::get_if_addrs().map_err(|e| {
         Error::new(
             ErrorKind::InvalidOperation,
@@ -97,96 +100,94 @@ fn get_interface_ip(interface: &str) -> Result<Value, Error> {
 }
 
 /// Get a list of all network interfaces with their IP addresses
-///
-/// # Returns
-///
-/// Returns a list of objects with interface information:
-/// - `name`: Interface name (e.g., "eth0", "en0", "lo")
-/// - `ip`: IP address assigned to the interface
-/// - `is_loopback`: Whether this is a loopback interface
-///
-/// # Example
-///
-/// ```jinja
-/// {# List all interfaces #}
-/// {% for iface in get_interfaces() %}
-///   {{ iface.name }}: {{ iface.ip }}
-/// {% endfor %}
-///
-/// {# Filter non-loopback interfaces #}
-/// {% for iface in get_interfaces() | selectattr("is_loopback", "equalto", false) %}
-///   {{ iface.name }}: {{ iface.ip }}
-/// {% endfor %}
-/// ```
-pub fn get_interfaces_fn(_kwargs: Kwargs) -> Result<Value, Error> {
-    let ifaces = if_addrs::get_if_addrs().map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to get network interfaces: {}", e),
-        )
-    })?;
+pub struct GetInterfaces;
 
-    let interfaces: Vec<Value> = ifaces
-        .into_iter()
-        .map(|iface| {
-            let mut map = std::collections::BTreeMap::new();
-            map.insert("name".to_string(), Value::from(iface.name.clone()));
-            map.insert("ip".to_string(), Value::from(iface.ip().to_string()));
-            map.insert("is_loopback".to_string(), Value::from(iface.is_loopback()));
-            Value::from_object(map)
-        })
-        .collect();
+impl Function for GetInterfaces {
+    const NAME: &'static str = "get_interfaces";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "get_interfaces",
+        category: "network",
+        description: "Get list of all network interfaces with their IP addresses",
+        arguments: &[],
+        return_type: "array",
+        examples: &[
+            "{% for iface in get_interfaces() %}{{ iface.name }}: {{ iface.ip }}{% endfor %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    Ok(Value::from(interfaces))
+    fn call(_kwargs: Kwargs) -> Result<Value, Error> {
+        let ifaces = if_addrs::get_if_addrs().map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Failed to get network interfaces: {}", e),
+            )
+        })?;
+
+        let interfaces: Vec<Value> = ifaces
+            .into_iter()
+            .map(|iface| {
+                let mut map = std::collections::BTreeMap::new();
+                map.insert("name".to_string(), Value::from(iface.name.clone()));
+                map.insert("ip".to_string(), Value::from(iface.ip().to_string()));
+                map.insert("is_loopback".to_string(), Value::from(iface.is_loopback()));
+                Value::from_object(map)
+            })
+            .collect();
+
+        Ok(Value::from(interfaces))
+    }
 }
 
 /// Resolve a hostname to an IP address using DNS
-///
-/// # Arguments
-///
-/// * `hostname` (required) - Hostname to resolve (e.g., "google.com", "localhost")
-///
-/// # Returns
-///
-/// Returns the first resolved IP address as a string
-///
-/// # Example
-///
-/// ```jinja
-/// IP for google.com: {{ resolve_dns(hostname="google.com") }}
-/// Localhost IP: {{ resolve_dns(hostname="localhost") }}
-/// ```
-pub fn resolve_dns_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let hostname: String = kwargs.get("hostname")?;
+pub struct ResolveDns;
 
-    // Add default port for DNS resolution (doesn't matter which port)
-    let address = format!("{}:0", hostname);
+impl Function for ResolveDns {
+    const NAME: &'static str = "resolve_dns";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "resolve_dns",
+        category: "network",
+        description: "Resolve a hostname to an IP address using DNS",
+        arguments: &[ArgumentMetadata {
+            name: "hostname",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Hostname to resolve (e.g., google.com, localhost)",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ resolve_dns(hostname=\"google.com\") }}",
+            "{{ resolve_dns(hostname=\"localhost\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let addrs: Vec<_> = address
-        .to_socket_addrs()
-        .map_err(|e| {
-            Error::new(
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let hostname: String = kwargs.get("hostname")?;
+
+        let address = format!("{}:0", hostname);
+
+        let addrs: Vec<_> = address
+            .to_socket_addrs()
+            .map_err(|e| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    format!("Failed to resolve hostname '{}': {}", hostname, e),
+                )
+            })?
+            .collect();
+
+        if addrs.is_empty() {
+            return Err(Error::new(
                 ErrorKind::InvalidOperation,
-                format!("Failed to resolve hostname '{}': {}", hostname, e),
-            )
-        })?
-        .collect();
+                format!("No IP addresses found for hostname '{}'", hostname),
+            ));
+        }
 
-    if addrs.is_empty() {
-        return Err(Error::new(
-            ErrorKind::InvalidOperation,
-            format!("No IP addresses found for hostname '{}'", hostname),
-        ));
+        Ok(Value::from(addrs[0].ip().to_string()))
     }
-
-    // Return the first IP address
-    Ok(Value::from(addrs[0].ip().to_string()))
 }
-
-// Note: is_port_available has been migrated to src/is_functions/network.rs
-// and supports both function syntax and "is" test syntax:
-// - `{{ is_port_available(port=8080) }}`
-// - `{% if 8080 is port_available %}`
 
 /// Parse a CIDR string into network address and prefix length
 fn parse_cidr(cidr: &str) -> Result<(Ipv4Addr, u8), Error> {
@@ -235,188 +236,232 @@ fn prefix_to_mask(prefix: u8) -> u32 {
 }
 
 /// Check if an IP address is within a CIDR range
-///
-/// # Arguments
-///
-/// * `cidr` (required) - CIDR notation (e.g., "192.168.1.0/24")
-/// * `ip` (required) - IP address to check (e.g., "192.168.1.100")
-///
-/// # Returns
-///
-/// Returns true if the IP is within the CIDR range, false otherwise
-///
-/// # Example
-///
-/// ```jinja
-/// {% if cidr_contains(cidr="192.168.1.0/24", ip="192.168.1.100") %}
-///   IP is in the subnet
-/// {% endif %}
-/// ```
-pub fn cidr_contains_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let cidr: String = kwargs.get("cidr")?;
-    let ip_str: String = kwargs.get("ip")?;
+pub struct CidrContains;
 
-    let (network_ip, prefix) = parse_cidr(&cidr)?;
-    let check_ip: Ipv4Addr = ip_str.parse().map_err(|_| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid IP address: '{}'", ip_str),
-        )
-    })?;
+impl Function for CidrContains {
+    const NAME: &'static str = "cidr_contains";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "cidr_contains",
+        category: "network",
+        description: "Check if an IP address is within a CIDR range",
+        arguments: &[
+            ArgumentMetadata {
+                name: "cidr",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "CIDR notation (e.g., 192.168.1.0/24)",
+            },
+            ArgumentMetadata {
+                name: "ip",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "IP address to check",
+            },
+        ],
+        return_type: "boolean",
+        examples: &[
+            "{% if cidr_contains(cidr=\"192.168.1.0/24\", ip=\"192.168.1.100\") %}in subnet{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let mask = prefix_to_mask(prefix);
-    let network_int = u32::from(network_ip);
-    let check_int = u32::from(check_ip);
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let cidr: String = kwargs.get("cidr")?;
+        let ip_str: String = kwargs.get("ip")?;
 
-    // Check if both IPs have the same network portion
-    let is_contained = (network_int & mask) == (check_int & mask);
+        let (network_ip, prefix) = parse_cidr(&cidr)?;
+        let check_ip: Ipv4Addr = ip_str.parse().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid IP address: '{}'", ip_str),
+            )
+        })?;
 
-    Ok(Value::from(is_contained))
+        let mask = prefix_to_mask(prefix);
+        let network_int = u32::from(network_ip);
+        let check_int = u32::from(check_ip);
+
+        let is_contained = (network_int & mask) == (check_int & mask);
+
+        Ok(Value::from(is_contained))
+    }
 }
 
 /// Get the network address from a CIDR notation
-///
-/// # Arguments
-///
-/// * `cidr` (required) - CIDR notation (e.g., "192.168.1.100/24")
-///
-/// # Returns
-///
-/// Returns the network address (e.g., "192.168.1.0")
-///
-/// # Example
-///
-/// ```jinja
-/// Network: {{ cidr_network(cidr="192.168.1.100/24") }}
-/// {# Output: 192.168.1.0 #}
-/// ```
-pub fn cidr_network_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let cidr: String = kwargs.get("cidr")?;
+pub struct CidrNetwork;
 
-    let (ip, prefix) = parse_cidr(&cidr)?;
-    let mask = prefix_to_mask(prefix);
-    let network_int = u32::from(ip) & mask;
-    let network_ip = Ipv4Addr::from(network_int);
+impl Function for CidrNetwork {
+    const NAME: &'static str = "cidr_network";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "cidr_network",
+        category: "network",
+        description: "Get the network address from a CIDR notation",
+        arguments: &[ArgumentMetadata {
+            name: "cidr",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "CIDR notation (e.g., 192.168.1.100/24)",
+        }],
+        return_type: "string",
+        examples: &["{{ cidr_network(cidr=\"192.168.1.100/24\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    Ok(Value::from(network_ip.to_string()))
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let cidr: String = kwargs.get("cidr")?;
+
+        let (ip, prefix) = parse_cidr(&cidr)?;
+        let mask = prefix_to_mask(prefix);
+        let network_int = u32::from(ip) & mask;
+        let network_ip = Ipv4Addr::from(network_int);
+
+        Ok(Value::from(network_ip.to_string()))
+    }
 }
 
 /// Get the broadcast address from a CIDR notation
-///
-/// # Arguments
-///
-/// * `cidr` (required) - CIDR notation (e.g., "192.168.1.0/24")
-///
-/// # Returns
-///
-/// Returns the broadcast address (e.g., "192.168.1.255")
-///
-/// # Example
-///
-/// ```jinja
-/// Broadcast: {{ cidr_broadcast(cidr="192.168.1.0/24") }}
-/// {# Output: 192.168.1.255 #}
-/// ```
-pub fn cidr_broadcast_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let cidr: String = kwargs.get("cidr")?;
+pub struct CidrBroadcast;
 
-    let (ip, prefix) = parse_cidr(&cidr)?;
-    let mask = prefix_to_mask(prefix);
-    let network_int = u32::from(ip) & mask;
-    let broadcast_int = network_int | !mask;
-    let broadcast_ip = Ipv4Addr::from(broadcast_int);
+impl Function for CidrBroadcast {
+    const NAME: &'static str = "cidr_broadcast";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "cidr_broadcast",
+        category: "network",
+        description: "Get the broadcast address from a CIDR notation",
+        arguments: &[ArgumentMetadata {
+            name: "cidr",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "CIDR notation (e.g., 192.168.1.0/24)",
+        }],
+        return_type: "string",
+        examples: &["{{ cidr_broadcast(cidr=\"192.168.1.0/24\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    Ok(Value::from(broadcast_ip.to_string()))
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let cidr: String = kwargs.get("cidr")?;
+
+        let (ip, prefix) = parse_cidr(&cidr)?;
+        let mask = prefix_to_mask(prefix);
+        let network_int = u32::from(ip) & mask;
+        let broadcast_int = network_int | !mask;
+        let broadcast_ip = Ipv4Addr::from(broadcast_int);
+
+        Ok(Value::from(broadcast_ip.to_string()))
+    }
 }
 
 /// Get the netmask from a CIDR notation
-///
-/// # Arguments
-///
-/// * `cidr` (required) - CIDR notation (e.g., "192.168.1.0/24")
-///
-/// # Returns
-///
-/// Returns the netmask (e.g., "255.255.255.0")
-///
-/// # Example
-///
-/// ```jinja
-/// Netmask: {{ cidr_netmask(cidr="192.168.1.0/24") }}
-/// {# Output: 255.255.255.0 #}
-/// ```
-pub fn cidr_netmask_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let cidr: String = kwargs.get("cidr")?;
+pub struct CidrNetmask;
 
-    let (_, prefix) = parse_cidr(&cidr)?;
-    let mask = prefix_to_mask(prefix);
-    let mask_ip = Ipv4Addr::from(mask);
+impl Function for CidrNetmask {
+    const NAME: &'static str = "cidr_netmask";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "cidr_netmask",
+        category: "network",
+        description: "Get the netmask from a CIDR notation",
+        arguments: &[ArgumentMetadata {
+            name: "cidr",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "CIDR notation (e.g., 192.168.1.0/24)",
+        }],
+        return_type: "string",
+        examples: &["{{ cidr_netmask(cidr=\"192.168.1.0/24\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    Ok(Value::from(mask_ip.to_string()))
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let cidr: String = kwargs.get("cidr")?;
+
+        let (_, prefix) = parse_cidr(&cidr)?;
+        let mask = prefix_to_mask(prefix);
+        let mask_ip = Ipv4Addr::from(mask);
+
+        Ok(Value::from(mask_ip.to_string()))
+    }
 }
 
 /// Convert an IPv4 address to its integer representation
-///
-/// # Arguments
-///
-/// * `ip` (required) - IPv4 address (e.g., "192.168.1.1")
-///
-/// # Returns
-///
-/// Returns the integer representation of the IP address
-///
-/// # Example
-///
-/// ```jinja
-/// Integer: {{ ip_to_int(ip="192.168.1.1") }}
-/// {# Output: 3232235777 #}
-/// ```
-pub fn ip_to_int_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let ip_str: String = kwargs.get("ip")?;
+pub struct IpToInt;
 
-    let ip: Ipv4Addr = ip_str.parse().map_err(|_| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid IPv4 address: '{}'", ip_str),
-        )
-    })?;
+impl Function for IpToInt {
+    const NAME: &'static str = "ip_to_int";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "ip_to_int",
+        category: "network",
+        description: "Convert an IPv4 address to its integer representation",
+        arguments: &[ArgumentMetadata {
+            name: "ip",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "IPv4 address (e.g., 192.168.1.1)",
+        }],
+        return_type: "integer",
+        examples: &["{{ ip_to_int(ip=\"192.168.1.1\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    let int_value = u32::from(ip);
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let ip_str: String = kwargs.get("ip")?;
 
-    Ok(Value::from(int_value as i64))
+        let ip: Ipv4Addr = ip_str.parse().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid IPv4 address: '{}'", ip_str),
+            )
+        })?;
+
+        let int_value = u32::from(ip);
+
+        Ok(Value::from(int_value as i64))
+    }
 }
 
 /// Convert an integer to its IPv4 address representation
-///
-/// # Arguments
-///
-/// * `int` (required) - Integer value (0 to 4294967295)
-///
-/// # Returns
-///
-/// Returns the IPv4 address as a string
-///
-/// # Example
-///
-/// ```jinja
-/// IP: {{ int_to_ip(int=3232235777) }}
-/// {# Output: 192.168.1.1 #}
-/// ```
-pub fn int_to_ip_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let int_value: i64 = kwargs.get("int")?;
+pub struct IntToIp;
 
-    if int_value < 0 || int_value > u32::MAX as i64 {
-        return Err(Error::new(
-            ErrorKind::InvalidOperation,
-            format!(
-                "Integer must be between 0 and {}, got {}",
-                u32::MAX,
-                int_value
-            ),
-        ));
+impl Function for IntToIp {
+    const NAME: &'static str = "int_to_ip";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "int_to_ip",
+        category: "network",
+        description: "Convert an integer to its IPv4 address representation",
+        arguments: &[ArgumentMetadata {
+            name: "int",
+            arg_type: "integer",
+            required: true,
+            default: None,
+            description: "Integer value (0 to 4294967295)",
+        }],
+        return_type: "string",
+        examples: &["{{ int_to_ip(int=3232235777) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let int_value: i64 = kwargs.get("int")?;
+
+        if int_value < 0 || int_value > u32::MAX as i64 {
+            return Err(Error::new(
+                ErrorKind::InvalidOperation,
+                format!(
+                    "Integer must be between 0 and {}, got {}",
+                    u32::MAX,
+                    int_value
+                ),
+            ));
+        }
+
+        let ip = Ipv4Addr::from(int_value as u32);
+
+        Ok(Value::from(ip.to_string()))
     }
-
-    let ip = Ipv4Addr::from(int_value as u32);
-
-    Ok(Value::from(ip.to_string()))
 }

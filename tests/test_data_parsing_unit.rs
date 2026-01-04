@@ -5,13 +5,22 @@ use std::sync::Arc;
 use tmpltool::TemplateContext;
 use tmpltool::filter_functions::FilterFunction;
 use tmpltool::filter_functions::serialization::{ParseJson, ParseToml, ParseYaml};
-use tmpltool::functions::data_parsing::{
-    create_read_json_file_fn, create_read_toml_file_fn, create_read_yaml_file_fn,
-};
+use tmpltool::functions::ContextFunction;
+use tmpltool::functions::data_parsing::{ReadJsonFile, ReadTomlFile, ReadYamlFile};
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
     Kwargs::from_iter(args.iter().map(|(k, v)| (*k, minijinja::Value::from(*v))))
+}
+
+// Helper to create path kwargs for file reading functions
+fn path_kwargs(path: &str) -> Kwargs {
+    create_kwargs(vec![("path", path)])
+}
+
+// Helper to create path kwargs from a String (for variable paths)
+fn path_kwargs_string(path: String) -> Kwargs {
+    Kwargs::from_iter([("path", minijinja::Value::from(path))])
 }
 
 // ========== parse_json tests ==========
@@ -241,9 +250,8 @@ fn test_read_json_file_success() {
     fs::write(&json_file, r#"{"name": "Test", "value": 42}"#).unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("test_data.json".to_string()).unwrap();
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("test_data.json")).unwrap();
     assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "Test");
     assert_eq!(result.get_attr("value").unwrap().as_usize(), Some(42));
 
@@ -255,9 +263,8 @@ fn test_read_json_file_success() {
 fn test_read_json_file_not_found() {
     let temp_dir = std::env::temp_dir();
     let context = Arc::new(TemplateContext::new(temp_dir, false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("nonexistent.json".to_string());
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("nonexistent.json"));
     assert!(result.is_err());
     assert!(
         result
@@ -275,9 +282,8 @@ fn test_read_json_file_invalid_json() {
     fs::write(&json_file, "not valid json").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("invalid.json".to_string());
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("invalid.json"));
     assert!(result.is_err());
     assert!(
         result
@@ -293,9 +299,8 @@ fn test_read_json_file_invalid_json() {
 #[test]
 fn test_read_json_file_security_absolute_path() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("/etc/passwd".to_string());
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("/etc/passwd"));
     assert!(result.is_err());
     assert!(
         result
@@ -308,9 +313,8 @@ fn test_read_json_file_security_absolute_path() {
 #[test]
 fn test_read_json_file_security_parent_traversal() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("../../../etc/passwd".to_string());
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("../../../etc/passwd"));
     assert!(result.is_err());
     assert!(
         result
@@ -328,9 +332,12 @@ fn test_read_json_file_trust_mode_allows_absolute_path() {
     fs::write(&json_file, r#"{"trusted": true}"#).unwrap();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file(json_file.to_string_lossy().to_string()).unwrap();
+    let result = ReadJsonFile::call(
+        context.clone(),
+        path_kwargs_string(json_file.to_string_lossy().to_string()),
+    )
+    .unwrap();
     assert!(result.get_attr("trusted").unwrap().is_true());
 
     // Cleanup
@@ -347,9 +354,8 @@ fn test_read_yaml_file_success() {
     fs::write(&yaml_file, "name: Test\nvalue: 42").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("test_data.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("test_data.yaml")).unwrap();
     assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "Test");
     assert_eq!(result.get_attr("value").unwrap().as_usize(), Some(42));
 
@@ -361,9 +367,8 @@ fn test_read_yaml_file_success() {
 fn test_read_yaml_file_not_found() {
     let temp_dir = std::env::temp_dir();
     let context = Arc::new(TemplateContext::new(temp_dir, false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("nonexistent.yaml".to_string());
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("nonexistent.yaml"));
     assert!(result.is_err());
     assert!(
         result
@@ -381,9 +386,8 @@ fn test_read_yaml_file_array() {
     fs::write(&yaml_file, "- apple\n- banana\n- cherry").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("array.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("array.yaml")).unwrap();
     assert_eq!(result.len(), Some(3));
     assert_eq!(
         result
@@ -401,9 +405,8 @@ fn test_read_yaml_file_array() {
 #[test]
 fn test_read_yaml_file_security_absolute_path() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("/etc/config.yaml".to_string());
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("/etc/config.yaml"));
     assert!(result.is_err());
     assert!(
         result
@@ -423,9 +426,8 @@ fn test_read_toml_file_success() {
     fs::write(&toml_file, "name = \"Test\"\nvalue = 42").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("test_data.toml".to_string()).unwrap();
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("test_data.toml")).unwrap();
     assert_eq!(result.get_attr("name").unwrap().as_str().unwrap(), "Test");
     assert_eq!(result.get_attr("value").unwrap().as_usize(), Some(42));
 
@@ -437,9 +439,8 @@ fn test_read_toml_file_success() {
 fn test_read_toml_file_not_found() {
     let temp_dir = std::env::temp_dir();
     let context = Arc::new(TemplateContext::new(temp_dir, false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("nonexistent.toml".to_string());
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("nonexistent.toml"));
     assert!(result.is_err());
     assert!(
         result
@@ -457,9 +458,8 @@ fn test_read_toml_file_table() {
     fs::write(&toml_file, "[database]\nhost = \"localhost\"\nport = 5432").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("config.toml".to_string()).unwrap();
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("config.toml")).unwrap();
     let db = result.get_attr("database").unwrap();
     assert_eq!(db.get_attr("host").unwrap().as_str().unwrap(), "localhost");
     assert_eq!(db.get_attr("port").unwrap().as_usize(), Some(5432));
@@ -476,9 +476,8 @@ fn test_read_toml_file_invalid_toml() {
     fs::write(&toml_file, "invalid = [missing quote").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("invalid.toml".to_string());
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("invalid.toml"));
     assert!(result.is_err());
     assert!(
         result
@@ -494,9 +493,8 @@ fn test_read_toml_file_invalid_toml() {
 #[test]
 fn test_read_toml_file_security_parent_traversal() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("../../config.toml".to_string());
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("../../config.toml"));
     assert!(result.is_err());
     assert!(
         result
@@ -1049,9 +1047,8 @@ fn test_parse_toml_unicode() {
 #[test]
 fn test_read_yaml_file_security_parent_traversal() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("../../../config.yaml".to_string());
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("../../../config.yaml"));
     assert!(result.is_err());
     assert!(
         result
@@ -1064,9 +1061,8 @@ fn test_read_yaml_file_security_parent_traversal() {
 #[test]
 fn test_read_toml_file_security_absolute_path() {
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("/etc/config.toml".to_string());
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("/etc/config.toml"));
     assert!(result.is_err());
     assert!(
         result
@@ -1084,9 +1080,12 @@ fn test_read_yaml_file_trust_mode_allows_absolute() {
     fs::write(&yaml_file, "trusted: true").unwrap();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file(yaml_file.to_string_lossy().to_string()).unwrap();
+    let result = ReadYamlFile::call(
+        context.clone(),
+        path_kwargs_string(yaml_file.to_string_lossy().to_string()),
+    )
+    .unwrap();
     assert!(result.get_attr("trusted").unwrap().is_true());
 
     // Cleanup
@@ -1101,9 +1100,12 @@ fn test_read_toml_file_trust_mode_allows_absolute() {
     fs::write(&toml_file, "trusted = true").unwrap();
 
     let context = Arc::new(TemplateContext::new(PathBuf::from("."), true));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file(toml_file.to_string_lossy().to_string()).unwrap();
+    let result = ReadTomlFile::call(
+        context.clone(),
+        path_kwargs_string(toml_file.to_string_lossy().to_string()),
+    )
+    .unwrap();
     assert!(result.get_attr("trusted").unwrap().is_true());
 
     // Cleanup
@@ -1118,9 +1120,8 @@ fn test_read_yaml_file_invalid_yaml() {
     fs::write(&yaml_file, "invalid:\n  - yaml\n  missing: indentation").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("invalid_yaml.yaml".to_string());
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("invalid_yaml.yaml"));
     assert!(result.is_err());
     assert!(
         result
@@ -1140,9 +1141,8 @@ fn test_read_json_file_complex_nested() {
     fs::write(&json_file, r#"{"a": {"b": {"c": [1, 2, {"d": "deep"}]}}}"#).unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("complex_nested.json".to_string()).unwrap();
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("complex_nested.json")).unwrap();
     let a = result.get_attr("a").unwrap();
     let b = a.get_attr("b").unwrap();
     let c = b.get_attr("c").unwrap();
@@ -1159,9 +1159,8 @@ fn test_read_yaml_file_with_nulls() {
     fs::write(&yaml_file, "value: null\nempty: ~").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("with_nulls.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("with_nulls.yaml")).unwrap();
     assert!(result.get_attr("value").unwrap().is_none());
     assert!(result.get_attr("empty").unwrap().is_none());
 
@@ -1176,9 +1175,8 @@ fn test_read_yaml_file_with_floats() {
     fs::write(&yaml_file, "value: 1.23456\nother: 9.87654").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("with_floats.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("with_floats.yaml")).unwrap();
     let val = result.get_attr("value").unwrap();
     let json_val: serde_json::Value = serde_json::to_value(&val).unwrap();
     let f = json_val.as_f64().unwrap();
@@ -1195,9 +1193,8 @@ fn test_read_toml_file_with_datetime() {
     fs::write(&toml_file, "created = 2024-01-15T10:30:00Z").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("with_datetime.toml".to_string()).unwrap();
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("with_datetime.toml")).unwrap();
     let created_val = result.get_attr("created").unwrap();
     let created = created_val.as_str().unwrap();
     assert!(created.contains("2024"));
@@ -1217,9 +1214,8 @@ fn test_read_toml_file_with_array_of_tables() {
     .unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("array_of_tables.toml".to_string()).unwrap();
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("array_of_tables.toml")).unwrap();
     let items = result.get_attr("items").unwrap();
     assert_eq!(items.len(), Some(2));
 
@@ -1234,9 +1230,8 @@ fn test_read_yaml_file_with_number_key() {
     fs::write(&yaml_file, "123: numeric key value").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("number_key.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("number_key.yaml")).unwrap();
     assert_eq!(
         result.get_attr("123").unwrap().as_str().unwrap(),
         "numeric key value"
@@ -1253,9 +1248,8 @@ fn test_read_yaml_file_with_boolean_key() {
     fs::write(&yaml_file, "true: boolean key value").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("bool_key.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("bool_key.yaml")).unwrap();
     assert_eq!(
         result.get_attr("true").unwrap().as_str().unwrap(),
         "boolean key value"
@@ -1272,9 +1266,8 @@ fn test_read_yaml_file_with_tagged_value() {
     fs::write(&yaml_file, "custom: !tag value").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("tagged.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("tagged.yaml")).unwrap();
     // Tagged value should be converted to its inner value
     assert!(result.get_attr("custom").is_ok());
 
@@ -1293,9 +1286,8 @@ fn test_read_yaml_file_with_anchor_alias() {
     .unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("anchor_alias.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("anchor_alias.yaml")).unwrap();
     assert_eq!(
         result.get_attr("default_value").unwrap().as_usize(),
         Some(100)
@@ -1314,9 +1306,8 @@ fn test_read_toml_file_with_nested_tables() {
     fs::write(&toml_file, "[a]\n[a.b]\n[a.b.c]\nvalue = \"deep\"").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("nested_tables.toml".to_string()).unwrap();
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("nested_tables.toml")).unwrap();
     let a = result.get_attr("a").unwrap();
     let b = a.get_attr("b").unwrap();
     let c = b.get_attr("c").unwrap();
@@ -1333,9 +1324,8 @@ fn test_read_json_file_with_unicode() {
     fs::write(&json_file, r#"{"emoji": "🚀", "text": "日本語"}"#).unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_json_file = create_read_json_file_fn(context);
 
-    let result = read_json_file("unicode.json".to_string()).unwrap();
+    let result = ReadJsonFile::call(context.clone(), path_kwargs("unicode.json")).unwrap();
     assert_eq!(result.get_attr("emoji").unwrap().as_str().unwrap(), "🚀");
     assert_eq!(result.get_attr("text").unwrap().as_str().unwrap(), "日本語");
 
@@ -1350,9 +1340,8 @@ fn test_read_yaml_file_with_large_integers() {
     fs::write(&yaml_file, "big: 9223372036854775807").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_yaml_file = create_read_yaml_file_fn(context);
 
-    let result = read_yaml_file("large_int.yaml".to_string()).unwrap();
+    let result = ReadYamlFile::call(context.clone(), path_kwargs("large_int.yaml")).unwrap();
     assert_eq!(
         result.get_attr("big").unwrap().as_i64(),
         Some(9223372036854775807i64)
@@ -1369,9 +1358,8 @@ fn test_read_toml_file_with_inline_table() {
     fs::write(&toml_file, "point = { x = 10, y = 20 }").unwrap();
 
     let context = Arc::new(TemplateContext::new(temp_dir.clone(), false));
-    let read_toml_file = create_read_toml_file_fn(context);
 
-    let result = read_toml_file("inline_table.toml".to_string()).unwrap();
+    let result = ReadTomlFile::call(context.clone(), path_kwargs("inline_table.toml")).unwrap();
     let point = result.get_attr("point").unwrap();
     assert_eq!(point.get_attr("x").unwrap().as_usize(), Some(10));
     assert_eq!(point.get_attr("y").unwrap().as_usize(), Some(20));

@@ -21,9 +21,19 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, ErrorKind, Value};
 use regex::Regex;
+
+/// Common metadata for string argument
+const STRING_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "string",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string to process",
+};
 
 /// Helper to extract string from Value
 fn extract_string(value: &Value, fn_name: &str) -> Result<String, Error> {
@@ -67,6 +77,34 @@ impl RegexReplace {
 
 impl FilterFunction for RegexReplace {
     const NAME: &'static str = "regex_replace";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "regex_replace",
+        category: "string",
+        description: "Replace substrings using regex pattern",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "pattern",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Regex pattern to match",
+            },
+            ArgumentMetadata {
+                name: "replacement",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Replacement string",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ regex_replace(string=\"hello123\", pattern=\"[0-9]+\", replacement=\"-\") }}",
+            "{{ \"hello123\" | regex_replace(pattern=\"[0-9]+\", replacement=\"-\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -124,6 +162,34 @@ impl Substring {
 
 impl FilterFunction for Substring {
     const NAME: &'static str = "substring";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "substring",
+        category: "string",
+        description: "Extract substring by position (supports negative start for counting from end)",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "start",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Start position (negative counts from end)",
+            },
+            ArgumentMetadata {
+                name: "length",
+                arg_type: "integer",
+                required: false,
+                default: None,
+                description: "Number of characters to extract",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ substring(string=\"hello world\", start=0, length=5) }}",
+            "{{ \"hello world\" | substring(start=-5) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -179,6 +245,34 @@ impl Truncate {
 
 impl FilterFunction for Truncate {
     const NAME: &'static str = "truncate";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "truncate",
+        category: "string",
+        description: "Truncate string with suffix",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "length",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Maximum length including suffix",
+            },
+            ArgumentMetadata {
+                name: "suffix",
+                arg_type: "string",
+                required: false,
+                default: Some("..."),
+                description: "Suffix to append when truncated",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ truncate(string=\"Hello World\", length=8) }}",
+            "{{ \"Hello World\" | truncate(length=8, suffix=\">>\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -221,6 +315,18 @@ impl WordCount {
 
 impl FilterFunction for WordCount {
     const NAME: &'static str = "word_count";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "word_count",
+        category: "string",
+        description: "Count words in string",
+        arguments: &[STRING_ARG],
+        return_type: "integer",
+        examples: &[
+            "{{ word_count(string=\"Hello World\") }}",
+            "{{ \"Hello World\" | word_count }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -258,6 +364,15 @@ impl SplitLines {
 
 impl FilterFunction for SplitLines {
     const NAME: &'static str = "split_lines";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "split_lines",
+        category: "string",
+        description: "Split string into lines array",
+        arguments: &[STRING_ARG],
+        return_type: "array",
+        examples: &["{{ split_lines(string=text) }}", "{{ text | split_lines }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -353,6 +468,34 @@ impl Wrap {
 
 impl FilterFunction for Wrap {
     const NAME: &'static str = "wrap";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "wrap",
+        category: "string",
+        description: "Word wrap text at specified width",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "width",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Maximum line width",
+            },
+            ArgumentMetadata {
+                name: "indent",
+                arg_type: "string",
+                required: false,
+                default: Some(""),
+                description: "Indentation for continuation lines",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ wrap(string=\"The quick brown fox\", width=10) }}",
+            "{{ text | wrap(width=80, indent=\"  \") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -411,6 +554,34 @@ impl Center {
 
 impl FilterFunction for Center {
     const NAME: &'static str = "center";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "center",
+        category: "string",
+        description: "Center text with padding",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "width",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Total width after padding",
+            },
+            ArgumentMetadata {
+                name: "char",
+                arg_type: "string",
+                required: false,
+                default: Some(" "),
+                description: "Padding character",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ center(string=\"hello\", width=11) }}",
+            "{{ \"hello\" | center(width=11, char=\"-\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -456,6 +627,18 @@ impl StripHtml {
 
 impl FilterFunction for StripHtml {
     const NAME: &'static str = "strip_html";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "strip_html",
+        category: "string",
+        description: "Remove HTML tags from string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ strip_html(string=\"<p>Hello <b>World</b></p>\") }}",
+            "{{ html_content | strip_html }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -494,6 +677,18 @@ impl StripAnsi {
 
 impl FilterFunction for StripAnsi {
     const NAME: &'static str = "strip_ansi";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "strip_ansi",
+        category: "string",
+        description: "Remove ANSI escape codes from string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ strip_ansi(string=colored_text) }}",
+            "{{ colored_text | strip_ansi }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -536,6 +731,18 @@ impl NormalizeWhitespace {
 
 impl FilterFunction for NormalizeWhitespace {
     const NAME: &'static str = "normalize_whitespace";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "normalize_whitespace",
+        category: "string",
+        description: "Normalize whitespace (collapse multiple spaces, trim)",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ normalize_whitespace(string=\"  hello   world  \") }}",
+            "{{ text | normalize_whitespace }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -593,6 +800,18 @@ impl Slugify {
 
 impl FilterFunction for Slugify {
     const NAME: &'static str = "slugify";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "slugify",
+        category: "string",
+        description: "Convert string to URL-friendly slug",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ slugify(string=\"Hello World!\") }}",
+            "{{ title | slugify }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -644,6 +863,27 @@ impl Indent {
 
 impl FilterFunction for Indent {
     const NAME: &'static str = "indent";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "indent",
+        category: "string",
+        description: "Indent text by N spaces",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "spaces",
+                arg_type: "integer",
+                required: false,
+                default: Some("4"),
+                description: "Number of spaces to indent",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ indent(string=\"line1\\nline2\", spaces=2) }}",
+            "{{ text | indent(spaces=4) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -722,6 +962,18 @@ impl Dedent {
 
 impl FilterFunction for Dedent {
     const NAME: &'static str = "dedent";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "dedent",
+        category: "string",
+        description: "Remove common leading whitespace from all lines",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ dedent(string=\"  line1\\n  line2\") }}",
+            "{{ text | dedent }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -776,6 +1028,27 @@ impl Quote {
 
 impl FilterFunction for Quote {
     const NAME: &'static str = "quote";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "quote",
+        category: "string",
+        description: "Quote a string with the specified style (single, double, or backtick)",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "style",
+                arg_type: "string",
+                required: false,
+                default: Some("double"),
+                description: "Quote style: single, double, or backtick",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ quote(string=\"hello\") }}",
+            "{{ \"hello\" | quote(style=\"single\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -819,6 +1092,18 @@ impl EscapeQuotes {
 
 impl FilterFunction for EscapeQuotes {
     const NAME: &'static str = "escape_quotes";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "escape_quotes",
+        category: "string",
+        description: "Escape quotes in a string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ escape_quotes(string=\"It's a \\\"test\\\"\") }}",
+            "{{ text | escape_quotes }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -879,6 +1164,18 @@ impl ToSnakeCase {
 
 impl FilterFunction for ToSnakeCase {
     const NAME: &'static str = "to_snake_case";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_snake_case",
+        category: "string",
+        description: "Convert string to snake_case",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ to_snake_case(string=\"HelloWorld\") }}",
+            "{{ \"HelloWorld\" | to_snake_case }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -937,6 +1234,18 @@ impl ToCamelCase {
 
 impl FilterFunction for ToCamelCase {
     const NAME: &'static str = "to_camel_case";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_camel_case",
+        category: "string",
+        description: "Convert string to camelCase",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ to_camel_case(string=\"hello_world\") }}",
+            "{{ \"hello-world\" | to_camel_case }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -990,6 +1299,18 @@ impl ToPascalCase {
 
 impl FilterFunction for ToPascalCase {
     const NAME: &'static str = "to_pascal_case";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_pascal_case",
+        category: "string",
+        description: "Convert string to PascalCase",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ to_pascal_case(string=\"hello_world\") }}",
+            "{{ \"hello-world\" | to_pascal_case }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -1050,6 +1371,18 @@ impl ToKebabCase {
 
 impl FilterFunction for ToKebabCase {
     const NAME: &'static str = "to_kebab_case";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "to_kebab_case",
+        category: "string",
+        description: "Convert string to kebab-case",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ to_kebab_case(string=\"HelloWorld\") }}",
+            "{{ \"hello_world\" | to_kebab_case }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -1095,6 +1428,34 @@ impl PadLeft {
 
 impl FilterFunction for PadLeft {
     const NAME: &'static str = "pad_left";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "pad_left",
+        category: "string",
+        description: "Pad string on the left to a minimum length",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "length",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Minimum total length",
+            },
+            ArgumentMetadata {
+                name: "char",
+                arg_type: "string",
+                required: false,
+                default: Some(" "),
+                description: "Padding character",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ pad_left(string=\"5\", length=3, char=\"0\") }}",
+            "{{ \"5\" | pad_left(length=3, char=\"0\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -1146,6 +1507,34 @@ impl PadRight {
 
 impl FilterFunction for PadRight {
     const NAME: &'static str = "pad_right";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "pad_right",
+        category: "string",
+        description: "Pad string on the right to a minimum length",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "length",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Minimum total length",
+            },
+            ArgumentMetadata {
+                name: "char",
+                arg_type: "string",
+                required: false,
+                default: Some(" "),
+                description: "Padding character",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ pad_right(string=\"5\", length=3, char=\"0\") }}",
+            "{{ \"5\" | pad_right(length=3, char=\"0\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -1191,6 +1580,27 @@ impl Repeat {
 
 impl FilterFunction for Repeat {
     const NAME: &'static str = "repeat";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "repeat",
+        category: "string",
+        description: "Repeat string N times",
+        arguments: &[
+            STRING_ARG,
+            ArgumentMetadata {
+                name: "count",
+                arg_type: "integer",
+                required: true,
+                default: None,
+                description: "Number of repetitions",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ repeat(string=\"ab\", count=3) }}",
+            "{{ \"-\" | repeat(count=5) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;
@@ -1232,6 +1642,18 @@ impl Reverse {
 
 impl FilterFunction for Reverse {
     const NAME: &'static str = "reverse";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "reverse",
+        category: "string",
+        description: "Reverse a string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ reverse(string=\"hello\") }}",
+            "{{ \"hello\" | reverse }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let string: String = kwargs.get("string")?;

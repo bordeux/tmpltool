@@ -1,106 +1,126 @@
-/// Environment variable access functions for templates
+//! Environment variable access functions for templates
+//!
+//! This module provides functions for accessing and filtering environment variables:
+//! - `get_env`: Get an environment variable with optional default value
+//! - `filter_env`: Filter environment variables by glob pattern
+
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::Function;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use std::collections::HashMap;
 
 /// Get environment variable with optional default
-///
-/// Replacement for Tera's built-in get_env() function
-///
-/// # Arguments
-///
-/// * `name` - Environment variable name
-/// * `default` - Optional default value if variable is not set
-///
-/// # Example
-///
-/// ```jinja
-/// {{ get_env(name="HOME") }}
-/// {{ get_env(name="MISSING", default="/tmp") }}
-/// ```
-pub fn env_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let name: String = kwargs.get("name")?;
-    let default: Option<String> = kwargs.get("default").ok();
+pub struct GetEnv;
 
-    match std::env::var(&name) {
-        Ok(value) => Ok(Value::from(value)),
-        Err(_) => {
-            if let Some(def) = default {
-                Ok(Value::from(def))
-            } else {
-                Err(Error::new(
-                    ErrorKind::UndefinedError,
-                    format!(
-                        "Environment variable '{}' is not set and no default provided",
-                        name
-                    ),
-                ))
+impl Function for GetEnv {
+    const NAME: &'static str = "get_env";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "get_env",
+        category: "environment",
+        description: "Get environment variable with optional default value",
+        arguments: &[
+            ArgumentMetadata {
+                name: "name",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "Environment variable name",
+            },
+            ArgumentMetadata {
+                name: "default",
+                arg_type: "string",
+                required: false,
+                default: None,
+                description: "Default value if variable is not set",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ get_env(name=\"HOME\") }}",
+            "{{ get_env(name=\"PORT\", default=\"8080\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let name: String = kwargs.get("name")?;
+        let default: Option<String> = kwargs.get("default").ok();
+
+        match std::env::var(&name) {
+            Ok(value) => Ok(Value::from(value)),
+            Err(_) => {
+                if let Some(def) = default {
+                    Ok(Value::from(def))
+                } else {
+                    Err(Error::new(
+                        ErrorKind::UndefinedError,
+                        format!(
+                            "Environment variable '{}' is not set and no default provided",
+                            name
+                        ),
+                    ))
+                }
             }
         }
     }
 }
 
-/// Filter environment variables by pattern
-///
-/// Returns a list of objects with `key` and `value` fields for all
-/// environment variables matching the given glob pattern.
-///
-/// # Arguments
-///
-/// * `pattern` - A glob pattern to match environment variable names
-///   - Use `*` to match any characters
-///   - Use `?` to match a single character
-///   - Examples: "SERVER_*", "DB_*", "*_PORT", "APP_?_NAME"
-///
-/// # Returns
-///
-/// A list of objects, each containing:
-/// * `key` - The environment variable name
-/// * `value` - The environment variable value
-///
-/// # Examples
-///
-/// ```jinja
-/// {% for var in filter_env(pattern="SERVER_*") %}
-///   {{ var.key }}={{ var.value }}
-/// {% endfor %}
-/// ```
-pub fn filter_env_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    // Extract pattern from kwargs
-    let pattern: String = kwargs.get("pattern")?;
+/// Filter environment variables by glob pattern
+pub struct FilterEnv;
 
-    // Convert glob pattern to regex
-    let regex_pattern = glob_to_regex(&pattern);
-    let re = regex::Regex::new(&regex_pattern).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Invalid pattern: {}", e),
-        )
-    })?;
+impl Function for FilterEnv {
+    const NAME: &'static str = "filter_env";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "filter_env",
+        category: "environment",
+        description: "Filter environment variables by glob pattern",
+        arguments: &[ArgumentMetadata {
+            name: "pattern",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Glob pattern to match variable names (e.g., \"SERVER_*\", \"DB_*\")",
+        }],
+        return_type: "array",
+        examples: &[
+            "{% for var in filter_env(pattern=\"SERVER_*\") %}{{ var.key }}={{ var.value }}{% endfor %}",
+            "{{ filter_env(pattern=\"DB_*\") }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    // Filter environment variables
-    let mut results: Vec<HashMap<String, String>> = std::env::vars()
-        .filter(|(key, _)| re.is_match(key))
-        .map(|(key, value)| {
-            let mut map = HashMap::new();
-            map.insert("key".to_string(), key);
-            map.insert("value".to_string(), value);
-            map
-        })
-        .collect();
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let pattern: String = kwargs.get("pattern")?;
 
-    // Sort by key for consistent output
-    results.sort_by(|a, b| a.get("key").cmp(&b.get("key")));
+        // Convert glob pattern to regex
+        let regex_pattern = glob_to_regex(&pattern);
+        let re = regex::Regex::new(&regex_pattern).map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidOperation,
+                format!("Invalid pattern: {}", e),
+            )
+        })?;
 
-    Ok(Value::from_serialize(&results))
+        // Filter environment variables
+        let mut results: Vec<HashMap<String, String>> = std::env::vars()
+            .filter(|(key, _)| re.is_match(key))
+            .map(|(key, value)| {
+                let mut map = HashMap::new();
+                map.insert("key".to_string(), key);
+                map.insert("value".to_string(), value);
+                map
+            })
+            .collect();
+
+        // Sort by key for consistent output
+        results.sort_by(|a, b| a.get("key").cmp(&b.get("key")));
+
+        Ok(Value::from_serialize(&results))
+    }
 }
 
 /// Convert a glob pattern to a regex pattern
-///
-/// Supports:
-/// * `*` - matches any characters (including none)
-/// * `?` - matches exactly one character
-/// * All other characters are escaped for literal matching
 fn glob_to_regex(pattern: &str) -> String {
     let mut regex = String::from("^");
 

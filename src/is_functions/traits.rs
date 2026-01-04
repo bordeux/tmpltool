@@ -7,12 +7,31 @@
 //!
 //! ```rust,ignore
 //! use crate::is_functions::traits::IsFunction;
+//! use crate::functions::metadata::{FunctionMetadata, ArgumentMetadata, SyntaxVariants};
 //!
 //! pub struct Email;
 //!
 //! impl IsFunction for Email {
 //!     const FUNCTION_NAME: &'static str = "is_email";
 //!     const IS_NAME: &'static str = "email";
+//!     const METADATA: FunctionMetadata = FunctionMetadata {
+//!         name: "is_email",
+//!         category: "validation",
+//!         description: "Validate email address format",
+//!         arguments: &[ArgumentMetadata {
+//!             name: "string",
+//!             arg_type: "string",
+//!             required: true,
+//!             default: None,
+//!             description: "The string to validate",
+//!         }],
+//!         return_type: "boolean",
+//!         examples: &[
+//!             "{{ is_email(string=\"user@example.com\") }}",
+//!             "{% if email is email %}valid{% endif %}",
+//!         ],
+//!         syntax: SyntaxVariants::FUNCTION_AND_TEST,
+//!     };
 //!
 //!     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
 //!         let input: String = kwargs.get("string")?;
@@ -28,11 +47,11 @@
 //! Email::register(&mut env);
 //! ```
 
+use crate::TemplateContext;
+use crate::functions::metadata::FunctionMetadata;
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, Value};
 use std::sync::Arc;
-
-use crate::TemplateContext;
 
 /// Trait for types that can be registered as both a MiniJinja function and test.
 ///
@@ -58,6 +77,9 @@ pub trait IsFunction: 'static {
     /// This name is used for test registration: `{% if x is email %}`
     /// The `is` keyword in the template provides the "is_" semantics.
     const IS_NAME: &'static str;
+
+    /// Metadata describing this function (required for IDE integration).
+    const METADATA: FunctionMetadata;
 
     /// Handle function-style calls where all arguments come from kwargs.
     ///
@@ -116,6 +138,9 @@ pub trait ContextIsFunction: 'static {
 
     /// Test name WITHOUT "is_" prefix (e.g., "file").
     const IS_NAME: &'static str;
+
+    /// Metadata describing this function (required for IDE integration).
+    const METADATA: FunctionMetadata;
 
     /// Handle function-style calls with context access.
     ///

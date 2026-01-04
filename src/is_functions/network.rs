@@ -18,6 +18,7 @@
 //! {% if 8080 is port_available %}port is free{% endif %}
 //! ```
 
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use crate::is_functions::IsFunction;
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, ErrorKind, Value};
@@ -68,6 +69,24 @@ impl PortAvailable {
 impl IsFunction for PortAvailable {
     const FUNCTION_NAME: &'static str = "is_port_available";
     const IS_NAME: &'static str = "port_available";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_port_available",
+        category: "network",
+        description: "Check if a TCP port is available for binding",
+        arguments: &[ArgumentMetadata {
+            name: "port",
+            arg_type: "integer",
+            required: true,
+            default: None,
+            description: "Port number (1-65535)",
+        }],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_port_available(port=8080) }}",
+            "{% if 8080 is port_available %}port is free{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let port_i64: i64 = kwargs.get("port")?;

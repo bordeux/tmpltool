@@ -2,14 +2,15 @@
 //!
 //! This module provides functions for working with URLs and HTTP authentication:
 //! - `basic_auth`: Generate HTTP Basic Authentication headers
-//! - `parse_url`: Parse URLs into components
 //! - `build_url`: Construct URLs from components
 //! - `query_string`: Build URL query strings from objects
+//!
+//! Note: parse_url is now in filter_functions/url.rs with dual function+filter syntax support.
 
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::Function;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
-use std::collections::BTreeMap;
-use url::Url;
 
 /// Convert a MiniJinja Value (object) to a URL-encoded query string
 ///
@@ -54,174 +55,167 @@ fn serialize_query_params(params: &Value) -> Result<String, Error> {
 }
 
 /// Generate HTTP Basic Authentication header value
-///
-/// # Arguments
-///
-/// * `username` - The username for authentication
-/// * `password` - The password for authentication
-///
-/// # Returns
-///
-/// Returns the Base64-encoded "Basic" authentication header value
-///
-/// # Example
-///
-/// ```jinja
-/// Authorization: {{ basic_auth(username="admin", password="secret") }}
-/// ```
-pub fn basic_auth_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let username: String = kwargs.get("username")?;
-    let password: String = kwargs.get("password")?;
+pub struct BasicAuth;
 
-    let credentials = format!("{}:{}", username, password);
-    let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, credentials);
+impl Function for BasicAuth {
+    const NAME: &'static str = "basic_auth";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "basic_auth",
+        category: "url",
+        description: "Generate HTTP Basic Authentication header value",
+        arguments: &[
+            ArgumentMetadata {
+                name: "username",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "The username for authentication",
+            },
+            ArgumentMetadata {
+                name: "password",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "The password for authentication",
+            },
+        ],
+        return_type: "string",
+        examples: &["Authorization: {{ basic_auth(username=\"admin\", password=\"secret\") }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    Ok(Value::from(format!("Basic {}", encoded)))
-}
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let username: String = kwargs.get("username")?;
+        let password: String = kwargs.get("password")?;
 
-/// Parse a URL into its components
-///
-/// # Arguments
-///
-/// * `url` - The URL string to parse
-///
-/// # Returns
-///
-/// Returns an object with the following fields:
-/// - `scheme`: The URL scheme (http, https, etc.)
-/// - `host`: The hostname
-/// - `port`: The port number (or default for scheme)
-/// - `path`: The path component
-/// - `query`: The query string (without ?)
-/// - `fragment`: The fragment/hash (without #)
-/// - `username`: Username from URL (if present)
-/// - `password`: Password from URL (if present)
-///
-/// # Example
-///
-/// ```jinja
-/// {% set url_parts = parse_url(url="https://user:pass@example.com:8080/path?foo=bar#section") %}
-/// Scheme: {{ url_parts.scheme }}
-/// Host: {{ url_parts.host }}
-/// Port: {{ url_parts.port }}
-/// ```
-pub fn parse_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let url_str: String = kwargs.get("url")?;
+        let credentials = format!("{}:{}", username, password);
+        let encoded =
+            base64::Engine::encode(&base64::engine::general_purpose::STANDARD, credentials);
 
-    let parsed = Url::parse(&url_str).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to parse URL '{}': {}", url_str, e),
-        )
-    })?;
-
-    let mut result = BTreeMap::new();
-    result.insert("scheme".to_string(), Value::from(parsed.scheme()));
-    result.insert(
-        "host".to_string(),
-        Value::from(parsed.host_str().unwrap_or("")),
-    );
-    result.insert(
-        "port".to_string(),
-        Value::from(parsed.port().or_else(|| parsed.port_or_known_default())),
-    );
-    result.insert("path".to_string(), Value::from(parsed.path()));
-    result.insert(
-        "query".to_string(),
-        Value::from(parsed.query().unwrap_or("")),
-    );
-    result.insert(
-        "fragment".to_string(),
-        Value::from(parsed.fragment().unwrap_or("")),
-    );
-    result.insert("username".to_string(), Value::from(parsed.username()));
-    result.insert(
-        "password".to_string(),
-        Value::from(parsed.password().unwrap_or("")),
-    );
-
-    Ok(Value::from_object(result))
+        Ok(Value::from(format!("Basic {}", encoded)))
+    }
 }
 
 /// Build a URL from components
-///
-/// # Arguments
-///
-/// * `scheme` - Optional URL scheme (default: "https")
-/// * `host` - The hostname (required)
-/// * `port` - Optional port number
-/// * `path` - Optional path component (default: "/")
-/// * `query` - Optional query string (string) or object (will be serialized)
-///
-/// # Returns
-///
-/// Returns the constructed URL string
-///
-/// # Example
-///
-/// ```jinja
-/// {{ build_url(host="api.example.com", port=8080, path="/v1/users", query="limit=10") }}
-/// {{ build_url(host="api.example.com", query={"page": 1, "limit": 20}) }}
-/// ```
-pub fn build_url_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let scheme: String = kwargs.get("scheme").unwrap_or_else(|_| "https".to_string());
-    let host: String = kwargs.get("host")?;
-    let port: Option<u16> = kwargs.get("port").ok();
-    let path: Option<String> = kwargs.get("path").ok();
-    let query: Option<Value> = kwargs.get("query").ok();
+pub struct BuildUrl;
 
-    // Start with scheme and host
-    let mut url = format!("{}://{}", scheme, host);
+impl Function for BuildUrl {
+    const NAME: &'static str = "build_url";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "build_url",
+        category: "url",
+        description: "Build a URL from components",
+        arguments: &[
+            ArgumentMetadata {
+                name: "host",
+                arg_type: "string",
+                required: true,
+                default: None,
+                description: "The hostname",
+            },
+            ArgumentMetadata {
+                name: "scheme",
+                arg_type: "string",
+                required: false,
+                default: Some("\"https\""),
+                description: "URL scheme (default: \"https\")",
+            },
+            ArgumentMetadata {
+                name: "port",
+                arg_type: "integer",
+                required: false,
+                default: None,
+                description: "Port number",
+            },
+            ArgumentMetadata {
+                name: "path",
+                arg_type: "string",
+                required: false,
+                default: Some("\"/\""),
+                description: "Path component (default: \"/\")",
+            },
+            ArgumentMetadata {
+                name: "query",
+                arg_type: "string|object",
+                required: false,
+                default: None,
+                description: "Query string or object to serialize",
+            },
+        ],
+        return_type: "string",
+        examples: &[
+            "{{ build_url(host=\"api.example.com\", port=8080, path=\"/v1/users\") }}",
+            "{{ build_url(host=\"api.example.com\", query={\"page\": 1}) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    // Add port if specified
-    if let Some(p) = port {
-        url.push_str(&format!(":{}", p));
-    }
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let scheme: String = kwargs.get("scheme").unwrap_or_else(|_| "https".to_string());
+        let host: String = kwargs.get("host")?;
+        let port: Option<u16> = kwargs.get("port").ok();
+        let path: Option<String> = kwargs.get("path").ok();
+        let query: Option<Value> = kwargs.get("query").ok();
 
-    // Add path (default to "/" if not specified)
-    let path_str = path.unwrap_or_else(|| "/".to_string());
-    if !path_str.starts_with('/') {
-        url.push('/');
-    }
-    url.push_str(&path_str);
+        // Start with scheme and host
+        let mut url = format!("{}://{}", scheme, host);
 
-    // Add query string if specified
-    if let Some(q) = query {
-        let query_str = if let Some(s) = q.as_str() {
-            // Query is a string, use it directly
-            s.to_string()
-        } else {
-            // Query is an object, serialize it
-            serialize_query_params(&q)?
-        };
-
-        if !query_str.is_empty() {
-            url.push('?');
-            url.push_str(&query_str);
+        // Add port if specified
+        if let Some(p) = port {
+            url.push_str(&format!(":{}", p));
         }
-    }
 
-    Ok(Value::from(url))
+        // Add path (default to "/" if not specified)
+        let path_str = path.unwrap_or_else(|| "/".to_string());
+        if !path_str.starts_with('/') {
+            url.push('/');
+        }
+        url.push_str(&path_str);
+
+        // Add query string if specified
+        if let Some(q) = query {
+            let query_str = if let Some(s) = q.as_str() {
+                // Query is a string, use it directly
+                s.to_string()
+            } else {
+                // Query is an object, serialize it
+                serialize_query_params(&q)?
+            };
+
+            if !query_str.is_empty() {
+                url.push('?');
+                url.push_str(&query_str);
+            }
+        }
+
+        Ok(Value::from(url))
+    }
 }
 
 /// Build a URL query string from an object
-///
-/// # Arguments
-///
-/// * `params` - An object containing key-value pairs for the query string
-///
-/// # Returns
-///
-/// Returns a URL-encoded query string (without leading ?)
-///
-/// # Example
-///
-/// ```jinja
-/// {% set params = {"name": "John Doe", "age": 30, "city": "New York"} %}
-/// {{ query_string(params=params) }}
-/// ```
-pub fn query_string_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    let params: Value = kwargs.get("params")?;
-    let query_str = serialize_query_params(&params)?;
-    Ok(Value::from(query_str))
+pub struct QueryString;
+
+impl Function for QueryString {
+    const NAME: &'static str = "query_string";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "query_string",
+        category: "url",
+        description: "Build a URL query string from an object",
+        arguments: &[ArgumentMetadata {
+            name: "params",
+            arg_type: "object",
+            required: true,
+            default: None,
+            description: "Object containing key-value pairs for the query string",
+        }],
+        return_type: "string",
+        examples: &["{{ query_string(params={\"name\": \"John\", \"age\": 30}) }}"],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(kwargs: Kwargs) -> Result<Value, Error> {
+        let params: Value = kwargs.get("params")?;
+        let query_str = serialize_query_params(&params)?;
+        Ok(Value::from(query_str))
+    }
 }

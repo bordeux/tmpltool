@@ -18,6 +18,7 @@
 //! {% if 2024 is leap_year %}leap year{% endif %}
 //! ```
 
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use crate::is_functions::IsFunction;
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, Value};
@@ -55,6 +56,24 @@ impl LeapYear {
 impl IsFunction for LeapYear {
     const FUNCTION_NAME: &'static str = "is_leap_year";
     const IS_NAME: &'static str = "leap_year";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "is_leap_year",
+        category: "datetime",
+        description: "Check if a year is a leap year",
+        arguments: &[ArgumentMetadata {
+            name: "year",
+            arg_type: "integer",
+            required: true,
+            default: None,
+            description: "The year to check",
+        }],
+        return_type: "boolean",
+        examples: &[
+            "{{ is_leap_year(year=2024) }}",
+            "{% if 2024 is leap_year %}leap year{% endif %}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_TEST,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let year: i32 = kwargs.get("year")?;

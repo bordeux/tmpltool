@@ -1,115 +1,55 @@
+//! Data parsing functions
+//!
+//! Provides functions for reading and parsing structured data files:
+//! - read_json_file: Read and parse JSON file
+//! - read_yaml_file: Read and parse YAML file
+//! - read_toml_file: Read and parse TOML file
+//!
+//! Note: parse_json, parse_yaml, parse_toml (string parsing) are now in
+//! filter_functions/serialization.rs with dual function+filter syntax support.
+
+use super::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
+use super::traits::ContextFunction;
+use crate::TemplateContext;
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
-/// Data parsing functions
-///
-/// Provides functions for parsing structured data formats:
-/// - parse_json: Parse JSON string into object
-/// - parse_yaml: Parse YAML string into object
-/// - parse_toml: Parse TOML string into object
-/// - read_json_file: Read and parse JSON file
-/// - read_yaml_file: Read and parse YAML file
-/// - read_toml_file: Read and parse TOML file
 use std::fs;
 use std::sync::Arc;
 
-use crate::TemplateContext;
+/// Read and parse a JSON file
+pub struct ReadJsonFile;
 
-/// Parse JSON string into object
-///
-/// # Example
-///
-/// ```jinja
-/// {{ parse_json(string='{"key": "value"}') }}
-/// ```
-pub fn parse_json_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    // Extract string from kwargs
-    let string: String = kwargs.get("string")?;
+impl ContextFunction for ReadJsonFile {
+    const NAME: &'static str = "read_json_file";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "read_json_file",
+        category: "data_parsing",
+        description: "Read and parse a JSON file",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to the JSON file",
+        }],
+        return_type: "object|array",
+        examples: &[
+            "{% set config = read_json_file(path=\"config.json\") %}",
+            "{{ read_json_file(path=\"data.json\").items | length }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
 
-    // Parse JSON string
-    let json_value: serde_json::Value = serde_json::from_str(&string).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to parse JSON: {}", e),
-        )
-    })?;
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
+        let path: String = kwargs.get("path")?;
 
-    Ok(Value::from_serialize(&json_value))
-}
-
-/// Parse YAML string into object
-///
-/// # Example
-///
-/// ```jinja
-/// {{ parse_yaml(string='key: value') }}
-/// ```
-pub fn parse_yaml_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    // Extract string from kwargs
-    let string: String = kwargs.get("string")?;
-
-    // Parse YAML string to serde_yaml::Value
-    let yaml_value: serde_yaml::Value = serde_yaml::from_str(&string).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to parse YAML: {}", e),
-        )
-    })?;
-
-    // Convert serde_yaml::Value to serde_json::Value
-    let json_value = serde_yaml_to_json(yaml_value).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert YAML to JSON: {}", e),
-        )
-    })?;
-
-    Ok(Value::from_serialize(&json_value))
-}
-
-/// Parse TOML string into object
-///
-/// # Example
-///
-/// ```jinja
-/// {{ parse_toml(string='key = "value"') }}
-/// ```
-pub fn parse_toml_fn(kwargs: Kwargs) -> Result<Value, Error> {
-    // Extract string from kwargs
-    let string: String = kwargs.get("string")?;
-
-    // Parse TOML string to toml::Value
-    let toml_value: toml::Value = toml::from_str(&string).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to parse TOML: {}", e),
-        )
-    })?;
-
-    // Convert toml::Value to serde_json::Value
-    let json_value = toml_to_json(toml_value).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidOperation,
-            format!("Failed to convert TOML to JSON: {}", e),
-        )
-    })?;
-
-    Ok(Value::from_serialize(&json_value))
-}
-
-/// Create read_json_file function with context
-pub fn create_read_json_file_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
-    move |path: String| {
-        // Security checks (unless trust mode is enabled)
+        // Security checks
         if !context.is_trust_mode() {
             crate::functions::filesystem::validate_path_security(&path)?;
         }
 
-        // Resolve path relative to template's directory
         let resolved_path = context.resolve_path(&path);
 
-        // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -117,7 +57,6 @@ pub fn create_read_json_file_fn(
             )
         })?;
 
-        // Parse JSON
         let json_value: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -133,20 +72,39 @@ pub fn create_read_json_file_fn(
     }
 }
 
-/// Create read_yaml_file function with context
-pub fn create_read_yaml_file_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
-    move |path: String| {
-        // Security checks (unless trust mode is enabled)
+/// Read and parse a YAML file
+pub struct ReadYamlFile;
+
+impl ContextFunction for ReadYamlFile {
+    const NAME: &'static str = "read_yaml_file";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "read_yaml_file",
+        category: "data_parsing",
+        description: "Read and parse a YAML file",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to the YAML file",
+        }],
+        return_type: "object|array",
+        examples: &[
+            "{% set config = read_yaml_file(path=\"config.yaml\") %}",
+            "{{ read_yaml_file(path=\"values.yml\").database.host }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
+        let path: String = kwargs.get("path")?;
+
         if !context.is_trust_mode() {
             crate::functions::filesystem::validate_path_security(&path)?;
         }
 
-        // Resolve path relative to template's directory
         let resolved_path = context.resolve_path(&path);
 
-        // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -154,7 +112,6 @@ pub fn create_read_yaml_file_fn(
             )
         })?;
 
-        // Parse YAML
         let yaml_value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -166,7 +123,6 @@ pub fn create_read_yaml_file_fn(
             )
         })?;
 
-        // Convert to JSON Value
         let json_value = serde_yaml_to_json(yaml_value).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -178,20 +134,39 @@ pub fn create_read_yaml_file_fn(
     }
 }
 
-/// Create read_toml_file function with context
-pub fn create_read_toml_file_fn(
-    context: Arc<TemplateContext>,
-) -> impl Fn(String) -> Result<Value, Error> + Send + Sync + 'static {
-    move |path: String| {
-        // Security checks (unless trust mode is enabled)
+/// Read and parse a TOML file
+pub struct ReadTomlFile;
+
+impl ContextFunction for ReadTomlFile {
+    const NAME: &'static str = "read_toml_file";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "read_toml_file",
+        category: "data_parsing",
+        description: "Read and parse a TOML file",
+        arguments: &[ArgumentMetadata {
+            name: "path",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "Path to the TOML file",
+        }],
+        return_type: "object",
+        examples: &[
+            "{% set config = read_toml_file(path=\"Cargo.toml\") %}",
+            "{{ read_toml_file(path=\"config.toml\").package.version }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_ONLY,
+    };
+
+    fn call(context: Arc<TemplateContext>, kwargs: Kwargs) -> Result<Value, Error> {
+        let path: String = kwargs.get("path")?;
+
         if !context.is_trust_mode() {
             crate::functions::filesystem::validate_path_security(&path)?;
         }
 
-        // Resolve path relative to template's directory
         let resolved_path = context.resolve_path(&path);
 
-        // Read file content
         let content = fs::read_to_string(&resolved_path).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -199,7 +174,6 @@ pub fn create_read_toml_file_fn(
             )
         })?;
 
-        // Parse TOML
         let toml_value: toml::Value = toml::from_str(&content).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -211,7 +185,6 @@ pub fn create_read_toml_file_fn(
             )
         })?;
 
-        // Convert to JSON Value
         let json_value = toml_to_json(toml_value).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidOperation,
@@ -264,10 +237,7 @@ fn serde_yaml_to_json(yaml: serde_yaml::Value) -> std::result::Result<serde_json
             }
             Ok(serde_json::Value::Object(json_map))
         }
-        serde_yaml::Value::Tagged(tagged) => {
-            // For tagged values, just convert the inner value
-            serde_yaml_to_json(tagged.value)
-        }
+        serde_yaml::Value::Tagged(tagged) => serde_yaml_to_json(tagged.value),
     }
 }
 

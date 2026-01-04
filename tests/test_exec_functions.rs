@@ -3,7 +3,8 @@ use minijinja::Value;
 use minijinja::value::Kwargs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tmpltool::functions::exec;
+use tmpltool::functions::ContextFunction;
+use tmpltool::functions::exec::{Exec, ExecRaw};
 use tmpltool::{TemplateContext, functions};
 
 fn create_env(trust_mode: bool) -> Environment<'static> {
@@ -406,12 +407,11 @@ fn create_untrusted_context() -> Arc<TemplateContext> {
 #[test]
 fn test_exec_unit_requires_trust_mode() {
     let context = create_untrusted_context();
-    let exec_fn = exec::create_exec_fn(context);
 
-    let result = exec_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("echo hello"),
-    )]));
+    let result = Exec::call(
+        context,
+        Kwargs::from_iter(vec![("command", Value::from("echo hello"))]),
+    );
 
     assert!(result.is_err());
     assert!(
@@ -425,12 +425,11 @@ fn test_exec_unit_requires_trust_mode() {
 #[test]
 fn test_exec_unit_simple_command() {
     let context = create_trusted_context();
-    let exec_fn = exec::create_exec_fn(context);
 
-    let result = exec_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("echo hello"),
-    )]))
+    let result = Exec::call(
+        context,
+        Kwargs::from_iter(vec![("command", Value::from("echo hello"))]),
+    )
     .unwrap();
 
     // exec() returns stdout directly as string
@@ -442,12 +441,14 @@ fn test_exec_unit_simple_command() {
 #[cfg(not(target_os = "windows"))]
 fn test_exec_unit_failing_command_throws_error() {
     let context = create_trusted_context();
-    let exec_fn = exec::create_exec_fn(context);
 
-    let result = exec_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("ls /nonexistent_directory_12345"),
-    )]));
+    let result = Exec::call(
+        context,
+        Kwargs::from_iter(vec![(
+            "command",
+            Value::from("ls /nonexistent_directory_12345"),
+        )]),
+    );
 
     // exec() should throw error on non-zero exit
     assert!(result.is_err());
@@ -458,12 +459,14 @@ fn test_exec_unit_failing_command_throws_error() {
 #[test]
 fn test_exec_unit_invalid_timeout() {
     let context = create_trusted_context();
-    let exec_fn = exec::create_exec_fn(context);
 
-    let result = exec_fn(Kwargs::from_iter(vec![
-        ("command", Value::from("echo hello")),
-        ("timeout", Value::from(500)),
-    ]));
+    let result = Exec::call(
+        context,
+        Kwargs::from_iter(vec![
+            ("command", Value::from("echo hello")),
+            ("timeout", Value::from(500)),
+        ]),
+    );
 
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Timeout must be"));
@@ -473,12 +476,11 @@ fn test_exec_unit_invalid_timeout() {
 #[test]
 fn test_exec_raw_unit_requires_trust_mode() {
     let context = create_untrusted_context();
-    let exec_raw_fn = exec::create_exec_raw_fn(context);
 
-    let result = exec_raw_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("echo hello"),
-    )]));
+    let result = ExecRaw::call(
+        context,
+        Kwargs::from_iter(vec![("command", Value::from("echo hello"))]),
+    );
 
     assert!(result.is_err());
     assert!(
@@ -492,12 +494,11 @@ fn test_exec_raw_unit_requires_trust_mode() {
 #[test]
 fn test_exec_raw_unit_simple_command() {
     let context = create_trusted_context();
-    let exec_raw_fn = exec::create_exec_raw_fn(context);
 
-    let result = exec_raw_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("echo hello"),
-    )]))
+    let result = ExecRaw::call(
+        context,
+        Kwargs::from_iter(vec![("command", Value::from("echo hello"))]),
+    )
     .unwrap();
 
     // Verify result structure
@@ -513,12 +514,14 @@ fn test_exec_raw_unit_simple_command() {
 #[cfg(not(target_os = "windows"))]
 fn test_exec_raw_unit_failing_command() {
     let context = create_trusted_context();
-    let exec_raw_fn = exec::create_exec_raw_fn(context);
 
-    let result = exec_raw_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("ls /nonexistent_directory_12345"),
-    )]))
+    let result = ExecRaw::call(
+        context,
+        Kwargs::from_iter(vec![(
+            "command",
+            Value::from("ls /nonexistent_directory_12345"),
+        )]),
+    )
     .unwrap();
 
     // exec_raw() should NOT throw error, just return result
@@ -534,13 +537,12 @@ fn test_exec_raw_unit_failing_command() {
 #[cfg(not(target_os = "windows"))]
 fn test_exec_raw_unit_stderr_output() {
     let context = create_trusted_context();
-    let exec_raw_fn = exec::create_exec_raw_fn(context);
 
     // Command that writes to stderr
-    let result = exec_raw_fn(Kwargs::from_iter(vec![(
-        "command",
-        Value::from("echo error >&2"),
-    )]))
+    let result = ExecRaw::call(
+        context,
+        Kwargs::from_iter(vec![("command", Value::from("echo error >&2"))]),
+    )
     .unwrap();
 
     assert!(result.get_attr("success").unwrap().is_true());
@@ -553,10 +555,13 @@ fn test_exec_raw_unit_stderr_output() {
 #[cfg(not(target_os = "windows"))]
 fn test_exec_raw_unit_exit_code() {
     let context = create_trusted_context();
-    let exec_raw_fn = exec::create_exec_raw_fn(context);
 
     // Command that exits with code 42
-    let result = exec_raw_fn(Kwargs::from_iter(vec![("command", Value::from("exit 42"))])).unwrap();
+    let result = ExecRaw::call(
+        context,
+        Kwargs::from_iter(vec![("command", Value::from("exit 42"))]),
+    )
+    .unwrap();
 
     assert_eq!(result.get_attr("exit_code").unwrap().as_i64(), Some(42));
     assert!(!result.get_attr("success").unwrap().is_true());

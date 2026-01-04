@@ -1,6 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::predicates;
+use tmpltool::functions::Function;
+use tmpltool::functions::predicates::{ArrayAll, ArrayAny, ArrayContains, EndsWith, StartsWith};
 
 // ============================================================================
 // Array Any Tests
@@ -8,7 +9,7 @@ use tmpltool::functions::predicates;
 
 #[test]
 fn test_array_any_found() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3, 4, 5])),
         ("predicate", Value::from(3)),
     ]))
@@ -19,7 +20,7 @@ fn test_array_any_found() {
 
 #[test]
 fn test_array_any_not_found() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3, 4, 5])),
         ("predicate", Value::from(99)),
     ]))
@@ -31,7 +32,7 @@ fn test_array_any_not_found() {
 #[test]
 fn test_array_any_empty_array() {
     let empty: Vec<i32> = vec![];
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(empty)),
         ("predicate", Value::from(1)),
     ]))
@@ -42,7 +43,7 @@ fn test_array_any_empty_array() {
 
 #[test]
 fn test_array_any_strings() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec!["apple", "banana", "cherry"])),
         ("predicate", Value::from("banana")),
     ]))
@@ -53,7 +54,7 @@ fn test_array_any_strings() {
 
 #[test]
 fn test_array_any_first_element() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("predicate", Value::from(1)),
     ]))
@@ -64,7 +65,7 @@ fn test_array_any_first_element() {
 
 #[test]
 fn test_array_any_last_element() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("predicate", Value::from(3)),
     ]))
@@ -75,7 +76,7 @@ fn test_array_any_last_element() {
 
 #[test]
 fn test_array_any_error_not_array() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![
+    let result = ArrayAny::call(Kwargs::from_iter(vec![
         ("array", Value::from(42)),
         ("predicate", Value::from(1)),
     ]));
@@ -95,7 +96,7 @@ fn test_array_any_error_not_array() {
 
 #[test]
 fn test_array_all_match() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![5, 5, 5, 5])),
         ("predicate", Value::from(5)),
     ]))
@@ -106,7 +107,7 @@ fn test_array_all_match() {
 
 #[test]
 fn test_array_all_no_match() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![5, 5, 3, 5])),
         ("predicate", Value::from(5)),
     ]))
@@ -119,7 +120,7 @@ fn test_array_all_no_match() {
 fn test_array_all_empty_array() {
     // Empty arrays should return true (vacuous truth)
     let empty: Vec<i32> = vec![];
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from(empty)),
         ("predicate", Value::from(5)),
     ]))
@@ -130,7 +131,7 @@ fn test_array_all_empty_array() {
 
 #[test]
 fn test_array_all_strings() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec!["test", "test", "test"])),
         ("predicate", Value::from("test")),
     ]))
@@ -141,7 +142,7 @@ fn test_array_all_strings() {
 
 #[test]
 fn test_array_all_single_element_match() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![42])),
         ("predicate", Value::from(42)),
     ]))
@@ -152,7 +153,7 @@ fn test_array_all_single_element_match() {
 
 #[test]
 fn test_array_all_single_element_no_match() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![42])),
         ("predicate", Value::from(99)),
     ]))
@@ -163,7 +164,7 @@ fn test_array_all_single_element_no_match() {
 
 #[test]
 fn test_array_all_error_not_array() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![
+    let result = ArrayAll::call(Kwargs::from_iter(vec![
         ("array", Value::from("not an array")),
         ("predicate", Value::from(1)),
     ]));
@@ -183,7 +184,7 @@ fn test_array_all_error_not_array() {
 
 #[test]
 fn test_array_contains_found() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![10, 20, 30, 40])),
         ("value", Value::from(30)),
     ]))
@@ -194,7 +195,7 @@ fn test_array_contains_found() {
 
 #[test]
 fn test_array_contains_not_found() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![10, 20, 30, 40])),
         ("value", Value::from(99)),
     ]))
@@ -206,7 +207,7 @@ fn test_array_contains_not_found() {
 #[test]
 fn test_array_contains_empty_array() {
     let empty: Vec<i32> = vec![];
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(empty)),
         ("value", Value::from(1)),
     ]))
@@ -217,7 +218,7 @@ fn test_array_contains_empty_array() {
 
 #[test]
 fn test_array_contains_strings() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec!["apple", "banana", "cherry"])),
         ("value", Value::from("banana")),
     ]))
@@ -228,7 +229,7 @@ fn test_array_contains_strings() {
 
 #[test]
 fn test_array_contains_first_element() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("value", Value::from(1)),
     ]))
@@ -239,7 +240,7 @@ fn test_array_contains_first_element() {
 
 #[test]
 fn test_array_contains_last_element() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 3])),
         ("value", Value::from(3)),
     ]))
@@ -250,7 +251,7 @@ fn test_array_contains_last_element() {
 
 #[test]
 fn test_array_contains_duplicate_values() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(vec![1, 2, 2, 3])),
         ("value", Value::from(2)),
     ]))
@@ -261,7 +262,7 @@ fn test_array_contains_duplicate_values() {
 
 #[test]
 fn test_array_contains_error_not_array() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![
+    let result = ArrayContains::call(Kwargs::from_iter(vec![
         ("array", Value::from(42)),
         ("value", Value::from(1)),
     ]));
@@ -281,7 +282,7 @@ fn test_array_contains_error_not_array() {
 
 #[test]
 fn test_starts_with_true() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hello World")),
         ("prefix", Value::from("Hello")),
     ]))
@@ -292,7 +293,7 @@ fn test_starts_with_true() {
 
 #[test]
 fn test_starts_with_false() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hello World")),
         ("prefix", Value::from("World")),
     ]))
@@ -303,7 +304,7 @@ fn test_starts_with_false() {
 
 #[test]
 fn test_starts_with_empty_prefix() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hello")),
         ("prefix", Value::from("")),
     ]))
@@ -314,7 +315,7 @@ fn test_starts_with_empty_prefix() {
 
 #[test]
 fn test_starts_with_same_string() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("test")),
         ("prefix", Value::from("test")),
     ]))
@@ -325,7 +326,7 @@ fn test_starts_with_same_string() {
 
 #[test]
 fn test_starts_with_case_sensitive() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hello")),
         ("prefix", Value::from("hello")),
     ]))
@@ -336,7 +337,7 @@ fn test_starts_with_case_sensitive() {
 
 #[test]
 fn test_starts_with_longer_prefix() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hi")),
         ("prefix", Value::from("Hello")),
     ]))
@@ -347,7 +348,7 @@ fn test_starts_with_longer_prefix() {
 
 #[test]
 fn test_starts_with_file_path() {
-    let result = predicates::starts_with_fn(Kwargs::from_iter(vec![
+    let result = StartsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("/usr/local/bin/app")),
         ("prefix", Value::from("/usr/")),
     ]))
@@ -362,7 +363,7 @@ fn test_starts_with_file_path() {
 
 #[test]
 fn test_ends_with_true() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("readme.txt")),
         ("suffix", Value::from(".txt")),
     ]))
@@ -373,7 +374,7 @@ fn test_ends_with_true() {
 
 #[test]
 fn test_ends_with_false() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("readme.txt")),
         ("suffix", Value::from(".md")),
     ]))
@@ -384,7 +385,7 @@ fn test_ends_with_false() {
 
 #[test]
 fn test_ends_with_empty_suffix() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("test")),
         ("suffix", Value::from("")),
     ]))
@@ -395,7 +396,7 @@ fn test_ends_with_empty_suffix() {
 
 #[test]
 fn test_ends_with_same_string() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("test")),
         ("suffix", Value::from("test")),
     ]))
@@ -406,7 +407,7 @@ fn test_ends_with_same_string() {
 
 #[test]
 fn test_ends_with_case_sensitive() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hello")),
         ("suffix", Value::from("LO")),
     ]))
@@ -417,7 +418,7 @@ fn test_ends_with_case_sensitive() {
 
 #[test]
 fn test_ends_with_longer_suffix() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("Hi")),
         ("suffix", Value::from("Hello")),
     ]))
@@ -428,7 +429,7 @@ fn test_ends_with_longer_suffix() {
 
 #[test]
 fn test_ends_with_url() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("https://example.com")),
         ("suffix", Value::from(".com")),
     ]))
@@ -439,7 +440,7 @@ fn test_ends_with_url() {
 
 #[test]
 fn test_ends_with_multiple_extensions() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![
+    let result = EndsWith::call(Kwargs::from_iter(vec![
         ("string", Value::from("archive.tar.gz")),
         ("suffix", Value::from(".tar.gz")),
     ]))
@@ -454,14 +455,14 @@ fn test_ends_with_multiple_extensions() {
 
 #[test]
 fn test_array_any_missing_array() {
-    let result = predicates::array_any_fn(Kwargs::from_iter(vec![("predicate", Value::from(1))]));
+    let result = ArrayAny::call(Kwargs::from_iter(vec![("predicate", Value::from(1))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_array_all_missing_predicate() {
-    let result = predicates::array_all_fn(Kwargs::from_iter(vec![(
+    let result = ArrayAll::call(Kwargs::from_iter(vec![(
         "array",
         Value::from(vec![1, 2, 3]),
     )]));
@@ -471,7 +472,7 @@ fn test_array_all_missing_predicate() {
 
 #[test]
 fn test_array_contains_missing_value() {
-    let result = predicates::array_contains_fn(Kwargs::from_iter(vec![(
+    let result = ArrayContains::call(Kwargs::from_iter(vec![(
         "array",
         Value::from(vec![1, 2, 3]),
     )]));
@@ -481,15 +482,14 @@ fn test_array_contains_missing_value() {
 
 #[test]
 fn test_starts_with_missing_string() {
-    let result =
-        predicates::starts_with_fn(Kwargs::from_iter(vec![("prefix", Value::from("test"))]));
+    let result = StartsWith::call(Kwargs::from_iter(vec![("prefix", Value::from("test"))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_ends_with_missing_suffix() {
-    let result = predicates::ends_with_fn(Kwargs::from_iter(vec![("string", Value::from("test"))]));
+    let result = EndsWith::call(Kwargs::from_iter(vec![("string", Value::from("test"))]));
 
     assert!(result.is_err());
 }

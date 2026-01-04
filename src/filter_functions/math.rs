@@ -23,17 +23,25 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 
+/// Common metadata for single-argument number functions
+const NUMBER_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "number",
+    arg_type: "number",
+    required: true,
+    default: None,
+    description: "The number to process",
+};
+
 /// Helper to extract a numeric value from a MiniJinja Value
 fn extract_number(value: &Value, fn_name: &str) -> Result<f64, Error> {
-    // Try direct integer conversion first
     if let Some(n) = value.as_i64() {
         return Ok(n as f64);
     }
 
-    // Try via serde_json for floats and other numeric types
     let json_value: serde_json::Value = serde_json::to_value(value).map_err(|e| {
         Error::new(
             ErrorKind::InvalidOperation,
@@ -63,17 +71,6 @@ fn smart_number(result: f64) -> Value {
 // ============================================
 
 /// Return absolute value of a number.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ abs(number=-42) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ -42 | abs }}
-/// {{ temperature_diff | abs }}
-/// ```
 pub struct Abs;
 
 impl Abs {
@@ -84,6 +81,15 @@ impl Abs {
 
 impl FilterFunction for Abs {
     const NAME: &'static str = "abs";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "abs",
+        category: "math",
+        description: "Return absolute value of a number",
+        arguments: &[NUMBER_ARG],
+        return_type: "number",
+        examples: &["{{ abs(number=-42) }}", "{{ -42 | abs }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let number: Value = kwargs.get("number")?;
@@ -102,18 +108,6 @@ impl FilterFunction for Abs {
 // ============================================
 
 /// Round a number to N decimal places.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ round(number=3.14159, decimals=2) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ 3.14159 | round }}
-/// {{ 3.14159 | round(decimals=2) }}
-/// {{ price | round(decimals=2) }}
-/// ```
 pub struct Round;
 
 impl Round {
@@ -131,6 +125,27 @@ impl Round {
 
 impl FilterFunction for Round {
     const NAME: &'static str = "round";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "round",
+        category: "math",
+        description: "Round a number to N decimal places",
+        arguments: &[
+            NUMBER_ARG,
+            ArgumentMetadata {
+                name: "decimals",
+                arg_type: "integer",
+                required: false,
+                default: Some("0"),
+                description: "Number of decimal places",
+            },
+        ],
+        return_type: "number",
+        examples: &[
+            "{{ round(number=3.14159, decimals=2) }}",
+            "{{ 3.14159 | round(decimals=2) }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let number: Value = kwargs.get("number")?;
@@ -151,17 +166,6 @@ impl FilterFunction for Round {
 // ============================================
 
 /// Round up to the nearest integer.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ ceil(number=3.1) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ 3.1 | ceil }}
-/// {{ items_needed | ceil }}
-/// ```
 pub struct Ceil;
 
 impl Ceil {
@@ -172,6 +176,15 @@ impl Ceil {
 
 impl FilterFunction for Ceil {
     const NAME: &'static str = "ceil";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "ceil",
+        category: "math",
+        description: "Round up to the nearest integer",
+        arguments: &[NUMBER_ARG],
+        return_type: "integer",
+        examples: &["{{ ceil(number=3.1) }}", "{{ 3.1 | ceil }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let number: Value = kwargs.get("number")?;
@@ -190,17 +203,6 @@ impl FilterFunction for Ceil {
 // ============================================
 
 /// Round down to the nearest integer.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ floor(number=3.9) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ 3.9 | floor }}
-/// {{ full_pages | floor }}
-/// ```
 pub struct Floor;
 
 impl Floor {
@@ -211,6 +213,15 @@ impl Floor {
 
 impl FilterFunction for Floor {
     const NAME: &'static str = "floor";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "floor",
+        category: "math",
+        description: "Round down to the nearest integer",
+        arguments: &[NUMBER_ARG],
+        return_type: "integer",
+        examples: &["{{ floor(number=3.9) }}", "{{ 3.9 | floor }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let number: Value = kwargs.get("number")?;

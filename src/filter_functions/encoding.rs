@@ -18,20 +18,20 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 
+/// Common metadata for single-argument string encoding functions
+const STRING_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "string",
+    arg_type: "string",
+    required: true,
+    default: None,
+    description: "The string to process",
+};
+
 /// Base64 encode function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ base64_encode(string="hello") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "hello" | base64_encode }}
-/// ```
 pub struct Base64Encode;
 
 impl Base64Encode {
@@ -42,6 +42,18 @@ impl Base64Encode {
 
 impl FilterFunction for Base64Encode {
     const NAME: &'static str = "base64_encode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "base64_encode",
+        category: "encoding",
+        description: "Encode a string to Base64",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ base64_encode(string=\"hello\") }}",
+            "{{ \"hello\" | base64_encode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -60,16 +72,6 @@ impl FilterFunction for Base64Encode {
 }
 
 /// Base64 decode function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ base64_decode(string="SGVsbG8=") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "SGVsbG8=" | base64_decode }}
-/// ```
 pub struct Base64Decode;
 
 impl Base64Decode {
@@ -94,6 +96,18 @@ impl Base64Decode {
 
 impl FilterFunction for Base64Decode {
     const NAME: &'static str = "base64_decode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "base64_decode",
+        category: "encoding",
+        description: "Decode a Base64 string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ base64_decode(string=\"aGVsbG8=\") }}",
+            "{{ \"aGVsbG8=\" | base64_decode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -112,16 +126,6 @@ impl FilterFunction for Base64Decode {
 }
 
 /// Hex encode function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ hex_encode(string="hello") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "hello" | hex_encode }}
-/// ```
 pub struct HexEncode;
 
 impl HexEncode {
@@ -132,6 +136,18 @@ impl HexEncode {
 
 impl FilterFunction for HexEncode {
     const NAME: &'static str = "hex_encode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "hex_encode",
+        category: "encoding",
+        description: "Encode a string to hexadecimal",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ hex_encode(string=\"hello\") }}",
+            "{{ \"hello\" | hex_encode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -147,16 +163,6 @@ impl FilterFunction for HexEncode {
 }
 
 /// Hex decode function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ hex_decode(string="68656c6c6f") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "68656c6c6f" | hex_decode }}
-/// ```
 pub struct HexDecode;
 
 impl HexDecode {
@@ -179,6 +185,18 @@ impl HexDecode {
 
 impl FilterFunction for HexDecode {
     const NAME: &'static str = "hex_decode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "hex_decode",
+        category: "encoding",
+        description: "Decode a hexadecimal string",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ hex_decode(string=\"68656c6c6f\") }}",
+            "{{ \"68656c6c6f\" | hex_decode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -194,16 +212,6 @@ impl FilterFunction for HexDecode {
 }
 
 /// HTML escape function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ escape_html(string="<script>") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "<script>" | escape_html }}
-/// ```
 pub struct EscapeHtml;
 
 impl EscapeHtml {
@@ -219,6 +227,18 @@ impl EscapeHtml {
 
 impl FilterFunction for EscapeHtml {
     const NAME: &'static str = "escape_html";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "escape_html",
+        category: "encoding",
+        description: "Escape HTML special characters",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ escape_html(string=\"<script>alert('xss')</script>\") }}",
+            "{{ \"<div>\" | escape_html }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -234,16 +254,6 @@ impl FilterFunction for EscapeHtml {
 }
 
 /// XML escape function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ escape_xml(string="<tag>") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "<tag>" | escape_xml }}
-/// ```
 pub struct EscapeXml;
 
 impl EscapeXml {
@@ -259,6 +269,18 @@ impl EscapeXml {
 
 impl FilterFunction for EscapeXml {
     const NAME: &'static str = "escape_xml";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "escape_xml",
+        category: "encoding",
+        description: "Escape XML special characters",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ escape_xml(string=\"<tag attr='value'>\") }}",
+            "{{ \"<xml>\" | escape_xml }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;
@@ -274,16 +296,6 @@ impl FilterFunction for EscapeXml {
 }
 
 /// Shell escape function.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ escape_shell(string="hello world") }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "hello world" | escape_shell }}
-/// ```
 pub struct EscapeShell;
 
 impl EscapeShell {
@@ -296,6 +308,18 @@ impl EscapeShell {
 
 impl FilterFunction for EscapeShell {
     const NAME: &'static str = "escape_shell";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "escape_shell",
+        category: "encoding",
+        description: "Escape shell special characters for safe command execution",
+        arguments: &[STRING_ARG],
+        return_type: "string",
+        examples: &[
+            "{{ escape_shell(string=\"file name.txt\") }}",
+            "{{ user_input | escape_shell }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;

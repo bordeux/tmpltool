@@ -11,6 +11,17 @@ pub enum ValidateFormat {
     Toml,
 }
 
+/// Output format for IDE metadata
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum IdeFormat {
+    /// Output as JSON
+    Json,
+    /// Output as YAML
+    Yaml,
+    /// Output as TOML
+    Toml,
+}
+
 /// A template rendering tool that uses Tera templates with environment variables
 #[derive(Parser, Debug)]
 #[command(name = "tmpltool")]
@@ -32,4 +43,10 @@ pub struct Cli {
     /// If validation fails, the program exits with an error and shows the validation message
     #[arg(long, value_enum)]
     pub validate: Option<ValidateFormat>,
+
+    /// Output function metadata for IDE integration
+    /// Prints all available functions with their descriptions,
+    /// arguments, return types, and examples, then exits
+    #[arg(long, value_enum)]
+    pub ide: Option<IdeFormat>,
 }

@@ -1,6 +1,7 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
-use tmpltool::functions::kubernetes;
+use tmpltool::functions::Function;
+use tmpltool::functions::kubernetes::{K8sConfigmapRef, K8sEnvVarRef, K8sSecretRef};
 
 // ============================================================================
 // k8s_env_var_ref Tests
@@ -8,7 +9,7 @@ use tmpltool::functions::kubernetes;
 
 #[test]
 fn test_k8s_env_var_ref_configmap_default() {
-    let result = kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![(
+    let result = K8sEnvVarRef::call(Kwargs::from_iter(vec![(
         "var_name",
         Value::from("DATABASE_HOST"),
     )]))
@@ -23,7 +24,7 @@ fn test_k8s_env_var_ref_configmap_default() {
 
 #[test]
 fn test_k8s_env_var_ref_configmap_explicit() {
-    let result = kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sEnvVarRef::call(Kwargs::from_iter(vec![
         ("var_name", Value::from("DB_HOST")),
         ("source", Value::from("configmap")),
         ("name", Value::from("app-config")),
@@ -38,7 +39,7 @@ fn test_k8s_env_var_ref_configmap_explicit() {
 
 #[test]
 fn test_k8s_env_var_ref_secret() {
-    let result = kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sEnvVarRef::call(Kwargs::from_iter(vec![
         ("var_name", Value::from("API_KEY")),
         ("source", Value::from("secret")),
         ("name", Value::from("api-secrets")),
@@ -53,7 +54,7 @@ fn test_k8s_env_var_ref_secret() {
 
 #[test]
 fn test_k8s_env_var_ref_secret_auto_name() {
-    let result = kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sEnvVarRef::call(Kwargs::from_iter(vec![
         ("var_name", Value::from("DB_PASSWORD")),
         ("source", Value::from("secret")),
     ]))
@@ -67,7 +68,7 @@ fn test_k8s_env_var_ref_secret_auto_name() {
 
 #[test]
 fn test_k8s_env_var_ref_invalid_source() {
-    let result = kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sEnvVarRef::call(Kwargs::from_iter(vec![
         ("var_name", Value::from("TEST")),
         ("source", Value::from("invalid")),
     ]));
@@ -83,8 +84,7 @@ fn test_k8s_env_var_ref_invalid_source() {
 
 #[test]
 fn test_k8s_env_var_ref_missing_var_name() {
-    let result =
-        kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![("source", Value::from("secret"))]));
+    let result = K8sEnvVarRef::call(Kwargs::from_iter(vec![("source", Value::from("secret"))]));
 
     assert!(result.is_err());
 }
@@ -95,7 +95,7 @@ fn test_k8s_env_var_ref_missing_var_name() {
 
 #[test]
 fn test_k8s_secret_ref_basic() {
-    let result = kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sSecretRef::call(Kwargs::from_iter(vec![
         ("secret_name", Value::from("db-credentials")),
         ("key", Value::from("password")),
     ]))
@@ -111,7 +111,7 @@ fn test_k8s_secret_ref_basic() {
 
 #[test]
 fn test_k8s_secret_ref_optional() {
-    let result = kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sSecretRef::call(Kwargs::from_iter(vec![
         ("secret_name", Value::from("tokens")),
         ("key", Value::from("api_token")),
         ("optional", Value::from(true)),
@@ -127,7 +127,7 @@ fn test_k8s_secret_ref_optional() {
 
 #[test]
 fn test_k8s_secret_ref_optional_false() {
-    let result = kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sSecretRef::call(Kwargs::from_iter(vec![
         ("secret_name", Value::from("creds")),
         ("key", Value::from("key1")),
         ("optional", Value::from(false)),
@@ -140,15 +140,14 @@ fn test_k8s_secret_ref_optional_false() {
 
 #[test]
 fn test_k8s_secret_ref_missing_secret_name() {
-    let result =
-        kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![("key", Value::from("password"))]));
+    let result = K8sSecretRef::call(Kwargs::from_iter(vec![("key", Value::from("password"))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_k8s_secret_ref_missing_key() {
-    let result = kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![(
+    let result = K8sSecretRef::call(Kwargs::from_iter(vec![(
         "secret_name",
         Value::from("db-creds"),
     )]));
@@ -158,7 +157,7 @@ fn test_k8s_secret_ref_missing_key() {
 
 #[test]
 fn test_k8s_secret_ref_complex_names() {
-    let result = kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sSecretRef::call(Kwargs::from_iter(vec![
         ("secret_name", Value::from("my-app-tls-cert")),
         ("key", Value::from("tls.crt")),
     ]))
@@ -175,7 +174,7 @@ fn test_k8s_secret_ref_complex_names() {
 
 #[test]
 fn test_k8s_configmap_ref_basic() {
-    let result = kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sConfigmapRef::call(Kwargs::from_iter(vec![
         ("configmap_name", Value::from("app-config")),
         ("key", Value::from("database_host")),
     ]))
@@ -191,7 +190,7 @@ fn test_k8s_configmap_ref_basic() {
 
 #[test]
 fn test_k8s_configmap_ref_optional() {
-    let result = kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sConfigmapRef::call(Kwargs::from_iter(vec![
         ("configmap_name", Value::from("features")),
         ("key", Value::from("new_ui")),
         ("optional", Value::from(true)),
@@ -207,7 +206,7 @@ fn test_k8s_configmap_ref_optional() {
 
 #[test]
 fn test_k8s_configmap_ref_optional_false() {
-    let result = kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sConfigmapRef::call(Kwargs::from_iter(vec![
         ("configmap_name", Value::from("config")),
         ("key", Value::from("key1")),
         ("optional", Value::from(false)),
@@ -220,15 +219,14 @@ fn test_k8s_configmap_ref_optional_false() {
 
 #[test]
 fn test_k8s_configmap_ref_missing_configmap_name() {
-    let result =
-        kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![("key", Value::from("db_host"))]));
+    let result = K8sConfigmapRef::call(Kwargs::from_iter(vec![("key", Value::from("db_host"))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_k8s_configmap_ref_missing_key() {
-    let result = kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![(
+    let result = K8sConfigmapRef::call(Kwargs::from_iter(vec![(
         "configmap_name",
         Value::from("app-config"),
     )]));
@@ -238,7 +236,7 @@ fn test_k8s_configmap_ref_missing_key() {
 
 #[test]
 fn test_k8s_configmap_ref_complex_names() {
-    let result = kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![
+    let result = K8sConfigmapRef::call(Kwargs::from_iter(vec![
         ("configmap_name", Value::from("my-app-config-v2")),
         ("key", Value::from("redis.url")),
     ]))
@@ -256,20 +254,20 @@ fn test_k8s_configmap_ref_complex_names() {
 #[test]
 fn test_all_ref_types_together() {
     // Test that all three reference types produce valid YAML
-    let env_var = kubernetes::k8s_env_var_ref_fn(Kwargs::from_iter(vec![
+    let env_var = K8sEnvVarRef::call(Kwargs::from_iter(vec![
         ("var_name", Value::from("HOST")),
         ("source", Value::from("configmap")),
         ("name", Value::from("config")),
     ]))
     .unwrap();
 
-    let secret = kubernetes::k8s_secret_ref_fn(Kwargs::from_iter(vec![
+    let secret = K8sSecretRef::call(Kwargs::from_iter(vec![
         ("secret_name", Value::from("secrets")),
         ("key", Value::from("pass")),
     ]))
     .unwrap();
 
-    let configmap = kubernetes::k8s_configmap_ref_fn(Kwargs::from_iter(vec![
+    let configmap = K8sConfigmapRef::call(Kwargs::from_iter(vec![
         ("configmap_name", Value::from("config")),
         ("key", Value::from("url")),
     ]))

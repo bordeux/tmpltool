@@ -7,11 +7,27 @@
 //!
 //! ```rust,ignore
 //! use crate::filter_functions::traits::FilterFunction;
+//! use crate::functions::metadata::{FunctionMetadata, ArgumentMetadata, SyntaxVariants};
 //!
 //! pub struct Sha256;
 //!
 //! impl FilterFunction for Sha256 {
 //!     const NAME: &'static str = "sha256";
+//!     const METADATA: FunctionMetadata = FunctionMetadata {
+//!         name: "sha256",
+//!         category: "hash",
+//!         description: "Compute SHA-256 hash of a string",
+//!         arguments: &[ArgumentMetadata {
+//!             name: "string",
+//!             arg_type: "string",
+//!             required: true,
+//!             default: None,
+//!             description: "The string to hash",
+//!         }],
+//!         return_type: "string",
+//!         examples: &["{{ sha256(string=\"hello\") }}", "{{ \"hello\" | sha256 }}"],
+//!         syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+//!     };
 //!
 //!     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
 //!         let input: String = kwargs.get("string")?;
@@ -30,6 +46,7 @@
 //! Sha256::register(&mut env);
 //! ```
 
+use crate::functions::metadata::FunctionMetadata;
 use minijinja::value::Kwargs;
 use minijinja::{Environment, Error, Value};
 
@@ -56,6 +73,9 @@ pub trait FilterFunction: 'static {
     ///
     /// This name is used for both the function and filter registration.
     const NAME: &'static str;
+
+    /// Metadata describing this function (required for IDE integration).
+    const METADATA: FunctionMetadata;
 
     /// Handle function-style calls where all arguments come from kwargs.
     ///

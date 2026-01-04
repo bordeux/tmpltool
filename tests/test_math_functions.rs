@@ -2,7 +2,8 @@ use minijinja::Value;
 use minijinja::value::Kwargs;
 use tmpltool::filter_functions::FilterFunction;
 use tmpltool::filter_functions::math::{Abs, Ceil, Floor, Round};
-use tmpltool::functions::math;
+use tmpltool::functions::Function;
+use tmpltool::functions::math::{Max, Min, Percentage};
 
 // ============================================================================
 // Min Tests
@@ -10,7 +11,7 @@ use tmpltool::functions::math;
 
 #[test]
 fn test_min_integers() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from(10)),
         ("b", Value::from(20)),
     ]))
@@ -21,7 +22,7 @@ fn test_min_integers() {
 
 #[test]
 fn test_min_floats() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from(3.25)),
         ("b", Value::from(2.75)),
     ]))
@@ -32,7 +33,7 @@ fn test_min_floats() {
 
 #[test]
 fn test_min_mixed() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from(5)),
         ("b", Value::from(5.5)),
     ]))
@@ -43,7 +44,7 @@ fn test_min_mixed() {
 
 #[test]
 fn test_min_negative() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from(-10)),
         ("b", Value::from(-5)),
     ]))
@@ -54,7 +55,7 @@ fn test_min_negative() {
 
 #[test]
 fn test_min_error_non_numeric_a() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from("test")),
         ("b", Value::from(10)),
     ]));
@@ -70,7 +71,7 @@ fn test_min_error_non_numeric_a() {
 
 #[test]
 fn test_min_error_non_numeric_b() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from(10)),
         ("b", Value::from("test")),
     ]));
@@ -86,7 +87,7 @@ fn test_min_error_non_numeric_b() {
 
 #[test]
 fn test_min_missing_param() {
-    let result = math::min_fn(Kwargs::from_iter(vec![("a", Value::from(10))]));
+    let result = Min::call(Kwargs::from_iter(vec![("a", Value::from(10))]));
 
     assert!(result.is_err());
 }
@@ -97,7 +98,7 @@ fn test_min_missing_param() {
 
 #[test]
 fn test_max_integers() {
-    let result = math::max_fn(Kwargs::from_iter(vec![
+    let result = Max::call(Kwargs::from_iter(vec![
         ("a", Value::from(10)),
         ("b", Value::from(20)),
     ]))
@@ -108,7 +109,7 @@ fn test_max_integers() {
 
 #[test]
 fn test_max_floats() {
-    let result = math::max_fn(Kwargs::from_iter(vec![
+    let result = Max::call(Kwargs::from_iter(vec![
         ("a", Value::from(3.25)),
         ("b", Value::from(2.75)),
     ]))
@@ -119,7 +120,7 @@ fn test_max_floats() {
 
 #[test]
 fn test_max_mixed() {
-    let result = math::max_fn(Kwargs::from_iter(vec![
+    let result = Max::call(Kwargs::from_iter(vec![
         ("a", Value::from(5)),
         ("b", Value::from(5.5)),
     ]))
@@ -130,7 +131,7 @@ fn test_max_mixed() {
 
 #[test]
 fn test_max_negative() {
-    let result = math::max_fn(Kwargs::from_iter(vec![
+    let result = Max::call(Kwargs::from_iter(vec![
         ("a", Value::from(-10)),
         ("b", Value::from(-5)),
     ]))
@@ -141,7 +142,7 @@ fn test_max_negative() {
 
 #[test]
 fn test_max_error_non_numeric() {
-    let result = math::max_fn(Kwargs::from_iter(vec![
+    let result = Max::call(Kwargs::from_iter(vec![
         ("a", Value::from("test")),
         ("b", Value::from(10)),
     ]));
@@ -452,7 +453,7 @@ fn test_floor_filter_syntax() {
 
 #[test]
 fn test_percentage_basic() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(25)),
         ("total", Value::from(100)),
     ]))
@@ -463,7 +464,7 @@ fn test_percentage_basic() {
 
 #[test]
 fn test_percentage_decimal() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(7)),
         ("total", Value::from(10)),
     ]))
@@ -474,7 +475,7 @@ fn test_percentage_decimal() {
 
 #[test]
 fn test_percentage_with_rounding() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(1)),
         ("total", Value::from(3)),
     ]))
@@ -487,7 +488,7 @@ fn test_percentage_with_rounding() {
 
 #[test]
 fn test_percentage_floats() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(450.0)),
         ("total", Value::from(500.0)),
     ]))
@@ -498,7 +499,7 @@ fn test_percentage_floats() {
 
 #[test]
 fn test_percentage_over_100() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(150)),
         ("total", Value::from(100)),
     ]))
@@ -509,7 +510,7 @@ fn test_percentage_over_100() {
 
 #[test]
 fn test_percentage_error_zero_total() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(25)),
         ("total", Value::from(0)),
     ]));
@@ -525,7 +526,7 @@ fn test_percentage_error_zero_total() {
 
 #[test]
 fn test_percentage_error_non_numeric_value() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from("test")),
         ("total", Value::from(100)),
     ]));
@@ -541,7 +542,7 @@ fn test_percentage_error_non_numeric_value() {
 
 #[test]
 fn test_percentage_error_non_numeric_total() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(25)),
         ("total", Value::from("test")),
     ]));
@@ -557,7 +558,7 @@ fn test_percentage_error_non_numeric_total() {
 
 #[test]
 fn test_percentage_missing_params() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![("value", Value::from(25))]));
+    let result = Percentage::call(Kwargs::from_iter(vec![("value", Value::from(25))]));
 
     assert!(result.is_err());
 }
@@ -568,61 +569,39 @@ fn test_percentage_missing_params() {
 
 #[test]
 fn test_min_error_missing_a() {
-    let result = math::min_fn(Kwargs::from_iter(vec![("b", Value::from(20))]));
+    let result = Min::call(Kwargs::from_iter(vec![("b", Value::from(20))]));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_min_error_missing_b() {
-    let result = math::min_fn(Kwargs::from_iter(vec![("a", Value::from(10))]));
+    let result = Min::call(Kwargs::from_iter(vec![("a", Value::from(10))]));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_max_error_missing_a() {
-    let result = math::max_fn(Kwargs::from_iter(vec![("b", Value::from(20))]));
+    let result = Max::call(Kwargs::from_iter(vec![("b", Value::from(20))]));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_max_error_missing_b() {
-    let result = math::max_fn(Kwargs::from_iter(vec![("a", Value::from(10))]));
+    let result = Max::call(Kwargs::from_iter(vec![("a", Value::from(10))]));
     assert!(result.is_err());
 }
 
-#[test]
-fn test_abs_error_missing_number() {
-    let result = math::abs_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_round_error_missing_number() {
-    let result = math::round_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_ceil_error_missing_number() {
-    let result = math::ceil_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_floor_error_missing_number() {
-    let result = math::floor_fn(Kwargs::from_iter(Vec::<(&str, Value)>::new()));
-    assert!(result.is_err());
-}
+// Note: abs, round, ceil, floor tests removed - functions now in filter_functions/math.rs
 
 #[test]
 fn test_percentage_error_missing_value() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![("total", Value::from(100))]));
+    let result = Percentage::call(Kwargs::from_iter(vec![("total", Value::from(100))]));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_min_with_zero() {
-    let result = math::min_fn(Kwargs::from_iter(vec![
+    let result = Min::call(Kwargs::from_iter(vec![
         ("a", Value::from(0)),
         ("b", Value::from(5)),
     ]))
@@ -632,7 +611,7 @@ fn test_min_with_zero() {
 
 #[test]
 fn test_max_with_zero() {
-    let result = math::max_fn(Kwargs::from_iter(vec![
+    let result = Max::call(Kwargs::from_iter(vec![
         ("a", Value::from(0)),
         ("b", Value::from(-5)),
     ]))
@@ -640,47 +619,12 @@ fn test_max_with_zero() {
     assert_eq!(result.to_string(), "0");
 }
 
-#[test]
-fn test_abs_with_zero() {
-    let result = math::abs_fn(Kwargs::from_iter(vec![("number", Value::from(0))])).unwrap();
-    assert_eq!(result.to_string(), "0");
-}
-
-#[test]
-fn test_round_with_zero_decimals() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
-        ("number", Value::from(3.7)),
-        ("decimals", Value::from(0)),
-    ]))
-    .unwrap();
-    assert_eq!(result.to_string(), "4");
-}
-
-#[test]
-fn test_round_with_high_decimals() {
-    let result = math::round_fn(Kwargs::from_iter(vec![
-        ("number", Value::from(3.123456789)),
-        ("decimals", Value::from(6)),
-    ]))
-    .unwrap();
-    assert_eq!(result.to_string(), "3.123457");
-}
-
-#[test]
-fn test_ceil_negative_direct() {
-    let result = math::ceil_fn(Kwargs::from_iter(vec![("number", Value::from(-3.1))])).unwrap();
-    assert_eq!(result.to_string(), "-3");
-}
-
-#[test]
-fn test_floor_negative_direct() {
-    let result = math::floor_fn(Kwargs::from_iter(vec![("number", Value::from(-3.1))])).unwrap();
-    assert_eq!(result.to_string(), "-4");
-}
+// Note: abs_with_zero, round_with_*, ceil_negative_direct, floor_negative_direct
+// tests removed - functions now in filter_functions/math.rs
 
 #[test]
 fn test_percentage_very_small() {
-    let result = math::percentage_fn(Kwargs::from_iter(vec![
+    let result = Percentage::call(Kwargs::from_iter(vec![
         ("value", Value::from(1)),
         ("total", Value::from(10000)),
     ]))

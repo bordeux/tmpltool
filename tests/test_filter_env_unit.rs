@@ -1,5 +1,6 @@
 use minijinja::value::Kwargs;
-use tmpltool::functions::environment::filter_env_fn;
+use tmpltool::functions::Function;
+use tmpltool::functions::environment::FilterEnv;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
@@ -17,7 +18,7 @@ fn test_filter_env_basic() {
 
     let kwargs = create_kwargs(vec![("pattern", "TEST_VAR_*")]);
 
-    let result = filter_env_fn(kwargs).unwrap();
+    let result = FilterEnv::call(kwargs).unwrap();
 
     assert_eq!(result.len(), Some(2));
 
@@ -55,7 +56,7 @@ fn test_filter_env_wildcard_middle() {
 
     let kwargs = create_kwargs(vec![("pattern", "PREFIX_*_SUFFIX")]);
 
-    let result = filter_env_fn(kwargs).unwrap();
+    let result = FilterEnv::call(kwargs).unwrap();
 
     assert_eq!(result.len(), Some(2));
 
@@ -75,7 +76,7 @@ fn test_filter_env_question_mark() {
 
     let kwargs = create_kwargs(vec![("pattern", "VAR_?")]);
 
-    let result = filter_env_fn(kwargs).unwrap();
+    let result = FilterEnv::call(kwargs).unwrap();
 
     // Should match VAR_A and VAR_B, but not VAR_AB (two characters)
     assert_eq!(result.len(), Some(2));
@@ -91,7 +92,7 @@ fn test_filter_env_question_mark() {
 fn test_filter_env_no_matches() {
     let kwargs = create_kwargs(vec![("pattern", "NONEXISTENT_PATTERN_*")]);
 
-    let result = filter_env_fn(kwargs).unwrap();
+    let result = FilterEnv::call(kwargs).unwrap();
 
     assert_eq!(result.len(), Some(0));
 }
@@ -99,7 +100,7 @@ fn test_filter_env_no_matches() {
 #[test]
 fn test_filter_env_no_pattern() {
     let kwargs = create_kwargs(vec![]);
-    let result = filter_env_fn(kwargs);
+    let result = FilterEnv::call(kwargs);
 
     assert!(result.is_err());
     assert!(result.err().unwrap().to_string().contains("pattern"));
@@ -116,7 +117,7 @@ fn test_glob_to_regex() {
 
     let kwargs = create_kwargs(vec![("pattern", "SERVER_*")]);
 
-    let result = filter_env_fn(kwargs).unwrap();
+    let result = FilterEnv::call(kwargs).unwrap();
 
     assert_eq!(result.len(), Some(2));
 

@@ -1,5 +1,6 @@
 use minijinja::value::Kwargs;
-use tmpltool::functions::environment::env_fn;
+use tmpltool::functions::Function;
+use tmpltool::functions::environment::GetEnv;
 
 // Helper to create kwargs for testing
 fn create_kwargs(args: Vec<(&str, &str)>) -> Kwargs {
@@ -13,7 +14,7 @@ fn test_env_fn_existing_var() {
     }
 
     let kwargs = create_kwargs(vec![("name", "TEST_ENV_VAR")]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "test_value");
 
     unsafe {
@@ -27,14 +28,14 @@ fn test_env_fn_with_default() {
         ("name", "NONEXISTENT_VAR_12345"),
         ("default", "default_value"),
     ]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "default_value");
 }
 
 #[test]
 fn test_env_fn_missing_no_default() {
     let kwargs = create_kwargs(vec![("name", "NONEXISTENT_VAR_67890")]);
-    let result = env_fn(kwargs);
+    let result = GetEnv::call(kwargs);
     assert!(result.is_err());
     assert!(
         result
@@ -48,7 +49,7 @@ fn test_env_fn_missing_no_default() {
 #[test]
 fn test_env_fn_empty_default() {
     let kwargs = create_kwargs(vec![("name", "NONEXISTENT_VAR_EMPTY"), ("default", "")]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 }
 
@@ -62,7 +63,7 @@ fn test_env_fn_override_with_default() {
         ("name", "TEST_OVERRIDE_VAR"),
         ("default", "default_value"),
     ]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(
         result.as_str().unwrap(),
         "actual_value",
@@ -77,7 +78,7 @@ fn test_env_fn_override_with_default() {
 #[test]
 fn test_env_fn_missing_name_param() {
     let kwargs: Kwargs = Kwargs::from_iter(Vec::<(&str, minijinja::Value)>::new());
-    let result = env_fn(kwargs);
+    let result = GetEnv::call(kwargs);
     assert!(result.is_err());
 }
 
@@ -88,7 +89,7 @@ fn test_env_fn_special_characters() {
     }
 
     let kwargs = create_kwargs(vec![("name", "TEST_SPECIAL_VAR")]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "value with spaces & symbols!");
 
     unsafe {
@@ -103,7 +104,7 @@ fn test_env_fn_unicode_value() {
     }
 
     let kwargs = create_kwargs(vec![("name", "TEST_UNICODE_VAR")]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "Hello 世界 🌍");
 
     unsafe {
@@ -118,7 +119,7 @@ fn test_env_fn_multiline_value() {
     }
 
     let kwargs = create_kwargs(vec![("name", "TEST_MULTILINE_VAR")]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "line1\nline2\nline3");
 
     unsafe {
@@ -133,7 +134,7 @@ fn test_env_fn_empty_string_value() {
     }
 
     let kwargs = create_kwargs(vec![("name", "TEST_EMPTY_VAR")]);
-    let result = env_fn(kwargs).unwrap();
+    let result = GetEnv::call(kwargs).unwrap();
     assert_eq!(result.as_str().unwrap(), "");
 
     unsafe {

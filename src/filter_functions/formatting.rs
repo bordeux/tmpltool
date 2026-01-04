@@ -13,6 +13,7 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
@@ -32,23 +33,6 @@ fn extract_string(value: &Value, fn_name: &str) -> Result<String, Error> {
 // ============================================
 
 /// Format file size in human-readable format (bytes, KB, MB, GB, etc.)
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ filesizeformat(bytes=1024) }}
-/// {# Output: 1 KB #}
-///
-/// {{ filesizeformat(bytes=1048576) }}
-/// {# Output: 1 MB #}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ 1024 | filesizeformat }}
-/// {# Output: 1 KB #}
-///
-/// {{ file_size | filesizeformat }}
-/// ```
 pub struct Filesizeformat;
 
 impl Filesizeformat {
@@ -83,6 +67,24 @@ impl Filesizeformat {
 
 impl FilterFunction for Filesizeformat {
     const NAME: &'static str = "filesizeformat";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "filesizeformat",
+        category: "formatting",
+        description: "Format file size in human-readable format (bytes, KB, MB, GB, etc.)",
+        arguments: &[ArgumentMetadata {
+            name: "bytes",
+            arg_type: "integer",
+            required: true,
+            default: None,
+            description: "The file size in bytes",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ filesizeformat(bytes=1048576) }}",
+            "{{ 1024 | filesizeformat }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let bytes: i64 = kwargs.get("bytes")?;
@@ -105,24 +107,6 @@ impl FilterFunction for Filesizeformat {
 // ============================================
 
 /// URL encode a string - encode special characters for use in URLs.
-///
-/// This uses percent-encoding for all non-alphanumeric characters.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ urlencode(string="hello world & foo=bar") }}
-/// {# Output: hello%20world%20%26%20foo%3Dbar #}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ "hello world" | urlencode }}
-/// {# Output: hello%20world #}
-/// ```
-///
-/// # Note
-/// See also `url_encode` which uses a slightly different encoding scheme
-/// (preserves some additional characters like `_`, `.`, `-`, `~`).
 pub struct Urlencode;
 
 impl Urlencode {
@@ -133,6 +117,24 @@ impl Urlencode {
 
 impl FilterFunction for Urlencode {
     const NAME: &'static str = "urlencode";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "urlencode",
+        category: "formatting",
+        description: "URL encode a string - encode special characters for use in URLs",
+        arguments: &[ArgumentMetadata {
+            name: "string",
+            arg_type: "string",
+            required: true,
+            default: None,
+            description: "The string to encode",
+        }],
+        return_type: "string",
+        examples: &[
+            "{{ urlencode(string=\"hello world\") }}",
+            "{{ \"hello world\" | urlencode }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let input: String = kwargs.get("string")?;

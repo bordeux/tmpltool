@@ -18,9 +18,19 @@
 //! ```
 
 use super::FilterFunction;
+use crate::functions::metadata::{ArgumentMetadata, FunctionMetadata, SyntaxVariants};
 use minijinja::value::Kwargs;
 use minijinja::{Error, ErrorKind, Value};
 use std::collections::HashSet;
+
+/// Common metadata for single-argument array functions
+const ARRAY_ARG: ArgumentMetadata = ArgumentMetadata {
+    name: "array",
+    arg_type: "array",
+    required: true,
+    default: None,
+    description: "The array to process",
+};
 
 /// Helper to extract array from Value
 fn extract_array(value: &Value, fn_name: &str) -> Result<Value, Error> {
@@ -64,17 +74,6 @@ fn format_number(num: f64) -> Value {
 // ============================================
 
 /// Calculate sum of array values.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_sum(array=numbers) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ numbers | array_sum }}
-/// {{ [1, 2, 3, 4, 5] | array_sum }}
-/// ```
 pub struct ArraySum;
 
 impl ArraySum {
@@ -93,6 +92,18 @@ impl ArraySum {
 
 impl FilterFunction for ArraySum {
     const NAME: &'static str = "array_sum";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_sum",
+        category: "array",
+        description: "Calculate sum of array values",
+        arguments: &[ARRAY_ARG],
+        return_type: "number",
+        examples: &[
+            "{{ array_sum(array=numbers) }}",
+            "{{ [1, 2, 3, 4, 5] | array_sum }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;
@@ -111,17 +122,6 @@ impl FilterFunction for ArraySum {
 // ============================================
 
 /// Calculate average of array values.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_avg(array=numbers) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ numbers | array_avg }}
-/// {{ scores | array_avg }}
-/// ```
 pub struct ArrayAvg;
 
 impl ArrayAvg {
@@ -146,6 +146,15 @@ impl ArrayAvg {
 
 impl FilterFunction for ArrayAvg {
     const NAME: &'static str = "array_avg";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_avg",
+        category: "array",
+        description: "Calculate average of array values",
+        arguments: &[ARRAY_ARG],
+        return_type: "number",
+        examples: &["{{ array_avg(array=numbers) }}", "{{ scores | array_avg }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;
@@ -164,17 +173,6 @@ impl FilterFunction for ArrayAvg {
 // ============================================
 
 /// Calculate median of array values.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_median(array=numbers) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ numbers | array_median }}
-/// {{ [1, 3, 5, 7, 9] | array_median }}
-/// ```
 pub struct ArrayMedian;
 
 impl ArrayMedian {
@@ -208,6 +206,18 @@ impl ArrayMedian {
 
 impl FilterFunction for ArrayMedian {
     const NAME: &'static str = "array_median";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_median",
+        category: "array",
+        description: "Calculate median of array values",
+        arguments: &[ARRAY_ARG],
+        return_type: "number",
+        examples: &[
+            "{{ array_median(array=numbers) }}",
+            "{{ [1, 3, 5, 7, 9] | array_median }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;
@@ -226,17 +236,6 @@ impl FilterFunction for ArrayMedian {
 // ============================================
 
 /// Find minimum value in array.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_min(array=numbers) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ numbers | array_min }}
-/// {{ prices | array_min }}
-/// ```
 pub struct ArrayMin;
 
 impl ArrayMin {
@@ -265,6 +264,15 @@ impl ArrayMin {
 
 impl FilterFunction for ArrayMin {
     const NAME: &'static str = "array_min";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_min",
+        category: "array",
+        description: "Find minimum value in array",
+        arguments: &[ARRAY_ARG],
+        return_type: "number",
+        examples: &["{{ array_min(array=numbers) }}", "{{ prices | array_min }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;
@@ -283,17 +291,6 @@ impl FilterFunction for ArrayMin {
 // ============================================
 
 /// Find maximum value in array.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_max(array=numbers) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ numbers | array_max }}
-/// {{ prices | array_max }}
-/// ```
 pub struct ArrayMax;
 
 impl ArrayMax {
@@ -322,6 +319,15 @@ impl ArrayMax {
 
 impl FilterFunction for ArrayMax {
     const NAME: &'static str = "array_max";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_max",
+        category: "array",
+        description: "Find maximum value in array",
+        arguments: &[ARRAY_ARG],
+        return_type: "number",
+        examples: &["{{ array_max(array=numbers) }}", "{{ prices | array_max }}"],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;
@@ -340,17 +346,6 @@ impl FilterFunction for ArrayMax {
 // ============================================
 
 /// Remove duplicate values from array.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_unique(array=items) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ items | array_unique }}
-/// {{ [1, 2, 2, 3, 3, 3] | array_unique }}
-/// ```
 pub struct ArrayUnique;
 
 impl ArrayUnique {
@@ -382,6 +377,18 @@ impl ArrayUnique {
 
 impl FilterFunction for ArrayUnique {
     const NAME: &'static str = "array_unique";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_unique",
+        category: "array",
+        description: "Remove duplicate values from array",
+        arguments: &[ARRAY_ARG],
+        return_type: "array",
+        examples: &[
+            "{{ array_unique(array=items) }}",
+            "{{ [1, 2, 2, 3, 3, 3] | array_unique }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;
@@ -400,17 +407,6 @@ impl FilterFunction for ArrayUnique {
 // ============================================
 
 /// Flatten nested arrays by one level.
-///
-/// # Function Syntax
-/// ```jinja
-/// {{ array_flatten(array=nested) }}
-/// ```
-///
-/// # Filter Syntax
-/// ```jinja
-/// {{ nested | array_flatten }}
-/// {{ [[1, 2], [3, 4]] | array_flatten }}
-/// ```
 pub struct ArrayFlatten;
 
 impl ArrayFlatten {
@@ -444,6 +440,18 @@ impl ArrayFlatten {
 
 impl FilterFunction for ArrayFlatten {
     const NAME: &'static str = "array_flatten";
+    const METADATA: FunctionMetadata = FunctionMetadata {
+        name: "array_flatten",
+        category: "array",
+        description: "Flatten nested arrays by one level",
+        arguments: &[ARRAY_ARG],
+        return_type: "array",
+        examples: &[
+            "{{ array_flatten(array=nested) }}",
+            "{{ [[1, 2], [3, 4]] | array_flatten }}",
+        ],
+        syntax: SyntaxVariants::FUNCTION_AND_FILTER,
+    };
 
     fn call_as_function(kwargs: Kwargs) -> Result<Value, Error> {
         let array: Value = kwargs.get("array")?;

@@ -1,7 +1,8 @@
 use minijinja::Value;
 use minijinja::value::Kwargs;
 use std::collections::BTreeMap;
-use tmpltool::functions::url;
+use tmpltool::functions::Function;
+use tmpltool::functions::url::{BasicAuth, BuildUrl, QueryString};
 
 // ============================================================================
 // basic_auth Tests
@@ -9,7 +10,7 @@ use tmpltool::functions::url;
 
 #[test]
 fn test_basic_auth_simple() {
-    let result = url::basic_auth_fn(Kwargs::from_iter(vec![
+    let result = BasicAuth::call(Kwargs::from_iter(vec![
         ("username", Value::from("admin")),
         ("password", Value::from("secret")),
     ]))
@@ -20,7 +21,7 @@ fn test_basic_auth_simple() {
 
 #[test]
 fn test_basic_auth_special_chars() {
-    let result = url::basic_auth_fn(Kwargs::from_iter(vec![
+    let result = BasicAuth::call(Kwargs::from_iter(vec![
         ("username", Value::from("user@example.com")),
         ("password", Value::from("p@ss:w0rd!")),
     ]))
@@ -33,7 +34,7 @@ fn test_basic_auth_special_chars() {
 
 #[test]
 fn test_basic_auth_empty_password() {
-    let result = url::basic_auth_fn(Kwargs::from_iter(vec![
+    let result = BasicAuth::call(Kwargs::from_iter(vec![
         ("username", Value::from("admin")),
         ("password", Value::from("")),
     ]))
@@ -44,7 +45,7 @@ fn test_basic_auth_empty_password() {
 
 #[test]
 fn test_basic_auth_empty_username() {
-    let result = url::basic_auth_fn(Kwargs::from_iter(vec![
+    let result = BasicAuth::call(Kwargs::from_iter(vec![
         ("username", Value::from("")),
         ("password", Value::from("secret")),
     ]))
@@ -55,187 +56,20 @@ fn test_basic_auth_empty_username() {
 
 #[test]
 fn test_basic_auth_missing_username() {
-    let result = url::basic_auth_fn(Kwargs::from_iter(vec![("password", Value::from("secret"))]));
+    let result = BasicAuth::call(Kwargs::from_iter(vec![("password", Value::from("secret"))]));
 
     assert!(result.is_err());
 }
 
 #[test]
 fn test_basic_auth_missing_password() {
-    let result = url::basic_auth_fn(Kwargs::from_iter(vec![("username", Value::from("admin"))]));
+    let result = BasicAuth::call(Kwargs::from_iter(vec![("username", Value::from("admin"))]));
 
     assert!(result.is_err());
 }
 
-// ============================================================================
-// parse_url Tests
-// ============================================================================
-
-#[test]
-fn test_parse_url_simple() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("https://example.com/path"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("scheme")).unwrap().as_str(),
-        Some("https")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("host")).unwrap().as_str(),
-        Some("example.com")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("path")).unwrap().as_str(),
-        Some("/path")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("port")).unwrap().as_i64(),
-        Some(443)
-    );
-}
-
-#[test]
-fn test_parse_url_with_port() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("https://example.com:8080/api"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("port")).unwrap().as_i64(),
-        Some(8080)
-    );
-}
-
-#[test]
-fn test_parse_url_with_query() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("https://example.com/search?q=test&limit=10"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("query")).unwrap().as_str(),
-        Some("q=test&limit=10")
-    );
-}
-
-#[test]
-fn test_parse_url_with_fragment() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("https://example.com/page#section"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("fragment")).unwrap().as_str(),
-        Some("section")
-    );
-}
-
-#[test]
-fn test_parse_url_with_credentials() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("https://user:pass@example.com/path"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("username")).unwrap().as_str(),
-        Some("user")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("password")).unwrap().as_str(),
-        Some("pass")
-    );
-}
-
-#[test]
-fn test_parse_url_complete() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("https://user:pass@example.com:8080/path?foo=bar#section"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("scheme")).unwrap().as_str(),
-        Some("https")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("host")).unwrap().as_str(),
-        Some("example.com")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("port")).unwrap().as_i64(),
-        Some(8080)
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("path")).unwrap().as_str(),
-        Some("/path")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("query")).unwrap().as_str(),
-        Some("foo=bar")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("fragment")).unwrap().as_str(),
-        Some("section")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("username")).unwrap().as_str(),
-        Some("user")
-    );
-    assert_eq!(
-        obj.get_value(&Value::from("password")).unwrap().as_str(),
-        Some("pass")
-    );
-}
-
-#[test]
-fn test_parse_url_http_default_port() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("http://example.com/path"),
-    )]))
-    .unwrap();
-
-    let obj = result.as_object().unwrap();
-    assert_eq!(
-        obj.get_value(&Value::from("port")).unwrap().as_i64(),
-        Some(80)
-    );
-}
-
-#[test]
-fn test_parse_url_invalid() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![(
-        "url",
-        Value::from("not a valid url"),
-    )]));
-
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_parse_url_missing_param() {
-    let result = url::parse_url_fn(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
-
-    assert!(result.is_err());
-}
+// Note: parse_url_fn tests removed - function now in filter_functions/url.rs
+// with dual function+filter syntax support. See tests/test_filters_integration.rs.
 
 // ============================================================================
 // build_url Tests
@@ -243,7 +77,7 @@ fn test_parse_url_missing_param() {
 
 #[test]
 fn test_build_url_simple() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("example.com")),
     ]))
@@ -254,7 +88,7 @@ fn test_build_url_simple() {
 
 #[test]
 fn test_build_url_with_port() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("example.com")),
         ("port", Value::from(8080)),
@@ -266,7 +100,7 @@ fn test_build_url_with_port() {
 
 #[test]
 fn test_build_url_with_path() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("example.com")),
         ("path", Value::from("/api/v1/users")),
@@ -278,7 +112,7 @@ fn test_build_url_with_path() {
 
 #[test]
 fn test_build_url_path_without_leading_slash() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("example.com")),
         ("path", Value::from("api/users")),
@@ -290,7 +124,7 @@ fn test_build_url_path_without_leading_slash() {
 
 #[test]
 fn test_build_url_with_query() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("example.com")),
         ("path", Value::from("/search")),
@@ -306,7 +140,7 @@ fn test_build_url_with_query() {
 
 #[test]
 fn test_build_url_complete() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("api.example.com")),
         ("port", Value::from(8080)),
@@ -323,7 +157,7 @@ fn test_build_url_complete() {
 
 #[test]
 fn test_build_url_empty_query() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("https")),
         ("host", Value::from("example.com")),
         ("query", Value::from("")),
@@ -335,7 +169,7 @@ fn test_build_url_empty_query() {
 
 #[test]
 fn test_build_url_http_scheme() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("scheme", Value::from("http")),
         ("host", Value::from("localhost")),
         ("port", Value::from(3000)),
@@ -347,7 +181,7 @@ fn test_build_url_http_scheme() {
 
 #[test]
 fn test_build_url_default_scheme() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![(
+    let result = BuildUrl::call(Kwargs::from_iter(vec![(
         "host",
         Value::from("example.com"),
     )]))
@@ -358,7 +192,7 @@ fn test_build_url_default_scheme() {
 
 #[test]
 fn test_build_url_missing_host() {
-    let result = url::build_url_fn(Kwargs::from_iter(vec![("scheme", Value::from("https"))]));
+    let result = BuildUrl::call(Kwargs::from_iter(vec![("scheme", Value::from("https"))]));
 
     assert!(result.is_err());
 }
@@ -369,7 +203,7 @@ fn test_build_url_with_query_object() {
     params.insert("page".to_string(), Value::from(1));
     params.insert("limit".to_string(), Value::from(20));
 
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("host", Value::from("api.example.com")),
         ("path", Value::from("/users")),
         ("query", Value::from_object(params)),
@@ -389,7 +223,7 @@ fn test_build_url_with_query_object_complex() {
     params.insert("active".to_string(), Value::from(true));
     params.insert("count".to_string(), Value::from(42));
 
-    let result = url::build_url_fn(Kwargs::from_iter(vec![
+    let result = BuildUrl::call(Kwargs::from_iter(vec![
         ("host", Value::from("example.com")),
         ("query", Value::from_object(params)),
     ]))
@@ -411,7 +245,7 @@ fn test_query_string_simple() {
     params.insert("name".to_string(), Value::from("test"));
     params.insert("value".to_string(), Value::from(42));
 
-    let result = url::query_string_fn(Kwargs::from_iter(vec![(
+    let result = QueryString::call(Kwargs::from_iter(vec![(
         "params",
         Value::from_object(params),
     )]))
@@ -428,7 +262,7 @@ fn test_query_string_with_special_chars() {
     params.insert("query".to_string(), Value::from("hello world"));
     params.insert("email".to_string(), Value::from("user@example.com"));
 
-    let result = url::query_string_fn(Kwargs::from_iter(vec![(
+    let result = QueryString::call(Kwargs::from_iter(vec![(
         "params",
         Value::from_object(params),
     )]))
@@ -445,7 +279,7 @@ fn test_query_string_boolean_values() {
     params.insert("active".to_string(), Value::from(true));
     params.insert("verified".to_string(), Value::from(false));
 
-    let result = url::query_string_fn(Kwargs::from_iter(vec![(
+    let result = QueryString::call(Kwargs::from_iter(vec![(
         "params",
         Value::from_object(params),
     )]))
@@ -460,7 +294,7 @@ fn test_query_string_boolean_values() {
 fn test_query_string_empty_object() {
     let params: BTreeMap<String, Value> = BTreeMap::new();
 
-    let result = url::query_string_fn(Kwargs::from_iter(vec![(
+    let result = QueryString::call(Kwargs::from_iter(vec![(
         "params",
         Value::from_object(params),
     )]))
@@ -477,7 +311,7 @@ fn test_query_string_multiple_params() {
     params.insert("sort".to_string(), Value::from("name"));
     params.insert("order".to_string(), Value::from("asc"));
 
-    let result = url::query_string_fn(Kwargs::from_iter(vec![(
+    let result = QueryString::call(Kwargs::from_iter(vec![(
         "params",
         Value::from_object(params),
     )]))
@@ -492,7 +326,7 @@ fn test_query_string_multiple_params() {
 
 #[test]
 fn test_query_string_error_not_object() {
-    let result = url::query_string_fn(Kwargs::from_iter(vec![(
+    let result = QueryString::call(Kwargs::from_iter(vec![(
         "params",
         Value::from("not an object"),
     )]));
@@ -502,7 +336,7 @@ fn test_query_string_error_not_object() {
 
 #[test]
 fn test_query_string_missing_param() {
-    let result = url::query_string_fn(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
+    let result = QueryString::call(Kwargs::from_iter(vec![("dummy", Value::from(0))]));
 
     assert!(result.is_err());
 }
