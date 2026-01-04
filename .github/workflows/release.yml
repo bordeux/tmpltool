@@ -8,11 +8,15 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   semantic-release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,7 +33,41 @@ jobs:
         run: npm ci
 
       - name: Run semantic-release
+        id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HUSKY: 0
-        run: npx semantic-release
+        run: |
+          # Get current tags
+          BEFORE_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+
+          # Run semantic-release
+          npx semantic-release 2>&1 | tee release-output.log
+
+          # Check if a new tag was created
+          git fetch --tags
+          AFTER_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+
+          if [ "$BEFORE_TAG" != "$AFTER_TAG" ] && [ "$AFTER_TAG" != "none" ]; then
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+            VERSION=$(echo "$AFTER_TAG" | sed 's/^v//')
+            echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "New release published: $AFTER_TAG"
+          else
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+            echo "No release published"
+          fi
+
+  trigger-publish:
+    name: Trigger Publish Workflow
+    needs: semantic-release
+    if: needs.semantic-release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger publish workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run publish.yml \
+            --repo "${{ github.repository }}" \
+            --field tag="v${{ needs.semantic-release.outputs.new_release_version }}"

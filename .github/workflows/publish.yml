@@ -1,9 +1,12 @@
 name: Publish
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g., v1.2.3)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -18,13 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Releasing version: $VERSION"
+          echo "Releasing version: $VERSION (tag: $TAG)"
 
   # ============================================
   # Build Binaries (reusable workflow)
@@ -34,7 +40,7 @@ jobs:
     needs: prepare
     uses: ./.github/workflows/_build-binaries.yml
     with:
-      ref: ${{ github.ref }}
+      ref: ${{ needs.prepare.outputs.tag }}
       upload-artifacts: true
       artifact-retention-days: 1
 
@@ -46,7 +52,7 @@ jobs:
     needs: prepare
     uses: ./.github/workflows/_build-packages.yml
     with:
-      ref: ${{ github.ref }}
+      ref: ${{ needs.prepare.outputs.tag }}
       version: ${{ needs.prepare.outputs.version }}
       artifact-retention-days: 1
 
@@ -61,7 +67,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -101,8 +107,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
           body_path: release_notes.md
           files: artifacts/**/*
           fail_on_unmatched_files: true
@@ -120,7 +126,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
