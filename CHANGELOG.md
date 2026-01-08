@@ -1,3 +1,10 @@
+## <small>1.4.3 (2026-01-08)</small>
+
+* Merge pull request #35 from bordeux/feature/app-analyse ([c4579c1](https://github.com/bordeux/tmpltool/commit/c4579c1)), closes [#35](https://github.com/bordeux/tmpltool/issues/35)
+* docs: reduce README.md ([c3d4360](https://github.com/bordeux/tmpltool/commit/c3d4360))
+* docs: reduce README.md ([ad2e825](https://github.com/bordeux/tmpltool/commit/ad2e825))
+* perf: optimize release binary size with LTO and symbol stripping ([a8f05ef](https://github.com/bordeux/tmpltool/commit/a8f05ef))
+
 ## <small>1.4.2 (2026-01-04)</small>
 
 * Merge pull request #34 from bordeux/fix/fix-release-semantic ([fb2e518](https://github.com/bordeux/tmpltool/commit/fb2e518)), closes [#34](https://github.com/bordeux/tmpltool/issues/34)
