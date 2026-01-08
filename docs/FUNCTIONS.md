@@ -11,8 +11,7 @@ This document provides a comprehensive reference for all available functions in 
 - [Command Execution Functions](functions/EXEC.md)
 - [Filesystem Functions](functions/FILESYSTEM.md)
 - [Path Manipulation Functions](functions/PATH.md)
-- [Data Parsing Functions](functions/DATA.md#parsing)
-- [Data Serialization Functions](functions/DATA.md#serialization)
+- [Data Parsing & Serialization Functions](functions/DATA.md)
 - [Object Manipulation Functions](functions/OBJECT.md)
 - [Validation Functions](functions/VALIDATION.md)
 - [System & Network Functions](functions/SYSTEM_NETWORK.md)
@@ -190,4 +189,35 @@ This document provides a comprehensive reference for all available functions in 
 - `truncate(string, length, suffix)` - Truncate string
 - And many more...
 
-For detailed documentation and examples for each function, see the individual category pages linked above.
+## Detailed Documentation
+
+Each function category has detailed documentation with examples. Click on any category above to see:
+- Complete function signatures
+- Argument descriptions and types
+- Return value information
+- Practical examples
+- Usage patterns
+
+## Getting Function Metadata Programmatically
+
+For programmatic access to function metadata (useful for IDE plugins and documentation generators), use the `--ide` flag:
+
+```bash
+# Get all function metadata as JSON
+tmpltool --ide json
+
+# Get as YAML
+tmpltool --ide yaml
+
+# Get as TOML
+tmpltool --ide toml
+```
+
+This outputs comprehensive metadata for all functions including:
+- Function names and categories
+- Argument definitions with types and defaults
+- Return types
+- Usage examples
+- Syntax information (function, filter, is-test support)
+
+See the [IDE Integration Guide](IDE_INTEGRATION.md) for more details.
