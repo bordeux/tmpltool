@@ -13,6 +13,8 @@ cat template.txt | tmpltool [OPTIONS]
 
 ## Options
 
+- `-h, --help` - Print help information and exit
+- `-V, --version` - Print version information and exit
 - `-o, --output <FILE>` - Output file path (prints to stdout if not specified)
 - `--trust` - Trust mode: Allow filesystem functions to access absolute paths and parent directories
   - **WARNING:** Only use with trusted templates. Disables security restrictions.
@@ -37,6 +39,12 @@ cat template.txt | tmpltool [OPTIONS]
 ## Examples
 
 ```bash
+# Get help
+tmpltool --help
+
+# Check version
+tmpltool --version
+
 # File to stdout
 tmpltool template.txt
 
