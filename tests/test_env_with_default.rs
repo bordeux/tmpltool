@@ -9,7 +9,7 @@ fn test_env_with_default() {
     let output_path = get_test_file_path("output_with_default.txt");
 
     // Read template from fixtures - uses default value
-    let template_content = read_fixture_template("with_default.tmpl");
+    let template_content = read_fixture_template("with_default.tmpltool");
     let template_path = get_test_file_path("template_with_default.txt");
     fs::write(&template_path, template_content).unwrap();
 

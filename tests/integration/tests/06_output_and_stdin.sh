@@ -5,8 +5,8 @@
 echo "Test: Output to file and stdin input"
 
 # Test 1: Output to file
-create_template "output.tmpl" "File content"
-"$BINARY" "$TEST_DIR/output.tmpl" -o "$TEST_DIR/output.txt" 2>&1
+create_template "output.tmpltool" "File content"
+"$BINARY" "$TEST_DIR/output.tmpltool" -o "$TEST_DIR/output.txt" 2>&1
 if [ -f "$TEST_DIR/output.txt" ]; then
     OUTPUT=$(cat "$TEST_DIR/output.txt")
     assert_equals "File content" "$OUTPUT" "Output file is created with correct content"

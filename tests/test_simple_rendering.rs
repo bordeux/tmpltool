@@ -9,7 +9,7 @@ fn test_simple_rendering() {
     let output_path = get_test_file_path("output_simple.txt");
 
     // Read simple template from fixtures (no variables)
-    let template_content = read_fixture_template("simple.tmpl");
+    let template_content = read_fixture_template("simple.tmpltool");
     let template_path = get_test_file_path("template_simple.txt");
     fs::write(&template_path, template_content).unwrap();
 

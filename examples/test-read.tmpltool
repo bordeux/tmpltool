@@ -1,0 +1,6 @@
+Testing relative path resolution:
+
+File content from ./basic.tmpltool:
+{{ read_file(path="./basic.tmpltool") }}
+
+End of test.

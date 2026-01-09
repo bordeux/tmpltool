@@ -41,13 +41,13 @@ fn test_simple_include() {
     let test_dir = setup_test_env();
 
     // Create partial template
-    create_file(&test_dir, "partial.tmpl", "Hello from partial!");
+    create_file(&test_dir, "partial.tmpltool", "Hello from partial!");
 
     // Create main template
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
-        "Start\n{% include \"./partial.tmpl\" %}\nEnd",
+        "main.tmpltool",
+        "Start\n{% include \"./partial.tmpltool\" %}\nEnd",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -80,15 +80,15 @@ fn test_include_with_env_vars() {
     // Create partial template with env vars
     create_file(
         &test_dir,
-        "partial.tmpl",
+        "partial.tmpltool",
         "User: {{ get_env(name=\"TEST_USER\", default=\"guest\") }}",
     );
 
     // Create main template
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
-        "Header\n{% include \"./partial.tmpl\" %}\nFooter",
+        "main.tmpltool",
+        "Header\n{% include \"./partial.tmpltool\" %}\nFooter",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -128,20 +128,20 @@ fn test_nested_includes() {
     let test_dir = setup_test_env();
 
     // Create level 2 template
-    create_file(&test_dir, "level2.tmpl", "Level 2 content");
+    create_file(&test_dir, "level2.tmpltool", "Level 2 content");
 
     // Create level 1 template that includes level 2
     create_file(
         &test_dir,
-        "level1.tmpl",
-        "Level 1 start\n{% include \"./level2.tmpl\" %}\nLevel 1 end",
+        "level1.tmpltool",
+        "Level 1 start\n{% include \"./level2.tmpltool\" %}\nLevel 1 end",
     );
 
     // Create main template that includes level 1
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
-        "Main start\n{% include \"./level1.tmpl\" %}\nMain end",
+        "main.tmpltool",
+        "Main start\n{% include \"./level1.tmpltool\" %}\nMain end",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -179,13 +179,13 @@ fn test_include_with_subdirectory() {
     fs::create_dir_all(&subdir).unwrap();
 
     // Create partial in subdirectory
-    create_file(&subdir, "footer.tmpl", "Footer content");
+    create_file(&subdir, "footer.tmpltool", "Footer content");
 
     // Create main template
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
-        "Main content\n{% include \"./partials/footer.tmpl\" %}",
+        "main.tmpltool",
+        "Main content\n{% include \"./partials/footer.tmpltool\" %}",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -218,8 +218,8 @@ fn test_include_nonexistent_template() {
     // Create main template that tries to include nonexistent file
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
-        "{% include \"./nonexistent.tmpl\" %}",
+        "main.tmpltool",
+        "{% include \"./nonexistent.tmpltool\" %}",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -248,14 +248,18 @@ fn test_include_parent_directory_blocked() {
     let test_dir = setup_test_env();
 
     // Create parent directory file
-    create_file(&test_dir, "parent.tmpl", "Parent content");
+    create_file(&test_dir, "parent.tmpltool", "Parent content");
 
     // Create subdirectory
     let subdir = test_dir.join("subdir");
     fs::create_dir_all(&subdir).unwrap();
 
     // Create template in subdirectory that tries to include parent
-    let main_template = create_file(&subdir, "main.tmpl", "{% include \"../parent.tmpl\" %}");
+    let main_template = create_file(
+        &subdir,
+        "main.tmpltool",
+        "{% include \"../parent.tmpltool\" %}",
+    );
 
     let output_file = test_dir.join("output.txt");
 
@@ -286,7 +290,7 @@ fn test_include_parent_directory_allowed_with_trust() {
     let test_dir = setup_test_env();
 
     // Create parent directory file
-    create_file(&test_dir, "parent.tmpl", "Parent content");
+    create_file(&test_dir, "parent.tmpltool", "Parent content");
 
     // Create subdirectory
     let subdir = test_dir.join("subdir");
@@ -295,8 +299,8 @@ fn test_include_parent_directory_allowed_with_trust() {
     // Create template in subdirectory that includes parent
     let main_template = create_file(
         &subdir,
-        "main.tmpl",
-        "Start\n{% include \"../parent.tmpl\" %}\nEnd",
+        "main.tmpltool",
+        "Start\n{% include \"../parent.tmpltool\" %}\nEnd",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -327,7 +331,7 @@ fn test_include_absolute_path_blocked() {
     let test_dir = setup_test_env();
 
     // Create template that tries to use absolute path
-    let main_template = create_file(&test_dir, "main.tmpl", "{% include \"/etc/passwd\" %}");
+    let main_template = create_file(&test_dir, "main.tmpltool", "{% include \"/etc/passwd\" %}");
 
     let output_file = test_dir.join("output.txt");
 
@@ -355,15 +359,15 @@ fn test_include_multiple_partials() {
     let test_dir = setup_test_env();
 
     // Create multiple partials
-    create_file(&test_dir, "header.tmpl", "=== Header ===");
-    create_file(&test_dir, "content.tmpl", "Main Content");
-    create_file(&test_dir, "footer.tmpl", "=== Footer ===");
+    create_file(&test_dir, "header.tmpltool", "=== Header ===");
+    create_file(&test_dir, "content.tmpltool", "Main Content");
+    create_file(&test_dir, "footer.tmpltool", "=== Footer ===");
 
     // Create main template that includes all
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
-        "{% include \"./header.tmpl\" %}\n{% include \"./content.tmpl\" %}\n{% include \"./footer.tmpl\" %}",
+        "main.tmpltool",
+        "{% include \"./header.tmpltool\" %}\n{% include \"./content.tmpltool\" %}\n{% include \"./footer.tmpltool\" %}",
     );
 
     let output_file = test_dir.join("output.txt");
@@ -394,16 +398,16 @@ fn test_include_with_conditionals() {
     let test_dir = setup_test_env();
 
     // Create partial
-    create_file(&test_dir, "optional.tmpl", "Optional content included");
+    create_file(&test_dir, "optional.tmpltool", "Optional content included");
 
     // Create main template with conditional include
     let main_template = create_file(
         &test_dir,
-        "main.tmpl",
+        "main.tmpltool",
         "{% set show = get_env(name=\"SHOW_OPTIONAL\", default=\"false\") %}\
         Start\n\
         {% if show == \"true\" %}\
-        {% include \"./optional.tmpl\" %}\n\
+        {% include \"./optional.tmpltool\" %}\n\
         {% endif %}\
         End",
     );
@@ -444,7 +448,7 @@ fn test_include_with_conditionals() {
 #[test]
 fn test_include_fixture_templates() {
     // Test using pre-created fixture templates
-    let template_path = common::get_fixture_template("include_base.tmpl");
+    let template_path = common::get_fixture_template("include_base.tmpltool");
     let output_file = common::get_test_file_path("include_base_output.txt");
 
     let result = render_template(
@@ -471,7 +475,7 @@ fn test_include_fixture_templates() {
 #[test]
 fn test_include_nested_fixture_templates() {
     // Test nested includes using fixture templates
-    let template_path = common::get_fixture_template("include_nested_main.tmpl");
+    let template_path = common::get_fixture_template("include_nested_main.tmpltool");
     let output_file = common::get_test_file_path("include_nested_output.txt");
 
     let result = render_template(

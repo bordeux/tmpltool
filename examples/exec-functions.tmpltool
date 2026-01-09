@@ -1,7 +1,7 @@
 # Command Execution Examples
 # ==========================================
 # SECURITY WARNING: This template requires --trust mode
-# Run with: tmpltool --trust examples/exec-functions.tmpl
+# Run with: tmpltool --trust examples/exec-functions.tmpltool
 
 ## Two Functions Available
 

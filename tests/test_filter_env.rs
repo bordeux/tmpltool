@@ -16,7 +16,7 @@ fn test_filter_env() {
     }
 
     let output_path = get_test_file_path("output_filter_env.txt");
-    let template_content = read_fixture_template("filter_env.tmpl");
+    let template_content = read_fixture_template("filter_env.tmpltool");
     let template_path = get_test_file_path("template_filter_env.txt");
     fs::write(&template_path, template_content).unwrap();
 

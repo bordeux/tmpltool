@@ -36,7 +36,7 @@ fn test_env_flag_loads_variables() {
     let env_file = create_env_file(&dir, ".env", "TEST_VAR=hello_world\n");
     let template = create_template_file(
         &dir,
-        "test.tmpl",
+        "test.tmpltool",
         "Value: {{ get_env(name=\"TEST_VAR\", default=\"not_set\") }}",
     );
 
@@ -54,7 +54,7 @@ fn test_env_flag_multiple_variables() {
     let env_file = create_env_file(&dir, ".env", "VAR1=first\nVAR2=second\nVAR3=third\n");
     let template = create_template_file(
         &dir,
-        "test.tmpl",
+        "test.tmpltool",
         "{{ get_env(name=\"VAR1\") }}-{{ get_env(name=\"VAR2\") }}-{{ get_env(name=\"VAR3\") }}",
     );
 
@@ -73,7 +73,7 @@ fn test_env_flag_multiple_files() {
     let env2 = create_env_file(&dir, ".env.local", "VAR2=from_env2\nVAR3=from_env2\n");
     let template = create_template_file(
         &dir,
-        "test.tmpl",
+        "test.tmpltool",
         "VAR1={{ get_env(name=\"VAR1\") }} VAR2={{ get_env(name=\"VAR2\") }} VAR3={{ get_env(name=\"VAR3\") }}",
     );
 
@@ -93,7 +93,7 @@ fn test_env_flag_override_order() {
     let env1 = create_env_file(&dir, "first.env", "VALUE=first\n");
     let env2 = create_env_file(&dir, "second.env", "VALUE=second\n");
     let env3 = create_env_file(&dir, "third.env", "VALUE=third\n");
-    let template = create_template_file(&dir, "test.tmpl", "{{ get_env(name=\"VALUE\") }}");
+    let template = create_template_file(&dir, "test.tmpltool", "{{ get_env(name=\"VALUE\") }}");
 
     // Last file wins
     tmpltool()
@@ -107,7 +107,7 @@ fn test_env_flag_override_order() {
 fn test_env_flag_missing_file() {
     let dir = TempDir::new().unwrap();
 
-    let template = create_template_file(&dir, "test.tmpl", "{{ get_env(name=\"X\") }}");
+    let template = create_template_file(&dir, "test.tmpltool", "{{ get_env(name=\"X\") }}");
 
     tmpltool()
         .args(["--env", "/nonexistent/.env", &template])
@@ -125,7 +125,7 @@ fn test_env_flag_with_comments() {
         ".env",
         "# This is a comment\nVAR=value\n# Another comment\n",
     );
-    let template = create_template_file(&dir, "test.tmpl", "{{ get_env(name=\"VAR\") }}");
+    let template = create_template_file(&dir, "test.tmpltool", "{{ get_env(name=\"VAR\") }}");
 
     tmpltool()
         .args(["--env", &env_file, &template])
@@ -145,7 +145,7 @@ fn test_env_flag_with_quoted_values() {
     );
     let template = create_template_file(
         &dir,
-        "test.tmpl",
+        "test.tmpltool",
         "{{ get_env(name=\"QUOTED\") }} | {{ get_env(name=\"SINGLE\") }}",
     );
 
@@ -162,7 +162,7 @@ fn test_env_flag_with_empty_value() {
     let dir = TempDir::new().unwrap();
 
     let env_file = create_env_file(&dir, ".env", "EMPTY=\n");
-    let template = create_template_file(&dir, "test.tmpl", "[{{ get_env(name=\"EMPTY\") }}]");
+    let template = create_template_file(&dir, "test.tmpltool", "[{{ get_env(name=\"EMPTY\") }}]");
 
     tmpltool()
         .args(["--env", &env_file, &template])
@@ -180,7 +180,7 @@ fn test_env_flag_with_special_characters() {
         ".env",
         "URL=https://example.com/path?key=value&other=123\n",
     );
-    let template = create_template_file(&dir, "test.tmpl", "{{ get_env(name=\"URL\") }}");
+    let template = create_template_file(&dir, "test.tmpltool", "{{ get_env(name=\"URL\") }}");
 
     tmpltool()
         .args(["--env", &env_file, &template])
@@ -197,7 +197,7 @@ fn test_env_flag_with_multiline_value() {
 
     // dotenvy supports multiline values with quotes
     let env_file = create_env_file(&dir, ".env", "MULTI=\"line1\nline2\nline3\"\n");
-    let template = create_template_file(&dir, "test.tmpl", "{{ get_env(name=\"MULTI\") }}");
+    let template = create_template_file(&dir, "test.tmpltool", "{{ get_env(name=\"MULTI\") }}");
 
     tmpltool()
         .args(["--env", &env_file, &template])
@@ -227,7 +227,8 @@ fn test_env_flag_combined_with_output() {
     let dir = TempDir::new().unwrap();
 
     let env_file = create_env_file(&dir, ".env", "OUTPUT_VAR=test_output\n");
-    let template = create_template_file(&dir, "test.tmpl", "{{ get_env(name=\"OUTPUT_VAR\") }}");
+    let template =
+        create_template_file(&dir, "test.tmpltool", "{{ get_env(name=\"OUTPUT_VAR\") }}");
     let output_file = dir.path().join("output.txt");
 
     tmpltool()
@@ -252,7 +253,7 @@ fn test_env_flag_combined_with_validate() {
     let env_file = create_env_file(&dir, ".env", "APP_NAME=myapp\nPORT=8080\n");
     let template = create_template_file(
         &dir,
-        "test.tmpl",
+        "test.tmpltool",
         "{\"app\": \"{{ get_env(name=\"APP_NAME\") }}\", \"port\": {{ get_env(name=\"PORT\") }}}",
     );
 
@@ -270,7 +271,7 @@ fn test_env_flag_no_env_files_works() {
 
     let template = create_template_file(
         &dir,
-        "test.tmpl",
+        "test.tmpltool",
         "{{ get_env(name=\"MISSING\", default=\"default_value\") }}",
     );
 

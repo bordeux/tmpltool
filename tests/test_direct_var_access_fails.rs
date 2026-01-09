@@ -14,7 +14,7 @@ fn test_direct_var_access_fails() {
     }
 
     // Read template from fixtures - tries direct var access without get_env()
-    let template_content = read_fixture_template("direct_var.tmpl");
+    let template_content = read_fixture_template("direct_var.tmpltool");
     let template_path = get_test_file_path("template_direct_var.txt");
     fs::write(&template_path, template_content).unwrap();
 

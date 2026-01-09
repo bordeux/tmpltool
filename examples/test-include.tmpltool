@@ -1,0 +1,6 @@
+Testing relative path resolution:
+
+File content from ./basic.tmpltool parsed:
+{% include "./basic.tmpltool" %}
+
+End of test.

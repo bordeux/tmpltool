@@ -15,7 +15,7 @@ fn test_multiline_template() {
     }
 
     // Read template from fixtures
-    let template_content = read_fixture_template("multiline.tmpl");
+    let template_content = read_fixture_template("multiline.tmpltool");
     let template_path = get_test_file_path("template_multiline.txt");
     fs::write(&template_path, template_content).unwrap();
 

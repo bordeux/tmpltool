@@ -22,7 +22,7 @@ fn test_render_template_from_file_to_stdout() {
 #[test]
 fn test_render_template_from_file_to_file() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(&input_path, "Test output").unwrap();
@@ -43,7 +43,7 @@ fn test_render_template_from_file_to_file() {
 #[test]
 fn test_render_template_with_env_var() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(
@@ -75,7 +75,7 @@ fn test_render_template_with_env_var() {
 #[test]
 fn test_render_template_with_trust_mode() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
     let data_file = temp_dir.path().join("data.txt");
 
@@ -87,7 +87,7 @@ fn test_render_template_with_trust_mode() {
     // Create a subdirectory and move the template there
     let subdir = temp_dir.path().join("subdir");
     fs::create_dir(&subdir).unwrap();
-    let nested_input = subdir.join("input.tmpl");
+    let nested_input = subdir.join("input.tmpltool");
     fs::write(&nested_input, "{{ read_file(path=\"../data.txt\") }}").unwrap();
 
     // Should work with trust mode (accessing parent directory)
@@ -109,7 +109,7 @@ fn test_render_template_with_trust_mode() {
 
 #[test]
 fn test_render_template_missing_file() {
-    let result = render_template(Some("/nonexistent/file.tmpl"), None, false, None);
+    let result = render_template(Some("/nonexistent/file.tmpltool"), None, false, None);
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("Failed to read template file"));
@@ -158,7 +158,7 @@ fn test_render_template_security_absolute_path() {
     // This test only works on Unix where absolute paths start with /
     // On Windows, the security check for absolute paths works differently
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
 
     // Try to read with Unix absolute path without trust mode
     fs::write(&input_path, "{{ read_file(path=\"/etc/passwd\") }}").unwrap();
@@ -173,7 +173,7 @@ fn test_render_template_security_absolute_path() {
 #[test]
 fn test_render_template_security_parent_directory() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
 
     // Try to read with parent directory traversal
     fs::write(&input_path, "{{ read_file(path=\"../secret.txt\") }}").unwrap();
@@ -192,7 +192,7 @@ fn test_render_template_security_parent_directory() {
 #[test]
 fn test_render_template_validate_json_success() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.json");
 
     fs::write(&input_path, r#"{"valid": "json", "number": 42}"#).unwrap();
@@ -223,7 +223,7 @@ fn test_render_template_validate_json_failure() {
 #[test]
 fn test_render_template_validate_yaml_success() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.yaml");
 
     fs::write(&input_path, "server:\n  host: localhost\n  port: 8080").unwrap();
@@ -254,7 +254,7 @@ fn test_render_template_validate_yaml_failure() {
 #[test]
 fn test_render_template_validate_toml_success() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.toml");
 
     fs::write(&input_path, "[server]\nhost = \"localhost\"\nport = 8080").unwrap();
@@ -289,12 +289,12 @@ fn test_render_template_validate_toml_failure() {
 #[test]
 fn test_render_template_with_includes() {
     let temp_dir = TempDir::new().unwrap();
-    let main_path = temp_dir.path().join("main.tmpl");
-    let partial_path = temp_dir.path().join("partial.tmpl");
+    let main_path = temp_dir.path().join("main.tmpltool");
+    let partial_path = temp_dir.path().join("partial.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(&partial_path, "included content").unwrap();
-    fs::write(&main_path, "Start {% include \"partial.tmpl\" %} End").unwrap();
+    fs::write(&main_path, "Start {% include \"partial.tmpltool\" %} End").unwrap();
 
     let result = render_template(
         Some(main_path.to_str().unwrap()),
@@ -311,7 +311,7 @@ fn test_render_template_with_includes() {
 #[test]
 fn test_render_template_with_filters() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(&input_path, "{{ \"hello world\" | upper }}").unwrap();
@@ -331,7 +331,7 @@ fn test_render_template_with_filters() {
 #[test]
 fn test_render_template_with_conditionals() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(
@@ -363,7 +363,7 @@ fn test_render_template_with_conditionals() {
 #[test]
 fn test_render_template_with_loops() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(&input_path, "{% for i in [1, 2, 3] %}{{ i }}{% endfor %}").unwrap();
@@ -395,7 +395,7 @@ fn test_render_template_empty_file() {
 #[test]
 fn test_render_template_large_template() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     // Create a large template with lots of repetition
@@ -418,7 +418,7 @@ fn test_render_template_large_template() {
 #[test]
 fn test_render_template_unicode_content() {
     let temp_dir = TempDir::new().unwrap();
-    let input_path = temp_dir.path().join("input.tmpl");
+    let input_path = temp_dir.path().join("input.tmpltool");
     let output_path = temp_dir.path().join("output.txt");
 
     fs::write(&input_path, "Hello 世界 🚀 café").unwrap();

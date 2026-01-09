@@ -6,6 +6,6 @@ echo "Test: Filesystem functions"
 
 # Test: read_file() works
 echo "test content" > "$TEST_DIR/test_file.txt"
-create_template "file_ops.tmpl" '{{ read_file(path="test_file.txt") }}'
-OUTPUT=$(run_binary "file_ops.tmpl")
+create_template "file_ops.tmpltool" '{{ read_file(path="test_file.txt") }}'
+OUTPUT=$(run_binary "file_ops.tmpltool")
 assert_contains "$OUTPUT" "test content" "read_file() works"
