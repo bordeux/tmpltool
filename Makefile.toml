@@ -65,7 +65,7 @@ args = ["test", "--", "--nocapture", "--test-threads=1"]
 [tasks.run]
 description = "Run the application with example"
 command = "cargo"
-args = ["run", "--", "examples/greeting.tmpltool"]
+args = ["run", "--", "examples/greeting.txt.tmpltool"]
 
 [tasks.check]
 description = "Fast check for compile errors (no binary generation)"
@@ -254,14 +254,14 @@ script_runner = "@shell"
 script = '''
 echo "Testing examples..."
 cargo build --release
-echo "✓ Testing greeting.tmpltool..."
-./target/release/tmpltool examples/greeting.tmpltool > /dev/null
-echo "✓ Testing basic.tmpltool..."
-CUSTOM_VAR="test" ./target/release/tmpltool examples/basic.tmpltool > /dev/null
-echo "✓ Testing config-with-defaults.tmpltool..."
-./target/release/tmpltool examples/config-with-defaults.tmpltool > /dev/null
-echo "✓ Testing docker-compose.tmpltool..."
-./target/release/tmpltool examples/docker-compose.tmpltool > /dev/null
+echo "✓ Testing greeting.txt.tmpltool..."
+./target/release/tmpltool examples/greeting.txt.tmpltool > /dev/null
+echo "✓ Testing basic.txt.tmpltool..."
+CUSTOM_VAR="test" ./target/release/tmpltool examples/basic.txt.tmpltool > /dev/null
+echo "✓ Testing config-with-defaults.toml.tmpltool..."
+./target/release/tmpltool examples/config-with-defaults.toml.tmpltool > /dev/null
+echo "✓ Testing docker-compose.yaml.tmpltool..."
+./target/release/tmpltool examples/docker-compose.yaml.tmpltool > /dev/null
 echo ""
 echo "All examples tested successfully!"
 '''

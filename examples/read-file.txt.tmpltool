@@ -1,5 +1,5 @@
 Hello {{ get_env(name="NAME", default="World") }}!
 
 File content is:
-{{ read_file(path="./basic.tmpltool") }}
+{{ read_file(path="./basic.txt.tmpltool") }}
 
