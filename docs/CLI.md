@@ -59,33 +59,33 @@ tmpltool template.txt -o output.txt
 echo "Hello {{ get_env(name=\"USER\") }}!" | tmpltool
 
 # With environment variables
-DB_HOST=postgres tmpltool config.tmpl -o config.txt
+DB_HOST=postgres tmpltool config.tmpltool -o config.txt
 
 # Chaining with other tools
-tmpltool config.json.tmpl | jq .
-cat k8s-deployment.yaml.tmpl | tmpltool | kubectl apply -f -
+tmpltool config.json.tmpltool | jq .
+cat k8s-deployment.yaml.tmpltool | tmpltool | kubectl apply -f -
 
 # Trust mode for system files
-tmpltool --trust system_info.tmpl  # Can read /etc/passwd, etc.
+tmpltool --trust system_info.tmpltool  # Can read /etc/passwd, etc.
 
 # Validate JSON output
-tmpltool config.json.tmpl --validate json
+tmpltool config.json.tmpltool --validate json
 # Exits with error if output is invalid JSON
 
 # Validate YAML output
-tmpltool k8s-deploy.yaml.tmpl --validate yaml -o deployment.yaml
+tmpltool k8s-deploy.yaml.tmpltool --validate yaml -o deployment.yaml
 
 # Validate TOML output
-tmpltool Cargo.toml.tmpl --validate toml
+tmpltool Cargo.toml.tmpltool --validate toml
 
 # Load variables from .env file
-tmpltool --env .env config.tmpl
+tmpltool --env .env config.tmpltool
 
 # Load from multiple env files (later files override earlier)
-tmpltool --env .env --env .env.local config.tmpl
+tmpltool --env .env --env .env.local config.tmpltool
 
 # Combine with other options
-tmpltool --env .env --env .env.production --validate json -o config.json config.tmpl
+tmpltool --env .env --env .env.production --validate json -o config.json config.tmpltool
 ```
 
 ## Environment Files (.env)
@@ -128,12 +128,12 @@ LOG_LEVEL=warn
 DATABASE_URL=postgres://prod-server/prod
 
 # Load both - production values override base
-tmpltool --env .env --env .env.production app.config.tmpl
+tmpltool --env .env --env .env.production app.config.tmpltool
 ```
 
 ### Example Workflow
 
-**Template (`config.tmpl`):**
+**Template (`config.tmpltool`):**
 ```jinja
 server:
   host: {{ get_env(name="SERVER_HOST", default="localhost") }}
@@ -154,7 +154,7 @@ LOG_LEVEL=debug
 
 **Render:**
 ```bash
-tmpltool --env .env config.tmpl -o config.yaml
+tmpltool --env .env config.tmpltool -o config.yaml
 ```
 
 **Output (`config.yaml`):**

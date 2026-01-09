@@ -107,12 +107,12 @@ Each test follows this pattern:
 
 ```bash
 # Create test template
-cat > "$TEST_DIR/test.tmpl" << 'EOF'
+cat > "$TEST_DIR/test.tmpltool" << 'EOF'
 {{ template content }}
 EOF
 
 # Run binary and capture output
-OUTPUT=$("$BINARY" "$TEST_DIR/test.tmpl" 2>&1)
+OUTPUT=$("$BINARY" "$TEST_DIR/test.tmpltool" 2>&1)
 
 # Assert expected result
 assert_equals "expected" "$OUTPUT" "test description"
@@ -131,8 +131,8 @@ To add a new integration test:
    echo "Test: My new feature"
 
    # Test 1: Description
-   create_template "mytest.tmpl" 'Template content here'
-   OUTPUT=$(run_binary "mytest.tmpl")
+   create_template "mytest.tmpltool" 'Template content here'
+   OUTPUT=$(run_binary "mytest.tmpltool")
    assert_equals "expected output" "$OUTPUT" "Test passes when..."
    ```
 
@@ -203,7 +203,7 @@ If a test fails:
 
 3. Test individual commands manually:
    ```bash
-   ./target/release/tmpltool examples/greeting.tmpl
+   ./target/release/tmpltool examples/greeting.tmpltool
    ```
 
 4. Check the test's expected vs actual output in the failure message

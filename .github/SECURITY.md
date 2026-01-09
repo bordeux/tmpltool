@@ -44,10 +44,10 @@ When using tmpltool, please follow these security best practices:
 
 ```bash
 # ✗ DANGEROUS - Don't use --trust with untrusted templates
-tmpltool --trust untrusted_template.tmpl
+tmpltool --trust untrusted_template.tmpltool
 
 # ✓ SAFE - Use without --trust for untrusted templates
-tmpltool untrusted_template.tmpl
+tmpltool untrusted_template.tmpltool
 ```
 
 **Why?** Trust mode disables security restrictions:
@@ -67,14 +67,14 @@ tmpltool untrusted_template.tmpl
 
 ```bash
 # ✗ DANGEROUS - Don't process templates from untrusted sources
-curl https://untrusted-site.com/template.tmpl | tmpltool
+curl https://untrusted-site.com/template.tmpltool | tmpltool
 
 # ✓ SAFE - Review templates before using them
-curl https://trusted-site.com/template.tmpl -o template.tmpl
+curl https://trusted-site.com/template.tmpltool -o template.tmpltool
 # Review the template
-cat template.tmpl
+cat template.tmpltool
 # Then use it
-tmpltool template.tmpl
+tmpltool template.tmpltool
 ```
 
 **What to check in templates:**
@@ -89,7 +89,7 @@ tmpltool template.tmpl
 ```bash
 # ✗ DANGEROUS - Don't expose secrets in environment
 export DATABASE_PASSWORD="secret123"
-tmpltool template.tmpl  # Template could leak this
+tmpltool template.tmpltool  # Template could leak this
 
 # ✓ BETTER - Use secure secret management
 # Load secrets only when needed and clear them after use
@@ -120,10 +120,10 @@ When using Docker:
 
 ```bash
 # ✓ SAFE - Mount only necessary directories
-docker run --rm -v $(pwd):/workspace -w /workspace tmpltool template.tmpl
+docker run --rm -v $(pwd):/workspace -w /workspace tmpltool template.tmpltool
 
 # ✗ DANGEROUS - Don't mount entire filesystem
-docker run --rm -v /:/host tmpltool template.tmpl
+docker run --rm -v /:/host tmpltool template.tmpltool
 ```
 
 ## Known Security Considerations

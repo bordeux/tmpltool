@@ -28,7 +28,7 @@ Describe the solution you'd like. How should this feature work?
 **Example usage:**
 ```bash
 # Show how you'd like to use this feature
-tmpltool --new-flag template.tmpl
+tmpltool --new-flag template.tmpltool
 ```
 
 **Example template:**

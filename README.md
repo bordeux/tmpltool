@@ -28,8 +28,8 @@ Get started in 30 seconds:
 curl -fsSL https://raw.githubusercontent.com/bordeux/repo/master/install.sh | sh -s -- tmpltool
 
 # Create and render template
-echo 'Hello {{ get_env(name="USER", default="World") }}!' > greeting.tmpl
-tmpltool greeting.tmpl
+echo 'Hello {{ get_env(name="USER", default="World") }}!' > greeting.tmpltool
+tmpltool greeting.tmpltool
 # Output: Hello World!
 ```
 
@@ -86,7 +86,7 @@ See [docs/README.md](docs/README.md) for the full documentation index.
 
 ### Simple Variable Substitution
 
-**Template** (`greeting.tmpl`):
+**Template** (`greeting.tmpltool`):
 ```
 Hello {{ get_env(name="USER") }}!
 Your home directory is: {{ get_env(name="HOME") }}
@@ -94,12 +94,12 @@ Your home directory is: {{ get_env(name="HOME") }}
 
 **Render:**
 ```bash
-tmpltool greeting.tmpl
+tmpltool greeting.tmpltool
 ```
 
 ### Using Default Values
 
-**Template** (`config.tmpl`):
+**Template** (`config.tmpltool`):
 ```
 Database: {{ get_env(name="DB_HOST", default="localhost") }}:{{ get_env(name="DB_PORT", default="5432") }}
 Environment: {{ get_env(name="APP_ENV", default="development") }}
@@ -108,7 +108,7 @@ Debug: {{ get_env(name="DEBUG", default="false") }}
 
 **Render with defaults:**
 ```bash
-tmpltool config.tmpl
+tmpltool config.tmpltool
 # Output:
 # Database: localhost:5432
 # Environment: development
@@ -117,7 +117,7 @@ tmpltool config.tmpl
 
 **Render with custom values:**
 ```bash
-DB_HOST=postgres DB_PORT=5432 APP_ENV=production tmpltool config.tmpl
+DB_HOST=postgres DB_PORT=5432 APP_ENV=production tmpltool config.tmpltool
 # Output:
 # Database: postgres:5432
 # Environment: production
@@ -126,7 +126,7 @@ DB_HOST=postgres DB_PORT=5432 APP_ENV=production tmpltool config.tmpl
 
 ### Conditionals and Loops
 
-**Template** (`status.tmpl`):
+**Template** (`status.tmpltool`):
 ```
 {% set debug = get_env(name="DEBUG", default="false") %}
 {% if debug == "true" %}
@@ -147,12 +147,12 @@ Items:
 
 **Render:**
 ```bash
-DEBUG=true ITEMS="apple,banana,orange,grape" tmpltool status.tmpl
+DEBUG=true ITEMS="apple,banana,orange,grape" tmpltool status.tmpltool
 ```
 
 ### Filtering Environment Variables
 
-**Template** (`server-vars.tmpl`):
+**Template** (`server-vars.tmpltool`):
 ```
 Server Configuration:
 {% for var in filter_env(pattern="SERVER_*") %}
@@ -162,7 +162,7 @@ Server Configuration:
 
 **Render:**
 ```bash
-SERVER_HOST=localhost SERVER_PORT=8080 SERVER_NAME=myapp tmpltool server-vars.tmpl
+SERVER_HOST=localhost SERVER_PORT=8080 SERVER_NAME=myapp tmpltool server-vars.tmpltool
 # Output:
 # Server Configuration:
 #   SERVER_HOST=localhost
@@ -172,7 +172,7 @@ SERVER_HOST=localhost SERVER_PORT=8080 SERVER_NAME=myapp tmpltool server-vars.tm
 
 ### Working with Files
 
-**Template** (`build-report.tmpl`):
+**Template** (`build-report.tmpltool`):
 ```
 # Build Report
 
@@ -190,7 +190,7 @@ Source files:
 
 **Render:**
 ```bash
-tmpltool build-report.tmpl
+tmpltool build-report.tmpltool
 ```
 
 ## Template Syntax

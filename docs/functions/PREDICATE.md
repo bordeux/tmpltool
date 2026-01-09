@@ -169,10 +169,10 @@ Check if a string ends with a specific suffix.
 {% set filename = "config.yaml" %}
 {% if ends_with(string=filename, suffix=".yaml") %}
   YAML configuration file
-  {% include "yaml-handler.tmpl" %}
+  {% include "yaml-handler.tmpltool" %}
 {% elif ends_with(string=filename, suffix=".json") %}
   JSON configuration file
-  {% include "json-handler.tmpl" %}
+  {% include "json-handler.tmpltool" %}
 {% endif %}
 
 {# Filter by file extension #}
