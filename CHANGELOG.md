@@ -1,3 +1,13 @@
+## 1.5.0 (2026-01-09)
+
+* Merge pull request #36 from bordeux/feature/app-analyse ([e608ef6](https://github.com/bordeux/tmpltool/commit/e608ef6)), closes [#36](https://github.com/bordeux/tmpltool/issues/36)
+* refactor: add output format extension to example templates ([1531e21](https://github.com/bordeux/tmpltool/commit/1531e21))
+* refactor: rename all .tmpl files to .tmpltool extension ([4d3f1bc](https://github.com/bordeux/tmpltool/commit/4d3f1bc))
+* docs: change template extension from .tmpl to .tmpltool ([fdb4b6d](https://github.com/bordeux/tmpltool/commit/fdb4b6d))
+* docs: remove old files ([f46c149](https://github.com/bordeux/tmpltool/commit/f46c149))
+* docs: todo list ([6b63989](https://github.com/bordeux/tmpltool/commit/6b63989))
+* feat: add .env file support via --env flag ([0cd0d98](https://github.com/bordeux/tmpltool/commit/0cd0d98))
+
 ## <small>1.4.3 (2026-01-08)</small>
 
 * Merge pull request #35 from bordeux/feature/app-analyse ([c4579c1](https://github.com/bordeux/tmpltool/commit/c4579c1)), closes [#35](https://github.com/bordeux/tmpltool/issues/35)
