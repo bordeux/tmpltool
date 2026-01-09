@@ -49,4 +49,10 @@ pub struct Cli {
     /// arguments, return types, and examples, then exits
     #[arg(long, value_enum)]
     pub ide: Option<IdeFormat>,
+
+    /// Load environment variables from .env file(s)
+    /// Can be specified multiple times: --env .env --env .env.local
+    /// Files are loaded in order, later files override earlier ones
+    #[arg(long = "env", value_name = "FILE")]
+    pub env_files: Vec<String>,
 }

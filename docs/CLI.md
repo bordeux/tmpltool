@@ -26,6 +26,10 @@ cat template.txt | tmpltool [OPTIONS]
   - Prints all available functions with descriptions, arguments, return types, and examples
   - Exits immediately after printing metadata (does not render templates)
   - Useful for building IDE plugins, autocomplete, and documentation generators
+- `--env <FILE>` - Load environment variables from .env file(s)
+  - Can be specified multiple times: `--env .env --env .env.local`
+  - Files are loaded in order; later files override variables from earlier ones
+  - Supports standard .env format: `KEY=value`, comments (`#`), and quoted values
 
 ## Input/Output Patterns
 
@@ -73,4 +77,93 @@ tmpltool k8s-deploy.yaml.tmpl --validate yaml -o deployment.yaml
 
 # Validate TOML output
 tmpltool Cargo.toml.tmpl --validate toml
+
+# Load variables from .env file
+tmpltool --env .env config.tmpl
+
+# Load from multiple env files (later files override earlier)
+tmpltool --env .env --env .env.local config.tmpl
+
+# Combine with other options
+tmpltool --env .env --env .env.production --validate json -o config.json config.tmpl
+```
+
+## Environment Files (.env)
+
+The `--env` flag loads variables from `.env` files before template rendering. This is useful for:
+- Storing configuration separately from templates
+- Managing different environments (development, staging, production)
+- Avoiding environment variable pollution in your shell
+
+### .env File Format
+
+```bash
+# This is a comment
+DATABASE_URL=postgres://localhost:5432/mydb
+API_KEY=secret123
+
+# Quoted values preserve spaces
+APP_NAME="My Application"
+DESCRIPTION='Single quotes work too'
+
+# Empty values
+EMPTY_VAR=
+
+# Special characters in unquoted values
+URL=https://example.com/path?key=value
+```
+
+### Multiple Environment Files
+
+Load multiple files to layer configurations:
+
+```bash
+# .env (base configuration)
+APP_NAME=myapp
+LOG_LEVEL=info
+DATABASE_URL=postgres://localhost/dev
+
+# .env.production (production overrides)
+LOG_LEVEL=warn
+DATABASE_URL=postgres://prod-server/prod
+
+# Load both - production values override base
+tmpltool --env .env --env .env.production app.config.tmpl
+```
+
+### Example Workflow
+
+**Template (`config.tmpl`):**
+```jinja
+server:
+  host: {{ get_env(name="SERVER_HOST", default="localhost") }}
+  port: {{ get_env(name="SERVER_PORT", default="8080") }}
+database:
+  url: {{ get_env(name="DATABASE_URL") }}
+logging:
+  level: {{ get_env(name="LOG_LEVEL", default="info") }}
+```
+
+**Environment file (`.env`):**
+```bash
+SERVER_HOST=0.0.0.0
+SERVER_PORT=3000
+DATABASE_URL=postgres://db:5432/myapp
+LOG_LEVEL=debug
+```
+
+**Render:**
+```bash
+tmpltool --env .env config.tmpl -o config.yaml
+```
+
+**Output (`config.yaml`):**
+```yaml
+server:
+  host: 0.0.0.0
+  port: 3000
+database:
+  url: postgres://db:5432/myapp
+logging:
+  level: debug
 ```

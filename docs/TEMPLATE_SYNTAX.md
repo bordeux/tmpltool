@@ -179,3 +179,281 @@ All string filters support both function and filter syntax:
 {% set variable_name = value %}
 {% set name = get_env(name="USER", default="guest") %}
 ```
+
+## Template Includes
+
+Template includes allow you to modularize your templates by splitting them into reusable partials. This promotes code reuse and keeps templates maintainable.
+
+### Basic Syntax
+
+```jinja
+{% include "./path/to/partial.tmpl" %}
+```
+
+**Important:** Always use relative paths starting with `./` for includes.
+
+### Same Directory Include
+
+Include a template from the same directory:
+
+```
+templates/
+├── main.tmpl
+└── header.tmpl
+```
+
+**main.tmpl:**
+```jinja
+{% include "./header.tmpl" %}
+Main content here
+```
+
+**header.tmpl:**
+```jinja
+=== Header ===
+```
+
+**Output:**
+```
+=== Header ===
+Main content here
+```
+
+### Subdirectory Include
+
+Include templates from subdirectories:
+
+```
+templates/
+├── main.tmpl
+└── partials/
+    ├── header.tmpl
+    └── footer.tmpl
+```
+
+**main.tmpl:**
+```jinja
+{% include "./partials/header.tmpl" %}
+Main content
+{% include "./partials/footer.tmpl" %}
+```
+
+### Nested Includes
+
+Includes can be nested—an included template can include other templates:
+
+```
+templates/
+├── main.tmpl
+├── layout.tmpl
+└── components/
+    └── nav.tmpl
+```
+
+**main.tmpl:**
+```jinja
+{% include "./layout.tmpl" %}
+```
+
+**layout.tmpl:**
+```jinja
+<header>
+{% include "./components/nav.tmpl" %}
+</header>
+<main>Content</main>
+```
+
+**components/nav.tmpl:**
+```jinja
+<nav>Navigation menu</nav>
+```
+
+**Output:**
+```html
+<header>
+<nav>Navigation menu</nav>
+</header>
+<main>Content</main>
+```
+
+### Multiple Includes
+
+Combine multiple partials to build complex configurations:
+
+```jinja
+{% include "./partials/header.tmpl" %}
+{% include "./partials/database.tmpl" %}
+{% include "./partials/logging.tmpl" %}
+{% include "./partials/footer.tmpl" %}
+```
+
+### Conditional Includes
+
+Use conditionals to include templates based on environment variables:
+
+```jinja
+{% set env = get_env(name="ENVIRONMENT", default="development") %}
+
+{% if env == "production" %}
+{% include "./configs/production.tmpl" %}
+{% elif env == "staging" %}
+{% include "./configs/staging.tmpl" %}
+{% else %}
+{% include "./configs/development.tmpl" %}
+{% endif %}
+```
+
+Or toggle optional sections:
+
+```jinja
+{% set enable_monitoring = get_env(name="ENABLE_MONITORING", default="false") %}
+
+{% if enable_monitoring == "true" %}
+{% include "./partials/monitoring.tmpl" %}
+{% endif %}
+```
+
+### Variables in Included Templates
+
+Included templates have access to all variables defined in the parent template:
+
+**main.tmpl:**
+```jinja
+{% set app_name = get_env(name="APP_NAME", default="myapp") %}
+{% set port = get_env(name="PORT", default="8080") %}
+{% include "./server-config.tmpl" %}
+```
+
+**server-config.tmpl:**
+```jinja
+server:
+  name: {{ app_name }}
+  port: {{ port }}
+```
+
+Included templates can also use all tmpltool functions like `get_env()`, `read_file()`, etc.
+
+### Security Restrictions
+
+By default, includes are restricted for security:
+
+| Path Type | Default Mode | Trust Mode (`--trust`) |
+|-----------|--------------|------------------------|
+| Same directory (`./file.tmpl`) | ✅ Allowed | ✅ Allowed |
+| Subdirectory (`./sub/file.tmpl`) | ✅ Allowed | ✅ Allowed |
+| Parent directory (`../file.tmpl`) | ❌ Blocked | ✅ Allowed |
+| Absolute path (`/etc/file`) | ❌ Blocked | ✅ Allowed |
+
+**Parent directory access blocked (default):**
+```jinja
+{# This will fail without --trust #}
+{% include "../shared/common.tmpl" %}
+```
+
+**Error:**
+```
+Security: Parent directory (..) traversal is not allowed: ../shared/common.tmpl.
+Use --trust to bypass this restriction.
+```
+
+**Enable with trust mode:**
+```bash
+tmpltool --trust template.tmpl
+```
+
+### Real-World Example: Docker Compose
+
+Organize a Docker Compose template with reusable service partials:
+
+```
+templates/
+├── docker-compose.tmpl
+└── services/
+    ├── web.tmpl
+    ├── database.tmpl
+    └── redis.tmpl
+```
+
+**docker-compose.tmpl:**
+```jinja
+version: "3.8"
+
+services:
+{% include "./services/web.tmpl" %}
+
+{% set use_db = get_env(name="USE_DATABASE", default="true") %}
+{% if use_db == "true" %}
+{% include "./services/database.tmpl" %}
+{% endif %}
+
+{% set use_cache = get_env(name="USE_CACHE", default="false") %}
+{% if use_cache == "true" %}
+{% include "./services/redis.tmpl" %}
+{% endif %}
+```
+
+**services/web.tmpl:**
+```jinja
+  web:
+    image: {{ get_env(name="WEB_IMAGE", default="nginx:latest") }}
+    ports:
+      - "{{ get_env(name="WEB_PORT", default="80") }}:80"
+```
+
+**services/database.tmpl:**
+```jinja
+  database:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: {{ get_env(name="DB_NAME", default="app") }}
+      POSTGRES_USER: {{ get_env(name="DB_USER", default="postgres") }}
+```
+
+**Render:**
+```bash
+WEB_PORT=8080 USE_CACHE=true tmpltool templates/docker-compose.tmpl
+```
+
+### Real-World Example: Kubernetes Manifests
+
+Split Kubernetes manifests into reusable components:
+
+```
+k8s/
+├── deployment.tmpl
+└── components/
+    ├── metadata.tmpl
+    ├── containers.tmpl
+    └── resources.tmpl
+```
+
+**deployment.tmpl:**
+```jinja
+apiVersion: apps/v1
+kind: Deployment
+{% include "./components/metadata.tmpl" %}
+spec:
+  replicas: {{ get_env(name="REPLICAS", default="3") }}
+  template:
+    spec:
+      containers:
+{% include "./components/containers.tmpl" %}
+```
+
+**components/metadata.tmpl:**
+```jinja
+metadata:
+  name: {{ get_env(name="APP_NAME", default="myapp") }}
+  namespace: {{ get_env(name="NAMESPACE", default="default") }}
+  labels:
+    app: {{ get_env(name="APP_NAME", default="myapp") }}
+```
+
+### Best Practices
+
+1. **Use `./` prefix** - Always start include paths with `./` for clarity
+2. **Organize partials** - Keep partials in subdirectories like `partials/`, `components/`, or `includes/`
+3. **Name clearly** - Use descriptive names like `header.tmpl`, `db-config.tmpl`
+4. **Keep partials focused** - Each partial should do one thing well
+5. **Document dependencies** - Comment which variables a partial expects
+6. **Avoid deep nesting** - Limit include depth for maintainability (2-3 levels max)

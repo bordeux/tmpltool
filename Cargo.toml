@@ -36,6 +36,7 @@ bcrypt = "0.17"
 hmac = "0.12"
 url = "2"
 urlencoding = "2"
+dotenvy = "0.15"
 
 [dev-dependencies]
 tempfile = "3.24.0"

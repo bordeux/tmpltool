@@ -4,24 +4,17 @@ Based on comprehensive documentation review, here are identified gaps and potent
 
 ## Critical Missing Features
 
-### 1. **Basic CLI Flags Not Documented**
-- ⚠️ **Partially Missing:** `--version` and `--help` flags exist (via clap) but not documented
-- **Current:** Flags work but users may not know about them
-- **Impact:** Users can't easily discover available options
-- **Blocker Level:** Low-Medium - Documentation gap
 
-### 2. **Template Includes Not Well Documented**
-- ⚠️ **Partially Missing:** Template includes (`{% include %}`) exist in codebase but not documented in main docs
-- **Found:** Test files show includes work, but no user-facing documentation
-- **Impact:** Users may not know they can modularize templates
-- **Blocker Level:** Medium - Reduces template reusability
+### 2. ~~**Template Includes Not Well Documented**~~ ✅ RESOLVED
+- ✅ **Documented:** Template includes now fully documented in `docs/TEMPLATE_SYNTAX.md`
+- **Added:** Basic syntax, subdirectory includes, nested includes, conditional includes, security restrictions, real-world examples (Docker Compose, Kubernetes), and best practices
 
-### 3. **No Configuration File Support**
-- ❌ **Missing:** No `.env` file support
-- ❌ **Missing:** No config file (JSON/YAML/TOML) for variables
-- **Current:** Only environment variables
-- **Impact:** Harder to manage complex configurations
-- **Blocker Level:** High - Common use case for many users
+### 3. **No Configuration File Support** ⚠️ PARTIALLY RESOLVED
+- ✅ **Added:** `.env` file support via `--env` flag (can load multiple files)
+- ❌ **Not implemented:** Config file (JSON/YAML/TOML) for variables (considered out of scope)
+- **Current:** Environment variables + .env files
+- **Impact:** Reduced - .env files cover most common use cases
+- **Blocker Level:** Low - Primary use case now supported
 
 ### 4. **No Watch Mode**
 - ❌ **Missing:** `--watch` flag for auto-rendering on file changes
