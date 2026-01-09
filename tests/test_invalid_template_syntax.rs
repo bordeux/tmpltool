@@ -9,7 +9,7 @@ fn test_invalid_template_syntax() {
     let output_path = get_test_file_path("output_invalid.txt");
 
     // Read invalid template from fixtures
-    let template_content = read_fixture_template("invalid.tmpl");
+    let template_content = read_fixture_template("invalid.tmpltool");
     let template_path = get_test_file_path("template_invalid.txt");
     fs::write(&template_path, template_content).unwrap();
 

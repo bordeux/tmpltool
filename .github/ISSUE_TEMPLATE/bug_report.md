@@ -26,7 +26,7 @@ A clear and concise description of what actually happened.
 
 ## Minimal Reproducible Example
 
-**Template** (`example.tmpl`):
+**Template** (`example.tmpltool`):
 ```
 # Paste your template here
 ```
@@ -34,7 +34,7 @@ A clear and concise description of what actually happened.
 **Command:**
 ```bash
 # Paste the exact command you ran
-tmpltool example.tmpl
+tmpltool example.tmpltool
 ```
 
 **Environment Variables (if applicable):**

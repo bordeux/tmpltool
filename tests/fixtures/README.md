@@ -7,14 +7,14 @@ This directory contains test fixtures for tmpltool tests. Fixtures make tests ea
 ```
 fixtures/
 ├── templates/           # Input template files
-│   ├── simple.tmpl
-│   ├── with_env.tmpl
-│   ├── with_default.tmpl
-│   ├── multiline.tmpl
-│   ├── conditionals.tmpl
-│   ├── invalid.tmpl
-│   ├── direct_var.tmpl
-│   └── docker-compose.tmpl
+│   ├── simple.tmpltool
+│   ├── with_env.tmpltool
+│   ├── with_default.tmpltool
+│   ├── multiline.tmpltool
+│   ├── conditionals.tmpltool
+│   ├── invalid.tmpltool
+│   ├── direct_var.tmpltool
+│   └── docker-compose.tmpltool
 └── expected/            # Expected output files
     ├── simple.txt
     ├── with_env.txt
@@ -34,41 +34,41 @@ Tests read these files and compare the actual output with the expected output.
 
 ## Available Fixtures
 
-### simple.tmpl
+### simple.tmpltool
 Basic static template with no variables.
 - **Expected:** `simple.txt`
 
-### with_env.tmpl
+### with_env.tmpltool
 Template using `get_env()` function.
 - **Environment:** `TEST_VAR=test_value`
 - **Expected:** `with_env.txt`
 
-### with_default.tmpl
+### with_default.tmpltool
 Template using `get_env()` with default value.
 - **Environment:** None (uses default)
 - **Expected:** `with_default.txt`
 
-### multiline.tmpl
+### multiline.tmpltool
 Multi-line template with environment variables.
 - **Environment:** `LINE1=First`, `LINE2=Second`
 - **Expected:** `multiline.txt`
 
-### conditionals.tmpl
+### conditionals.tmpltool
 Template with conditional logic.
 - **Environment:** `CONDITION=yes` (for true case)
 - **Expected (true):** `conditionals_true.txt`
 - **Expected (false):** `conditionals_false.txt`
 
-### invalid.tmpl
+### invalid.tmpltool
 Template with invalid syntax (for error testing).
 - **Expected:** Should fail to render
 
-### direct_var.tmpl
+### direct_var.tmpltool
 Template trying to access variable directly without `get_env()`.
 - **Environment:** `DIRECT_VAR=value`
 - **Expected:** Should fail to render
 
-### docker-compose.tmpl
+### docker-compose.tmpltool
 Real-world example: Docker Compose template.
 - **Environment:** Uses defaults
 - **Expected:** `docker-compose.txt`
@@ -82,7 +82,7 @@ To add a new fixture for testing:
 Create a new file in `templates/`:
 
 ```bash
-# Example: tests/fixtures/templates/my_feature.tmpl
+# Example: tests/fixtures/templates/my_feature.tmpltool
 My feature: {{ get_env(name="FEATURE_VAR", default="default_value") }}
 ```
 
@@ -114,7 +114,7 @@ fn test_my_feature() {
     let output_path = get_test_file_path("output_my_feature.txt");
 
     // Read template from fixtures
-    let template_content = read_fixture_template("my_feature.tmpl");
+    let template_content = read_fixture_template("my_feature.tmpltool");
     let template_path = get_test_file_path("template_my_feature.txt");
     fs::write(&template_path, template_content).unwrap();
 

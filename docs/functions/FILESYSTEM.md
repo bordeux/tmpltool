@@ -14,7 +14,7 @@ All filesystem functions enforce security restrictions to prevent unauthorized a
 **Trust Mode:** Use `--trust` flag to bypass these restrictions for trusted templates.
 
 ```bash
-tmpltool --trust template.tmpl  # Can access any file
+tmpltool --trust template.tmpltool  # Can access any file
 ```
 
 #### `read_file(path)`

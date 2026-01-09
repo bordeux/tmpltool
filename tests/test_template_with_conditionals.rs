@@ -15,7 +15,7 @@ fn test_template_with_conditionals() {
     }
 
     // Read template from fixtures
-    let template_content = read_fixture_template("conditionals.tmpl");
+    let template_content = read_fixture_template("conditionals.tmpltool");
     let template_path = get_test_file_path("template_conditional.txt");
     fs::write(&template_path, template_content).unwrap();
 

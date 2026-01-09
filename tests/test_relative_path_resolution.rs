@@ -45,7 +45,7 @@ fn test_read_file_relative_to_template_file() {
 
     // Create template that reads data.txt with relative path
     let template_content = "{{ read_file(path=\"./data.txt\") }}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -81,7 +81,7 @@ fn test_read_file_relative_to_template_in_subdirectory() {
 
     // Create template in subdirectory that reads config.txt with relative path
     let template_content = "{{ read_file(path=\"./config.txt\") }}";
-    let template_file = create_template_file(&subdir, "template.tmpl", template_content);
+    let template_file = create_template_file(&subdir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -108,7 +108,7 @@ fn test_file_exists_relative_to_template() {
 
     // Create template that checks if data.txt exists
     let template_content = "exists: {{ file_exists(path=\"./data.txt\") }}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -135,7 +135,7 @@ fn test_file_size_relative_to_template() {
 
     // Create template that gets size of data.txt
     let template_content = "size: {{ file_size(path=\"./data.txt\") }}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -166,7 +166,7 @@ fn test_list_dir_relative_to_template() {
 
     // Create template that lists current directory
     let template_content = "{% for file in list_dir(path=\".\") | sort %}{{ file }}\n{% endfor %}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -185,7 +185,7 @@ fn test_list_dir_relative_to_template() {
     assert!(output.contains("data.txt"));
     assert!(output.contains("file1.txt"));
     assert!(output.contains("file2.txt"));
-    assert!(output.contains("template.tmpl"));
+    assert!(output.contains("template.tmpltool"));
 
     cleanup_test_env(&test_dir);
 }
@@ -202,7 +202,7 @@ fn test_glob_relative_to_template() {
     // Create template that globs for .txt files
     let template_content =
         "{% for file in glob(pattern=\"*.txt\") | sort %}{{ file }}\n{% endfor %}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -232,7 +232,7 @@ fn test_security_restriction_prevents_parent_directory_access() {
 
     // Create template that tries to access parent directory
     let template_content = "{{ read_file(path=\"../secret.txt\") }}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -266,7 +266,7 @@ fn test_trust_mode_allows_parent_directory_access() {
 
     // Create template in subdirectory that accesses parent directory
     let template_content = "{{ read_file(path=\"../parent_data.txt\") }}";
-    let template_file = create_template_file(&subdir, "template.tmpl", template_content);
+    let template_file = create_template_file(&subdir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -293,7 +293,7 @@ fn test_file_modified_relative_to_template() {
 
     // Create template that gets modification time of data.txt
     let template_content = "modified: {{ file_modified(path=\"./data.txt\") }}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");
@@ -339,7 +339,7 @@ fn test_multiple_relative_reads_in_same_template() {
 
     // Create template that reads multiple files
     let template_content = "File 1: {{ read_file(path=\"./file1.txt\") }}\nFile 2: {{ read_file(path=\"./file2.txt\") }}";
-    let template_file = create_template_file(&test_dir, "template.tmpl", template_content);
+    let template_file = create_template_file(&test_dir, "template.tmpltool", template_content);
 
     // Create output file
     let output_file = test_dir.join("output.txt");

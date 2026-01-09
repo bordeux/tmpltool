@@ -86,8 +86,8 @@ FROM alpine:latest
 COPY --from=tmpltool /tmpltool /usr/local/bin/tmpltool
 
 # Now use tmpltool in your build process
-COPY config.tmpl /app/
-RUN tmpltool /app/config.tmpl -o /app/config.json --validate json
+COPY config.tmpltool /app/
+RUN tmpltool /app/config.tmpltool -o /app/config.json --validate json
 ```
 
 **Available Tags:**

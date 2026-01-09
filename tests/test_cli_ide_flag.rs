@@ -130,7 +130,7 @@ fn test_ide_json_structure() {
 fn test_ide_exits_without_rendering() {
     // --ide should exit before trying to render a template
     tmpltool()
-        .args(["--ide", "json", "nonexistent_template.tmpl"])
+        .args(["--ide", "json", "nonexistent_template.tmpltool"])
         .assert()
         .success();
 }

@@ -64,17 +64,17 @@ It's designed for **DevOps/SRE workflows** like generating Kubernetes manifests,
 ### CLI Quick Reference
 ```bash
 # Basic usage
-tmpltool template.tmpl                    # Render to stdout
-tmpltool template.tmpl -o output.txt      # Render to file
+tmpltool template.tmpltool                    # Render to stdout
+tmpltool template.tmpltool -o output.txt      # Render to file
 echo '{{ now() }}' | tmpltool             # Pipe template from stdin
 
 # With options
-tmpltool --trust system.tmpl              # Allow filesystem access outside CWD
-tmpltool config.tmpl --validate json      # Validate output is valid JSON
+tmpltool --trust system.tmpltool              # Allow filesystem access outside CWD
+tmpltool config.tmpltool --validate json      # Validate output is valid JSON
 tmpltool --ide-json                       # Output function metadata as JSON (for IDE integration)
 
 # With environment variables
-DB_HOST=prod-db APP_ENV=production tmpltool config.tmpl
+DB_HOST=prod-db APP_ENV=production tmpltool config.tmpltool
 ```
 
 ### Template Quick Reference
@@ -166,19 +166,19 @@ cargo make pre-commit
 cargo make run
 
 # From source with custom template (use cargo directly)
-cargo run -- examples/greeting.tmpl
+cargo run -- examples/greeting.tmpltool
 
 # From release binary
-./target/release/tmpltool examples/greeting.tmpl
+./target/release/tmpltool examples/greeting.tmpltool
 
 # With environment variables
-NAME="Alice" ./target/release/tmpltool examples/greeting.tmpl
+NAME="Alice" ./target/release/tmpltool examples/greeting.tmpltool
 
 # With trust mode (allows filesystem access outside CWD)
-./target/release/tmpltool --trust system_info.tmpl
+./target/release/tmpltool --trust system_info.tmpltool
 
 # Output to file
-./target/release/tmpltool template.tmpl -o output.txt
+./target/release/tmpltool template.tmpltool -o output.txt
 
 # Read from stdin
 echo 'Hello {{ get_env(name="USER") }}!' | ./target/release/tmpltool
@@ -482,7 +482,7 @@ When debugging template issues:
 - Design decision: Explicit is safer than implicit
 
 ### Path Resolution
-- Templates can include other templates: `{% include "partial.tmpl" %}`
+- Templates can include other templates: `{% include "partial.tmpltool" %}`
 - Paths resolved relative to template's directory (or CWD if stdin)
 - Lazy loading via `Environment::set_loader()`
 
@@ -496,11 +496,11 @@ When debugging template issues:
 
 ### Examples Directory
 `examples/` contains demonstration templates:
-- `greeting.tmpl` - Simple variable substitution
-- `basic.tmpl` - Environment variable filtering
-- `config-with-defaults.tmpl` - Default values
-- `docker-compose.tmpl` - Real-world Docker Compose generation
-- `comprehensive-app-config.tmpl` - All features showcase
+- `greeting.tmpltool` - Simple variable substitution
+- `basic.tmpltool` - Environment variable filtering
+- `config-with-defaults.tmpltool` - Default values
+- `docker-compose.tmpltool` - Real-world Docker Compose generation
+- `comprehensive-app-config.tmpltool` - All features showcase
 
 ### Tests Organization
 - `tests/test_*_unit.rs` - Unit tests for specific functions

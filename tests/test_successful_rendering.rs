@@ -14,7 +14,7 @@ fn test_successful_rendering() {
     }
 
     // Read template from fixtures
-    let template_content = read_fixture_template("with_env.tmpl");
+    let template_content = read_fixture_template("with_env.tmpltool");
     let template_path = get_test_file_path("template_success.txt");
     fs::write(&template_path, template_content).unwrap();
 

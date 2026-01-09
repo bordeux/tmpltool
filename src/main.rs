@@ -1,5 +1,6 @@
 use clap::Parser;
 use serde::Serialize;
+use std::path::Path;
 use std::process;
 use tmpltool::cli::IdeFormat;
 use tmpltool::{Cli, FunctionMetadata, get_all_metadata, render_template};
@@ -10,8 +11,32 @@ struct IdeMetadata<'a> {
     functions: Vec<&'a FunctionMetadata>,
 }
 
+/// Load environment variables from .env files
+/// Later files override variables from earlier files
+fn load_env_files(env_files: &[String]) -> Result<(), String> {
+    if env_files.is_empty() {
+        return Ok(());
+    }
+    for env_file in env_files {
+        let path = Path::new(env_file);
+        if !path.exists() {
+            return Err(format!("Environment file not found: {}", env_file));
+        }
+        // Use from_path_override to allow later files to override earlier ones
+        dotenvy::from_path_override(path)
+            .map_err(|e| format!("Failed to load '{}': {}", env_file, e))?;
+    }
+    Ok(())
+}
+
 fn main() {
     let cli = Cli::parse();
+
+    // Load environment files first (before any other processing)
+    if let Err(e) = load_env_files(&cli.env_files) {
+        eprintln!("Error: {}", e);
+        process::exit(1);
+    }
 
     // Handle --ide <format> early exit
     if let Some(format) = cli.ide {

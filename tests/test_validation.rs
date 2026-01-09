@@ -15,7 +15,7 @@ fn get_binary_path() -> PathBuf {
 #[test]
 fn test_validate_json_valid() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(
         template_file,
@@ -37,7 +37,7 @@ fn test_validate_json_valid() {
 #[test]
 fn test_validate_json_invalid() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(template_file, r#"{{"name": "test", invalid}}"#).unwrap();
 
@@ -55,7 +55,7 @@ fn test_validate_json_invalid() {
 #[test]
 fn test_validate_yaml_valid() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(
         template_file,
@@ -77,7 +77,7 @@ fn test_validate_yaml_valid() {
 #[test]
 fn test_validate_yaml_invalid() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(template_file, "name: test\nvalue: : invalid").unwrap();
 
@@ -95,7 +95,7 @@ fn test_validate_yaml_invalid() {
 #[test]
 fn test_validate_toml_valid() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(
         template_file,
@@ -117,7 +117,7 @@ fn test_validate_toml_valid() {
 #[test]
 fn test_validate_toml_invalid() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(template_file, "name = test without quotes").unwrap();
 
@@ -135,7 +135,7 @@ fn test_validate_toml_invalid() {
 #[test]
 fn test_no_validation_by_default() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(template_file, "Hello World").unwrap();
 
@@ -152,7 +152,7 @@ fn test_no_validation_by_default() {
 #[test]
 fn test_validate_json_with_output_file() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let output_path = temp_dir.path().join("output.json");
 
     let mut template_file = fs::File::create(&template_path).unwrap();
@@ -181,7 +181,7 @@ fn test_validate_json_with_output_file() {
 #[test]
 fn test_validate_preserves_output() {
     let temp_dir = TempDir::new().unwrap();
-    let template_path = temp_dir.path().join("template.tmpl");
+    let template_path = temp_dir.path().join("template.tmpltool");
     let mut template_file = fs::File::create(&template_path).unwrap();
     writeln!(
         template_file,

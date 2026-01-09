@@ -2,7 +2,7 @@
 
 ## Docker Compose Generator
 
-**Template** (`docker-compose.tmpl`):
+**Template** (`docker-compose.tmpltool`):
 ```yaml
 version: '3.8'
 
@@ -32,17 +32,17 @@ HOST_PORT=8080 \
 NODE_ENV=production \
 DATABASE_URL=postgres://db:5432/mydb \
 ENABLE_VOLUMES=true \
-tmpltool docker-compose.tmpl -o docker-compose.yml
+tmpltool docker-compose.tmpltool -o docker-compose.yml
 ```
 
 **Or use defaults:**
 ```bash
-tmpltool docker-compose.tmpl -o docker-compose.yml
+tmpltool docker-compose.tmpltool -o docker-compose.yml
 ```
 
 ## Comprehensive Application Configuration
 
-See [examples/comprehensive-app-config.tmpl](examples/comprehensive-app-config.tmpl) for a complete example demonstrating all features:
+See [examples/comprehensive-app-config.tmpltool](examples/comprehensive-app-config.tmpltool) for a complete example demonstrating all features:
 
 - All hash functions (MD5, SHA1, SHA256, SHA512)
 - UUID generation
@@ -59,21 +59,21 @@ See [examples/comprehensive-app-config.tmpl](examples/comprehensive-app-config.t
 
 ```bash
 # Generate and validate JSON config
-tmpltool config.json.tmpl | jq .
+tmpltool config.json.tmpltool | jq .
 
 # Generate and apply Kubernetes config
-tmpltool k8s-deployment.yaml.tmpl | kubectl apply -f -
+tmpltool k8s-deployment.yaml.tmpltool | kubectl apply -f -
 
 # Generate nginx config and test it
-tmpltool nginx.conf.tmpl | nginx -t -c /dev/stdin
+tmpltool nginx.conf.tmpltool | nginx -t -c /dev/stdin
 
 # Combine multiple templates
-cat header.tmpl body.tmpl footer.tmpl | tmpltool > complete.html
+cat header.tmpltool body.tmpltool footer.tmpltool | tmpltool > complete.html
 ```
 
 ## Trust Mode - System Files
 
-**Template** (`system_info.tmpl`):
+**Template** (`system_info.tmpltool`):
 ```
 # System Information
 
@@ -92,11 +92,11 @@ cat header.tmpl body.tmpl footer.tmpl | tmpltool > complete.html
 **Render:**
 ```bash
 # Without --trust: Security error
-tmpltool system_info.tmpl
+tmpltool system_info.tmpltool
 # Error: Security: Absolute paths are not allowed
 
 # With --trust: Works!
-tmpltool --trust system_info.tmpl -o system_info.md
+tmpltool --trust system_info.tmpltool -o system_info.md
 ```
 
 **WARNING:** Only use `--trust` with templates you completely trust. Malicious templates could read sensitive files like SSH keys, passwords, or system configurations.

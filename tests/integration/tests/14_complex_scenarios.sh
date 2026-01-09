@@ -5,7 +5,7 @@
 echo "Test: Complex real-world scenarios"
 
 # Test: Complex configuration template
-create_template "complex.tmpl" '# Server Configuration
+create_template "complex.tmpltool" '# Server Configuration
 server:
   host: {{ get_env(name="SERVER_HOST", default="0.0.0.0") }}
   port: {{ get_env(name="SERVER_PORT", default="8080") }}
@@ -15,6 +15,6 @@ server:
     cert: {{ get_env(name="SSL_CERT_PATH") }}
   {% endif %}'
 
-OUTPUT=$(SERVER_HOST="localhost" SERVER_PORT="3000" run_binary "complex.tmpl")
+OUTPUT=$(SERVER_HOST="localhost" SERVER_PORT="3000" run_binary "complex.tmpltool")
 assert_contains "$OUTPUT" "host: localhost" "Complex template renders host correctly"
 assert_contains "$OUTPUT" "port: 3000" "Complex template renders port correctly"
