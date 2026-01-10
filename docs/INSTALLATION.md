@@ -83,7 +83,7 @@ FROM ghcr.io/bordeux/tmpltool:latest AS tmpltool
 
 FROM alpine:latest
 # Copy the binary from the tmpltool image
-COPY --from=tmpltool /tmpltool /usr/local/bin/tmpltool
+COPY --from=tmpltool /usr/local/bin/tmpltool /usr/local/bin/tmpltool
 
 # Now use tmpltool in your build process
 COPY config.tmpltool /app/
