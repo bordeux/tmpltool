@@ -27,7 +27,7 @@ RUN strip /usr/src/tmpltool/target/release/tmpltool
 # ================================
 # Runtime Stage
 # ================================
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install CA certificates for HTTPS
 RUN apt-get update && \

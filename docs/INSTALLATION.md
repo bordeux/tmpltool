@@ -83,7 +83,7 @@ FROM ghcr.io/bordeux/tmpltool:latest AS tmpltool
 
 FROM alpine:latest
 # Copy the binary from the tmpltool image
-COPY --from=tmpltool /tmpltool /usr/local/bin/tmpltool
+COPY --from=tmpltool /usr/local/bin/tmpltool /usr/local/bin/tmpltool
 
 # Now use tmpltool in your build process
 COPY config.tmpltool /app/
@@ -103,6 +103,20 @@ docker cp tmpltool-tmp:/tmpltool ./tmpltool
 docker rm tmpltool-tmp
 chmod +x ./tmpltool
 ./tmpltool --version
+```
+
+## Cargo (crates.io)
+
+If you have Rust installed, you can install directly from [crates.io](https://crates.io/crates/tmpltool):
+
+```bash
+cargo install tmpltool
+```
+
+To update to the latest version:
+
+```bash
+cargo install tmpltool --force
 ```
 
 ## From Source
