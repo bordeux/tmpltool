@@ -4,6 +4,9 @@
 [![Release](https://github.com/bordeux/tmpltool/actions/workflows/release.yml/badge.svg)](https://github.com/bordeux/tmpltool/actions/workflows/release.yml)
 [![codecov](https://codecov.io/gh/bordeux/tmpltool/branch/master/graph/badge.svg)](https://codecov.io/gh/bordeux/tmpltool)
 [![GitHub release](https://img.shields.io/github/v/release/bordeux/tmpltool)](https://github.com/bordeux/tmpltool/releases)
+[![Crates.io](https://img.shields.io/crates/v/tmpltool)](https://crates.io/crates/tmpltool)
+[![docs.rs](https://docs.rs/tmpltool/badge.svg)](https://docs.rs/tmpltool)
+[![MSRV](https://img.shields.io/badge/MSRV-1.85-blue)](https://github.com/bordeux/tmpltool)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/bordeux/tmpltool/pkgs/container/tmpltool)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 

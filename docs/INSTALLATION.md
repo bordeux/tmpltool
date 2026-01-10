@@ -105,6 +105,20 @@ chmod +x ./tmpltool
 ./tmpltool --version
 ```
 
+## Cargo (crates.io)
+
+If you have Rust installed, you can install directly from [crates.io](https://crates.io/crates/tmpltool):
+
+```bash
+cargo install tmpltool
+```
+
+To update to the latest version:
+
+```bash
+cargo install tmpltool --force
+```
+
 ## From Source
 
 ```bash
