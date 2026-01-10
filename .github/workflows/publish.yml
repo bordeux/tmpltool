@@ -11,6 +11,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write  # For crates.io trusted publishing
 
 jobs:
   # ============================================
@@ -31,6 +32,25 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Releasing version: $VERSION (tag: $TAG)"
+
+  # ============================================
+  # Publish to crates.io
+  # ============================================
+  publish-crates:
+    name: Publish to crates.io
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish to crates.io
+        run: cargo publish
 
   # ============================================
   # Build Binaries (reusable workflow)
