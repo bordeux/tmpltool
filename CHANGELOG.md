@@ -1,3 +1,12 @@
+## <small>1.5.1 (2026-01-10)</small>
+
+* Merge pull request #37 from bordeux/feature/cargo-release ([ae9d28a](https://github.com/bordeux/tmpltool/commit/ae9d28a)), closes [#37](https://github.com/bordeux/tmpltool/issues/37)
+* fix: add cargo publish ([4c8eb8f](https://github.com/bordeux/tmpltool/commit/4c8eb8f))
+* fix: use tokens for publishing in cargo ([f754a18](https://github.com/bordeux/tmpltool/commit/f754a18))
+* fix: use trixie debian image for docker ([42504fb](https://github.com/bordeux/tmpltool/commit/42504fb))
+* docs: add crates.io badges and cargo install instructions ([fd19658](https://github.com/bordeux/tmpltool/commit/fd19658))
+* docs: update docker installation ([7dbd114](https://github.com/bordeux/tmpltool/commit/7dbd114))
+
 ## 1.5.0 (2026-01-09)
 
 * Merge pull request #36 from bordeux/feature/app-analyse ([e608ef6](https://github.com/bordeux/tmpltool/commit/e608ef6)), closes [#36](https://github.com/bordeux/tmpltool/issues/36)

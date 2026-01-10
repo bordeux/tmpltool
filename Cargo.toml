@@ -1,6 +1,6 @@
 [package]
 name = "tmpltool"
-version = "1.5.0"
+version = "1.5.1"
 edition = "2024"
 license = "MIT"
 description = "A fast and simple command-line template rendering tool using MiniJinja templates with environment variables"
